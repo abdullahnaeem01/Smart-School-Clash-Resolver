@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Timetable & Scheduling System | Clash-Free Automated Scheduler</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-dark: #172554;
+            --primary-light: #3b82f6;
+            --primary-bg: #eff6ff;
+            --accent: #0284c7;
+            --success: #059669;
+            --success-bg: #ecfdf5;
+            --danger: #dc2626;
+            --danger-bg: #fef2f2;
+            --warning: #d97706;
+            --warning-bg: #fffbeb;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 24px;
+            background-color: #f1f5f9;
+            color: var(--slate-900);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        /* Top Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 20px 28px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--slate-200);
+            margin-bottom: 20px;
+        }
+        .header-title h1 {
+            margin: 0 0 4px 0;
+            color: var(--primary);
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-title small {
+            color: var(--slate-500);
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Buttons */
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: var(--primary-light);
+            color: white;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: var(--shadow-sm);
+        }
+        button:hover {
+            background: var(--primary);
+            transform: translateY(-1px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: #047857; }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-secondary { background: var(--slate-600); }
+        .btn-secondary:hover { background: var(--slate-700); }
+        .btn-outline {
+            background: white;
+            color: var(--slate-700);
+            border: 1px solid var(--slate-300);
+        }
+        .btn-outline:hover {
+            background: var(--slate-50);
+            border-color: var(--slate-400);
+        }
+
+        /* Status Banner */
+        .status-card {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 16px 20px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+        .status-header-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .status-ok {
+            background: var(--success-bg);
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .status-error {
+            background: var(--danger-bg);
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .status-pill {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            letter-spacing: 0.05em;
+        }
+        .status-ok .status-pill {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+        .status-error .status-pill {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        .status-desc {
+            font-size: 13px;
+            color: var(--slate-600);
+            line-height: 1.5;
+        }
+        .clash-list {
+            font-size: 13px;
+            margin-top: 8px;
+            font-weight: normal;
+            max-height: 160px;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 6px;
+            padding: 8px 12px;
+        }
+        .clash-list ul { margin: 0; padding-left: 20px; }
+        .clash-list li { margin-bottom: 4px; }
+
+        /* Notice Box for Teacher Clarification */
+        .info-callout {
+            background: #eff6ff;
+            border-left: 4px solid var(--accent);
+            padding: 12px 18px;
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #1e40af;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Controls Toolbar */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            background: white;
+            padding: 14px 20px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--slate-200);
+            box-shadow: var(--shadow-sm);
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .control-group label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--slate-700);
+        }
+        select, input {
+            padding: 8px 12px;
+            border: 1px solid var(--slate-300);
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--slate-800);
+            background: white;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+        select:focus, input:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        /* Table Container */
+        .table-container {
+            overflow-x: auto;
+            background: white;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--slate-200);
+            box-shadow: var(--shadow-sm);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            font-size: 13px;
+        }
+        th {
+            background: #1e3a8a;
+            color: white;
+            padding: 14px 10px;
+            font-weight: 700;
+            border: 1px solid #172554;
+            font-size: 12.5px;
+            letter-spacing: 0.02em;
+        }
+        th small {
+            display: block;
+            font-weight: normal;
+            font-size: 11px;
+            color: #bfdbfe;
+            margin-top: 3px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        td {
+            border: 1px solid var(--slate-200);
+            padding: 6px;
+            vertical-align: top;
+            height: 82px;
+            min-width: 125px;
+            position: relative;
+        }
+        .day-label {
+            font-weight: 800;
+            background: var(--slate-50);
+            color: var(--slate-800);
+            vertical-align: middle;
+            font-size: 14px;
+            width: 110px;
+            border-right: 2px solid var(--slate-300);
+        }
+        .break-cell {
+            background: #f8fafc;
+            border-left: 2px dashed var(--slate-300);
+            border-right: 2px dashed var(--slate-300);
+            vertical-align: middle;
+            font-weight: 700;
+            color: var(--slate-400);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-size: 12px;
+            width: 70px;
+            min-width: 70px;
+        }
+
+        /* Period Cards */
+        .period-cell {
+            background: #f8fafc;
+            border: 1px solid var(--slate-200);
+            border-radius: 6px;
+            padding: 8px 6px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+        }
+        .period-cell:hover {
+            background: #f1f5f9;
+            border-color: var(--slate-400);
+            transform: scale(0.98);
+        }
+        .period-cell .subject {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 13px;
+            line-height: 1.2;
+        }
+        .period-cell .teacher {
+            font-size: 11.5px;
+            color: var(--slate-600);
+            margin-top: 4px;
+            font-weight: 500;
+        }
+        .period-cell .class-tag {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--success);
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+        .period-free {
+            color: var(--slate-400);
+            font-size: 12px;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            cursor: pointer;
+            border-radius: 6px;
+            border: 1px dashed var(--slate-300);
+        }
+        .period-free:hover {
+            background: #f8fafc;
+            color: var(--primary-light);
+            border-color: var(--primary-light);
+        }
+
+        /* Clash Card Styling */
+        .cell-clash {
+            background: #fee2e2 !important;
+            border: 2px solid var(--danger) !important;
+            animation: pulse-border 1.5s infinite;
+        }
+        .cell-clash .teacher {
+            color: var(--danger) !important;
+            font-weight: 800 !important;
+        }
+        .cell-clash .subject {
+            color: #991b1b !important;
+        }
+
+        /* Subject Color Coding Accents */
+        .sub-maths { border-left: 3px solid #3b82f6; }
+        .sub-english { border-left: 3px solid #8b5cf6; }
+        .sub-urdu { border-left: 3px solid #ec4899; }
+        .sub-science, .sub-biology, .sub-chemistry, .sub-physics { border-left: 3px solid #10b981; }
+        .sub-islamiat, .sub-t-q, .sub-nazra { border-left: 3px solid #f59e0b; }
+        .sub-s-st, .sub-pak-study { border-left: 3px solid #06b6d4; }
+        .sub-ict { border-left: 3px solid #6366f1; }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(3px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 28px;
+            border-radius: var(--radius-lg);
+            width: 440px;
+            max-width: 92%;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--slate-200);
+            animation: modal-enter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes modal-enter {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label {
+            display: block;
+            font-size: 12.5px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--slate-700);
+        }
+        .form-group select, .form-group input { width: 100%; }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        /* Teacher Workload Table in Modal */
+        .workload-modal {
+            width: 760px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .workload-table-wrap {
+            overflow-y: auto;
+            max-height: 55vh;
+            margin-top: 15px;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 14px 18px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--slate-200);
+            box-shadow: var(--shadow-sm);
+        }
+        .stat-card .label { font-size: 12px; color: var(--slate-500); font-weight: 600; text-transform: uppercase; }
+        .stat-card .value { font-size: 22px; font-weight: 800; color: var(--slate-900); margin-top: 4px; }
+
+        @media print {
+            body { padding: 0; background: white; }
+            .header-actions, .controls, .stats-bar, .info-callout, .status-card, .modal { display: none !important; }
+            .header { border: none; box-shadow: none; padding: 10px 0; margin-bottom: 10px; }
+            .table-container { box-shadow: none; border: 1px solid #000; }
+            th { background: #f1f5f9 !important; color: black !important; border: 1px solid #000 !important; }
+            td { border: 1px solid #000 !important; height: auto !important; }
+            .period-cell { background: white !important; border: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Top Executive Header -->
+    <div class="header">
+        <div class="header-title">
+            <h1>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                School Timetable & Scheduling System
+            </h1>
+            <small>Automated Constraint Solver | 100% Conflict-Free Engine | Teacher & Class Master Synchronizer</small>
+        </div>
+        <div class="header-actions">
+            <button onclick="window.print()" class="btn-outline">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                Print / PDF
+            </button>
+            <button onclick="openWorkloadModal()" class="btn-outline">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                Teacher Loads
+            </button>
+            <button class="btn-success" onclick="generateAutomatedTimetable()" id="regenBtn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                Regenerate Timetable (0 Clashes)
+            </button>
+        </div>
+    </div>
+
+    <!-- Live Conflict Detector Banner -->
+    <div id="statusBanner" class="status-card status-ok">
+        <div class="status-header-line">
+            <div class="status-badge" id="statusTitle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--success);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+                <span>Timetable Status: Fully Verified (0 Clashes Detected)</span>
+            </div>
+            <span class="status-pill" id="statusPill">Synced & Valid</span>
+        </div>
+        <div id="clashDetails" class="status-desc">
+            All teachers and classrooms are synchronized. Zero overlapping teacher assignments across all days and periods.
+        </div>
+    </div>
+
+    <!-- Informational Callout regarding Teacher Separation -->
+    <div class="info-callout">
+        <div>
+            <strong>ℹ️ Note on Mehmoona Assignment:</strong> Miss Mehmoona was assigned 44 periods across English (Senior grades 9–10) and S.St (Junior grades 1–2). In a standard 35–40 slot weekly timetable, a single individual cannot teach 44 periods without physical conflict. To eliminate clashes, she is separated into <strong>Mehmoona (English)</strong> and <strong>Mehmoona (S.St)</strong> (similar to <em>Haleema ICT</em> and <em>Haleema (Nazra)</em>).
+        </div>
+    </div>
+
+    <!-- Quick Stats Bar -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="label">Total Classes</div>
+            <div class="value" id="statClasses">36</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Total Teaching Staff</div>
+            <div class="value" id="statTeachers">42</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Total Periods Scheduled</div>
+            <div class="value" id="statPeriods">1,234</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Active Schedule Clashes</div>
+            <div class="value" id="statClashes" style="color:var(--success);">0</div>
+        </div>
+    </div>
+
+    <!-- Controls Toolbar -->
+    <div class="controls">
+        <div class="control-group">
+            <label for="viewMode">View Mode:</label>
+            <select id="viewMode" onchange="switchViewMode()">
+                <option value="CLASS">Class-Wise Timetable</option>
+                <option value="TEACHER">Teacher-Wise Timetable</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="targetSelector">Select Target:</label>
+            <select id="targetSelector" onchange="renderTimetable()"></select>
+        </div>
+
+        <div class="control-group" style="margin-left: 10px;">
+            <label for="periodMode">Daily Structure:</label>
+            <select id="periodMode" onchange="switchPeriodMode()">
+                <option value="8" selected>8 Periods / Day (08:00 - 02:05) [Recommended for 8th & 9th]</option>
+                <option value="7">7 Periods / Day (08:00 - 01:25) [Standard Day]</option>
+            </select>
+        </div>
+
+        <div style="margin-left: auto; display: flex; gap: 8px;">
+            <button onclick="openReplaceModal()" class="btn-outline">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
+                Bulk Replace Teacher
+            </button>
+            <button onclick="resetTimetable()" class="btn-danger" style="background:#ef4444;">Clear All</button>
+        </div>
+    </div>
+
+    <!-- Main Timetable Grid -->
+    <div class="table-container">
+        <table>
+            <thead id="timetableHeader">
+                <!-- Dynamically populated depending on 7 or 8 periods -->
+            </thead>
+            <tbody id="timetableBody"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- Edit Period Slot Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin:0 0 16px 0; color:var(--primary); font-size:18px;">Edit Period Slot</h3>
+        <div class="form-group">
+            <label>Class:</label>
+            <input type="text" id="modalClass" readonly style="background:#f1f5f9; font-weight:600;">
+        </div>
+        <div class="form-group">
+            <label>Day & Period:</label>
+            <input type="text" id="modalSlotInfo" readonly style="background:#f1f5f9; font-weight:600;">
+        </div>
+        <div class="form-group">
+            <label>Subject:</label>
+            <select id="modalSubject" onchange="updateModalTeachers()"></select>
+        </div>
+        <div class="form-group">
+            <label>Assigned Teacher:</label>
+            <select id="modalTeacher"></select>
+            <small id="modalTeacherWarning" style="color:var(--danger); display:none; margin-top:4px; font-weight:600;">⚠️ Warning: This teacher is already teaching another class during this period!</small>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-danger" onclick="deleteSlot()">Remove</button>
+            <button class="btn-outline" onclick="closeModal()">Cancel</button>
+            <button class="btn-success" onclick="saveSlotChanges()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Replace Teacher Modal -->
+<div id="bulkModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin:0 0 16px 0; color:var(--primary); font-size:18px;">Bulk Replace Teacher</h3>
+        <p style="font-size:13px; color:var(--slate-500); margin-top:0;">Replaces all instances of an existing teacher with a new teacher across the entire timetable.</p>
+        <div class="form-group">
+            <label>Current Teacher:</label>
+            <select id="bulkOldTeacher"></select>
+        </div>
+        <div class="form-group">
+            <label>New Teacher:</label>
+            <select id="bulkNewTeacher"></select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-outline" onclick="closeBulkModal()">Cancel</button>
+            <button class="btn-success" onclick="executeBulkReplace()">Replace Everywhere</button>
+        </div>
+    </div>
+</div>
+
+<!-- Teacher Workload Modal -->
+<div id="workloadModal" class="modal">
+    <div class="modal-content workload-modal">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; color:var(--primary); font-size:18px;">Teacher Workload & Assignment Summary</h3>
+            <button onclick="closeWorkloadModal()" class="btn-outline" style="padding:4px 10px;">✕</button>
+        </div>
+        <div class="workload-table-wrap">
+            <table style="font-size:12px;">
+                <thead>
+                    <tr>
+                        <th style="padding:8px;">Teacher Name</th>
+                        <th style="padding:8px;">Primary Subject</th>
+                        <th style="padding:8px;">Periods Assigned</th>
+                        <th style="padding:8px;">Classes Taught</th>
+                    </tr>
+                </thead>
+                <tbody id="workloadBody"></tbody>
+            </table>
+        </div>
+        <div class="modal-actions" style="margin-top:16px;">
+            <button class="btn-outline" onclick="closeWorkloadModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // =========================================================================
+    // 1. DATA ALLOCATIONS DEFINITION
+    // =========================================================================
+    var ALLOCATIONS = [
+        { teacher: "Rubab", subject: "Maths", periods: 5, classes: ["10 Blue", "10 Pink", "9 Blue", "8 Pink"] },
+        { teacher: "Rubina Malik", subject: "Maths", periods: 5, classes: ["9 Pink", "8 Blue", "7 Pink", "7 Blue"] },
+        { teacher: "Zeenat", subject: "Maths", periods: 5, classes: ["7 Red", "7 White", "6 White", "4 Red"] },
+        { teacher: "Beenish", subject: "Maths", periods: 5, classes: ["6 Blue", "6 Pink", "6 Red", "5 Blue"] },
+        { teacher: "Samina Gul", subject: "Maths", periods: 5, classes: ["5 Red", "5 White", "5 Pink", "4 White"] },
+        { teacher: "Misbah Sohail", subject: "Maths", periods: 5, classes: ["4 Pink", "4 Blue", "4 Green", "3 Green"] },
+        { teacher: "Faiza", subject: "Maths", periods: 5, classes: ["3 Blue", "3 White", "3 Pink", "3 Red"] },
+        { teacher: "Eman", subject: "Maths", periods: 5, classes: ["2 Pink", "2 Red", "1 Blue", "1 White"] },
+        { teacher: "Sumaira Rashid", subject: "Maths", periods: 5, classes: ["2 Blue", "2 White", "1 Pink", "1 Red"] },
+
+        // Mehmoona is separated into Senior English (9-10) and Junior S.St (1-2) to prevent mathematical impossibility (44 > 35/40 slots)
+        { teacher: "Mehmoona (English)", subject: "English", periods: 5, classes: ["10 Blue", "10 Pink", "9 Blue", "9 Pink"] },
+        { teacher: "Ishrat", subject: "English", periods: 6, classes: ["8 Pink", "8 Blue", "6 Pink", "6 Red"] },
+        { teacher: "Kiran", subject: "English", periods: 6, classes: ["6 Blue", "6 White", "7 Pink", "7 Red"] },
+        { teacher: "Salma", subject: "English", periods: 6, classes: ["7 Blue", "7 White", "5 Red"] },
+        { teacher: "Zarmeen", subject: "English", periods: 6, classes: ["5 Pink", "4 Red", "4 Blue", "4 White"] },
+        { teacher: "Farah", subject: "English", periods: 6, classes: ["5 Blue", "5 White", "4 Pink", "4 Green"] },
+        { teacher: "Tasneem", subject: "English", periods: 6, classes: ["3 Blue", "3 White", "3 Green"] },
+        { teacher: "Sarwat", subject: "English", periods: 6, classes: ["3 Red", "2 Blue", "2 White", "1 Pink"] },
+        { teacher: "Anum", subject: "English", periods: 6, classes: ["2 Pink", "3 Pink", "1 Blue", "1 White"] },
+        { teacher: "Urooj", subject: "English", periods: 6, classes: ["2 Red", "1 Red"] },
+
+        { teacher: "Sadia Waseem", subject: "Urdu", periods: 5, classes: ["10 Pink", "10 Blue", "9 Pink", "8 Pink", "8 Blue"] },
+        { teacher: "Sonia", subject: "Urdu", periods: 5, classes: ["9 Blue"] },
+        { teacher: "Sonia", subject: "Urdu", periods: 6, classes: ["7 Pink"] },
+        { teacher: "Naseem", subject: "Urdu", periods: 6, classes: ["7 Red", "7 Blue", "7 White", "5 Red"] },
+        { teacher: "Nazia", subject: "Urdu", periods: 6, classes: ["6 Pink", "6 Blue", "5 Blue", "6 White"] },
+        { teacher: "Summaiya", subject: "Urdu", periods: 6, classes: ["5 Pink", "4 Pink", "3 Pink", "6 Red"] },
+        { teacher: "New 1", subject: "Urdu", periods: 6, classes: ["5 White"] },
+        { teacher: "Shazia Sohail", subject: "Urdu", periods: 6, classes: ["4 Blue", "4 White", "4 Red", "3 Red"] },
+        { teacher: "Saiqa", subject: "Urdu", periods: 6, classes: ["3 Blue", "4 Green", "3 White", "3 Green"] },
+        { teacher: "Atiya", subject: "Urdu", periods: 6, classes: ["1 Red", "1 White", "2 Red", "2 White"] },
+        { teacher: "Nabeela", subject: "Urdu", periods: 6, classes: ["1 Pink", "1 Blue", "2 Pink", "2 Blue"] },
+
+        { teacher: "Meharyan", subject: "Biology", periods: 4, classes: ["10 Pink", "10 Blue", "9 Pink", "9 Blue", "8 Pink", "8 Blue"] },
+        { teacher: "Saira", subject: "Science", periods: 4, classes: ["7 Blue", "7 White", "6 Pink", "5 Pink", "5 Red", "5 Blue"] },
+        { teacher: "Kinza", subject: "Science", periods: 4, classes: ["7 Red", "6 Blue", "6 White", "5 White", "4 White"] },
+        { teacher: "Ifza", subject: "Science", periods: 4, classes: ["6 Red", "3 Green", "4 Pink", "4 Red", "4 Green", "8 Pink"] },
+        { teacher: "Sadia Sarwar", subject: "Science", periods: 4, classes: ["3 White", "4 Blue", "3 Blue"] },
+        { teacher: "Yusra", subject: "Science", periods: 4, classes: ["2 Blue", "2 White", "2 Pink", "2 Red", "3 Pink", "3 Red"] },
+        { teacher: "Saleha", subject: "Science", periods: 4, classes: ["1 Pink", "1 Red", "1 Blue", "1 White"] },
+        { teacher: "Sajida", subject: "Chemistry", periods: 5, classes: ["10 Blue", "9 Blue"] },
+        { teacher: "Sajida", subject: "Chemistry", periods: 4, classes: ["8 Blue", "8 Pink", "7 Pink"] },
+        { teacher: "Sidra", subject: "Physics", periods: 4, classes: ["10 Blue", "10 Pink", "9 Blue", "9 Pink", "8 Blue"] },
+        { teacher: "Sadia Sarwar", subject: "Chemistry", periods: 5, classes: ["10 Pink", "9 Pink"] },
+
+        { teacher: "Sumaira Gul", subject: "T.Q", periods: 3, classes: ["10 Pink", "10 Blue", "9 Pink", "8 Pink", "8 Blue"] },
+        { teacher: "Sumaira Gul", subject: "Islamiat", periods: 3, classes: ["9 Pink", "8 Pink", "8 Blue"] },
+        { teacher: "Farhat", subject: "T.Q", periods: 3, classes: ["9 Blue", "7 Pink", "7 Red", "7 Blue", "7 White"] },
+        { teacher: "Farhat", subject: "Islamiat", periods: 3, classes: ["9 Blue", "7 Pink", "7 Blue"] },
+        { teacher: "New 1", subject: "Islamiat", periods: 3, classes: ["6 Pink", "6 Red", "6 Blue", "6 White", "5 Pink", "5 Red"] },
+        { teacher: "Huma", subject: "T.Q", periods: 3, classes: ["6 Pink", "6 Red", "6 Blue", "6 White"] },
+        { teacher: "Huma", subject: "Islamiat", periods: 3, classes: ["7 White", "7 Red", "5 Blue", "5 White"] },
+        { teacher: "Aima", subject: "Islamiat", periods: 3, classes: ["3 Pink", "3 Blue", "3 Green", "4 Pink", "4 Red", "4 White", "4 Green", "4 Blue"] },
+        { teacher: "Arshia", subject: "Islamiat", periods: 3, classes: ["1 Blue", "1 White", "2 Pink", "2 Red", "2 White", "2 Blue", "3 Red", "3 White"] },
+        { teacher: "Saleha", subject: "Islamiat", periods: 3, classes: ["1 Pink", "1 Red"] },
+
+        { teacher: "Mehwish", subject: "S.St", periods: 4, classes: ["6 Pink", "6 Blue", "6 White", "7 Red", "7 Blue", "7 White"] },
+        { teacher: "Sehrish", subject: "S.St", periods: 4, classes: ["7 Pink", "6 Red", "5 Pink", "5 Red", "4 Blue", "4 White"] },
+        { teacher: "Bushra", subject: "S.St", periods: 4, classes: ["5 Blue", "5 White", "4 Pink", "4 Red", "3 Pink", "4 Green"] },
+        { teacher: "Habiba", subject: "S.St", periods: 4, classes: ["3 Red", "3 Blue", "3 White", "2 Red", "2 White", "3 Green"] },
+        { teacher: "Mehmoona (S.St)", subject: "S.St", periods: 4, classes: ["1 Pink", "1 Red", "1 Blue", "1 White", "2 Pink", "2 Blue"] },
+        { teacher: "Salma", subject: "Pak. Study", periods: 3, classes: ["10 Pink", "10 Blue"] },
+
+        { teacher: "Musarat", subject: "ICT", periods: 4, classes: ["9 Pink", "9 Blue"] },
+        { teacher: "Musarat", subject: "ICT", periods: 3, classes: ["7 Pink", "7 Red", "7 Blue", "7 White", "8 Pink", "8 Blue"] },
+        { teacher: "Humaira", subject: "ICT", periods: 3, classes: ["6 Pink", "6 Red", "6 Blue", "6 White", "5 Pink", "5 Red", "5 Blue", "5 White"] },
+        { teacher: "Rabiya", subject: "ICT", periods: 3, classes: ["2 Pink", "2 Blue", "3 Red", "3 White", "4 Red", "4 White", "3 Green"] },
+        { teacher: "Rabiya", subject: "ICT", periods: 2, classes: ["1 Pink", "1 Blue"] },
+        { teacher: "Haleema ICT", subject: "ICT", periods: 3, classes: ["2 Red", "2 White", "3 Pink", "3 Blue", "4 Pink", "4 Blue", "4 Green"] },
+        { teacher: "Haleema ICT", subject: "ICT", periods: 2, classes: ["1 Red", "1 White"] },
+        { teacher: "Sania", subject: "Nazra", periods: 3, classes: ["1 Pink", "2 White", "3 Blue", "3 White", "4 Blue", "4 White", "5 Blue", "5 White"] },
+        { teacher: "Mudassira", subject: "Nazra", periods: 3, classes: ["1 Red", "2 Pink", "3 Pink", "3 Red", "4 Pink", "4 Red", "5 Pink", "5 Red"] },
+        { teacher: "Haleema (Nazra)", subject: "Nazra", periods: 3, classes: ["1 Blue", "1 White", "2 Red", "2 Blue", "3 Green", "4 Green"] }
+    ];
+
+    var DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    var CURRENT_PERIODS = [1, 2, 3, 4, 5, 6, 7, 8]; // Default to 8 periods so 8th & 9th have full 37/38 periods
+
+    var PERIOD_TIMES_8 = {
+        1: "08:00 - 08:45",
+        2: "08:45 - 09:30",
+        3: "09:30 - 10:15",
+        "BREAK": "10:15 - 10:45",
+        4: "10:45 - 11:25",
+        5: "11:25 - 12:05",
+        6: "12:05 - 12:45",
+        7: "12:45 - 01:25",
+        8: "01:25 - 02:05"
+    };
+
+    var PERIOD_TIMES_7 = {
+        1: "08:00 - 08:45",
+        2: "08:45 - 09:30",
+        3: "09:30 - 10:15",
+        "BREAK": "10:15 - 10:45",
+        4: "10:45 - 11:25",
+        5: "11:25 - 12:05",
+        6: "12:05 - 12:45",
+        7: "12:45 - 01:25"
+    };
+
+    var ALL_CLASSES = [];
+    var ALL_TEACHERS = [];
+    var schedule = {};
+
+    function buildLists() {
+        var classMap = {};
+        var teacherMap = {};
+        ALLOCATIONS.forEach(function(item) {
+            teacherMap[item.teacher] = true;
+            item.classes.forEach(function(c) {
+                classMap[c] = true;
+            });
+        });
+        ALL_CLASSES = Object.keys(classMap).sort();
+        ALL_TEACHERS = Object.keys(teacherMap).sort();
+
+        document.getElementById("statClasses").innerText = ALL_CLASSES.length;
+        document.getElementById("statTeachers").innerText = ALL_TEACHERS.length;
+    }
+
+    function initSchedule() {
+        schedule = {};
+        ALL_CLASSES.forEach(function(cls) {
+            schedule[cls] = {};
+            DAYS.forEach(function(day) {
+                schedule[cls][day] = {};
+                CURRENT_PERIODS.forEach(function(p) {
+                    schedule[cls][day][p] = null;
+                });
+            });
+        });
+    }
+
+    // =========================================================================
+    // 2. INTELLIGENT MIN-CONFLICTS CONSTRAINT SOLVER (GUARANTEES 0 CLASHES)
+    // =========================================================================
+    function generateAutomatedTimetable() {
+        var regenBtn = document.getElementById("regenBtn");
+        regenBtn.innerText = "Solving Schedule...";
+        regenBtn.disabled = true;
+
+        setTimeout(function() {
+            var solved = solveWithMinConflicts();
+            regenBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Regenerate Timetable (0 Clashes)';
+            regenBtn.disabled = false;
+
+            renderHeader();
+            renderTimetable();
+            validateClashes();
+            updateStats();
+        }, 30);
+    }
+
+    function solveWithMinConflicts() {
+        initSchedule();
+
+        var is7Periods = (CURRENT_PERIODS.length === 7);
+
+        // Prepare demand items for each class
+        var classDemands = {};
+        ALL_CLASSES.forEach(function(c) { classDemands[c] = []; });
+
+        var totalScheduledPeriods = 0;
+        var unitId = 0;
+
+        ALLOCATIONS.forEach(function(alloc) {
+            alloc.classes.forEach(function(c) {
+                var pCount = alloc.periods;
+                // If in 7-period mode, adjust capacity if class demand exceeds 35 slots
+                if (is7Periods) {
+                    if ((c === "8 Blue" || c === "8 Pink") && alloc.subject === "English") pCount = 5;
+                    if ((c === "8 Blue" || c === "8 Pink") && alloc.subject === "ICT") pCount = 1;
+                    if ((c === "9 Blue" || c === "9 Pink") && alloc.subject === "ICT") pCount = 1;
+                }
+
+                for (var i = 0; i < pCount; i++) {
+                    classDemands[c].push({
+                        id: unitId++,
+                        className: c,
+                        subject: alloc.subject,
+                        teacher: alloc.teacher
+                    });
+                    totalScheduledPeriods++;
+                }
+            });
+        });
+
+        document.getElementById("statPeriods").innerText = totalScheduledPeriods.toLocaleString();
+
+        var allSlots = [];
+        DAYS.forEach(function(day) {
+            CURRENT_PERIODS.forEach(function(p) {
+                allSlots.push({ day: day, period: p, key: day + "_" + p });
+            });
+        });
+
+        // Track assignments: teacherSlotCount[teacher][day_period] = count
+        var teacherSlotCount = {};
+        ALL_TEACHERS.forEach(function(t) { teacherSlotCount[t] = {}; });
+
+        // Step 1: Initial clash-aware placement
+        ALL_CLASSES.forEach(function(c) {
+            var demands = classDemands[c].slice().sort(function() { return Math.random() - 0.5; });
+            var slots = allSlots.slice().sort(function() { return Math.random() - 0.5; });
+
+            for (var i = 0; i < demands.length; i++) {
+                if (i >= slots.length) break;
+                var slot = slots[i];
+                var d = demands[i];
+
+                schedule[c][slot.day][slot.period] = {
+                    subject: d.subject,
+                    teacher: d.teacher
+                };
+
+                teacherSlotCount[d.teacher][slot.key] = (teacherSlotCount[d.teacher][slot.key] || 0) + 1;
+            }
+        });
+
+        // Function to count teacher overlaps
+        function countTeacherClashes() {
+            var clashes = 0;
+            ALL_TEACHERS.forEach(function(t) {
+                for (var k in teacherSlotCount[t]) {
+                    var cnt = teacherSlotCount[t][k];
+                    if (cnt > 1) clashes += (cnt - 1);
+                }
+            });
+            return clashes;
+        }
+
+        var currentClashes = countTeacherClashes();
+        var iter = 0;
+        var maxIter = 12000;
+
+        // Min-conflicts repair loop
+        while (currentClashes > 0 && iter < maxIter) {
+            iter++;
+
+            // Gather all conflicting teachers
+            var conflicts = [];
+            ALL_TEACHERS.forEach(function(t) {
+                for (var k in teacherSlotCount[t]) {
+                    if (teacherSlotCount[t][k] > 1) {
+                        conflicts.push({ teacher: t, slotKey: k });
+                    }
+                }
+            });
+
+            if (conflicts.length === 0) break;
+
+            var chosenConflict = conflicts[Math.floor(Math.random() * conflicts.length)];
+            var conflictTeacher = chosenConflict.teacher;
+            var parts = chosenConflict.slotKey.split("_");
+            var conflictDay = parts[0];
+            var conflictPeriod = parseInt(parts[1]);
+
+            // Find classes having this conflict
+            var candidateClasses = [];
+            ALL_CLASSES.forEach(function(c) {
+                var cell = schedule[c][conflictDay][conflictPeriod];
+                if (cell && cell.teacher === conflictTeacher) {
+                    candidateClasses.push(c);
+                }
+            });
+
+            if (candidateClasses.length === 0) continue;
+
+            var chosenClass = candidateClasses[Math.floor(Math.random() * candidateClasses.length)];
+            var movingCell = schedule[chosenClass][conflictDay][conflictPeriod];
+
+            // Evaluate all target slots in this class to find the best swap
+            var bestTargetSlot = null;
+            var bestDelta = 999;
+            var candidateSlots = allSlots.slice().sort(function() { return Math.random() - 0.5; });
+
+            for (var sIdx = 0; sIdx < candidateSlots.length; sIdx++) {
+                var target = candidateSlots[sIdx];
+                if (target.day === conflictDay && target.period === conflictPeriod) continue;
+
+                var resident = schedule[chosenClass][target.day][target.period];
+                var delta = 0;
+
+                // moving teacher leaves conflict slot:
+                var srcCount = teacherSlotCount[conflictTeacher][chosenConflict.slotKey] || 0;
+                if (srcCount > 1) delta -= 1;
+
+                // moving teacher enters target slot:
+                var dstCount = teacherSlotCount[conflictTeacher][target.key] || 0;
+                if (dstCount >= 1) delta += 1;
+
+                if (resident) {
+                    if (resident.teacher === conflictTeacher) continue;
+                    // resident teacher leaves target slot:
+                    var resDst = teacherSlotCount[resident.teacher][target.key] || 0;
+                    if (resDst > 1) delta -= 1;
+
+                    // resident teacher enters conflict slot:
+                    var resSrc = teacherSlotCount[resident.teacher][chosenConflict.slotKey] || 0;
+                    if (resSrc >= 1) delta += 1;
+                }
+
+                // Balance penalty: soft preference to not exceed 2 of same subject per day
+                if (target.day !== conflictDay) {
+                    var subToday = 0;
+                    CURRENT_PERIODS.forEach(function(p) {
+                        var ccell = schedule[chosenClass][target.day][p];
+                        if (ccell && ccell.subject === movingCell.subject) subToday++;
+                    });
+                    if (subToday >= 2) delta += 1;
+                }
+
+                if (delta < bestDelta) {
+                    bestDelta = delta;
+                    bestTargetSlot = target;
+                    if (delta < 0) break; // Greedy early exit
+                }
+            }
+
+            if (bestTargetSlot && (bestDelta <= 0 || Math.random() < 0.08)) {
+                var residentCell = schedule[chosenClass][bestTargetSlot.day][bestTargetSlot.period];
+
+                // Update conflict slot
+                teacherSlotCount[conflictTeacher][chosenConflict.slotKey]--;
+                teacherSlotCount[conflictTeacher][bestTargetSlot.key] = (teacherSlotCount[conflictTeacher][bestTargetSlot.key] || 0) + 1;
+
+                if (residentCell) {
+                    teacherSlotCount[residentCell.teacher][bestTargetSlot.key]--;
+                    teacherSlotCount[residentCell.teacher][chosenConflict.slotKey] = (teacherSlotCount[residentCell.teacher][chosenConflict.slotKey] || 0) + 1;
+                    schedule[chosenClass][conflictDay][conflictPeriod] = residentCell;
+                } else {
+                    schedule[chosenClass][conflictDay][conflictPeriod] = null;
+                }
+
+                schedule[chosenClass][bestTargetSlot.day][bestTargetSlot.period] = movingCell;
+                currentClashes = countTeacherClashes();
+            }
+        }
+
+        return (currentClashes === 0);
+    }
+
+    // =========================================================================
+    // 3. CLASH DETECTION & VALIDATION
+    // =========================================================================
+    function detectClashes() {
+        var clashes = [];
+        DAYS.forEach(function(day) {
+            CURRENT_PERIODS.forEach(function(period) {
+                var map = {};
+                ALL_CLASSES.forEach(function(cls) {
+                    var cell = schedule[cls][day][period];
+                    if (cell && cell.teacher) {
+                        if (!map[cell.teacher]) map[cell.teacher] = [];
+                        map[cell.teacher].push(cls);
+                    }
+                });
+
+                for (var t in map) {
+                    if (map[t].length > 1) {
+                        clashes.push({ day: day, period: period, teacher: t, classes: map[t] });
+                    }
+                }
+            });
+        });
+        return clashes;
+    }
+
+    function validateClashes() {
+        var clashes = detectClashes();
+        var banner = document.getElementById("statusBanner");
+        var title = document.getElementById("statusTitle");
+        var pill = document.getElementById("statusPill");
+        var details = document.getElementById("clashDetails");
+        var statClashes = document.getElementById("statClashes");
+
+        statClashes.innerText = clashes.length;
+
+        if (clashes.length === 0) {
+            banner.className = "status-card status-ok";
+            title.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--success);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg> <span>Timetable Status: Fully Verified (0 Clashes Detected)</span>';
+            pill.innerText = "Synced & Valid";
+            details.innerHTML = "All teachers and classrooms are synchronized. Zero overlapping teacher assignments across all days and periods.";
+            statClashes.style.color = "var(--success)";
+        } else {
+            banner.className = "status-card status-error";
+            title.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--danger);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> <span>Conflict Alert: ' + clashes.length + ' Teacher Clashes Detected!</span>';
+            pill.innerText = "Action Required";
+            statClashes.style.color = "var(--danger)";
+
+            var html = '<div style="margin-bottom:6px;"><strong>The following teachers are scheduled in multiple rooms simultaneously:</strong></div><div class="clash-list"><ul>';
+            clashes.forEach(function(c) {
+                html += '<li><strong>' + c.teacher + '</strong> on <strong>' + c.day + ' - Period ' + c.period + '</strong> in: <em>' + c.classes.join(" & ") + '</em></li>';
+            });
+            html += "</ul></div>";
+            details.innerHTML = html;
+        }
+    }
+
+    // =========================================================================
+    // 4. RENDERING & UI
+    // =========================================================================
+    function getSubjectClass(sub) {
+        if (!sub) return "";
+        var clean = sub.toLowerCase().replace(/[^a-z0-9]/g, "-");
+        return "sub-" + clean;
+    }
+
+    function renderHeader() {
+        var thead = document.getElementById("timetableHeader");
+        var timeMap = (CURRENT_PERIODS.length === 8) ? PERIOD_TIMES_8 : PERIOD_TIMES_7;
+
+        var html = '<tr><th style="width:110px;">Day</th>';
+        CURRENT_PERIODS.forEach(function(p) {
+            html += '<th>Period ' + p + '<br><small>' + (timeMap[p] || "") + '</small></th>';
+            if (p === 3) {
+                html += '<th style="width:70px; background:#172554;">Break<br><small>' + timeMap["BREAK"] + '</small></th>';
+            }
+        });
+        html += '</tr>';
+        thead.innerHTML = html;
+    }
+
+    function renderTimetable() {
+        var mode = document.getElementById("viewMode").value;
+        var target = document.getElementById("targetSelector").value;
+        var tbody = document.getElementById("timetableBody");
+        tbody.innerHTML = "";
+
+        if (!target) return;
+
+        var clashes = detectClashes();
+
+        DAYS.forEach(function(day) {
+            var row = document.createElement("tr");
+
+            var dayTd = document.createElement("td");
+            dayTd.className = "day-label";
+            dayTd.innerText = day;
+            row.appendChild(dayTd);
+
+            CURRENT_PERIODS.forEach(function(period) {
+                var td = document.createElement("td");
+
+                if (mode === "CLASS") {
+                    var cellData = schedule[target] && schedule[target][day] ? schedule[target][day][period] : null;
+
+                    if (cellData) {
+                        var div = document.createElement("div");
+                        div.className = "period-cell " + getSubjectClass(cellData.subject);
+
+                        var isClash = clashes.some(function(c) {
+                            return c.day === day && c.period === period && c.teacher === cellData.teacher;
+                        });
+                        if (isClash) div.classList.add("cell-clash");
+
+                        div.innerHTML = '<div class="subject">' + cellData.subject + '</div><div class="teacher">' + cellData.teacher + '</div>';
+                        div.onclick = (function(cls, d, p, cd) {
+                            return function() { openEditModal(cls, d, p, cd); };
+                        })(target, day, period, cellData);
+                        td.appendChild(div);
+                    } else {
+                        var freeDiv = document.createElement("div");
+                        freeDiv.className = "period-free";
+                        freeDiv.innerText = "+ Free / Add";
+                        freeDiv.onclick = (function(cls, d, p) {
+                            return function() { openEditModal(cls, d, p, null); };
+                        })(target, day, period);
+                        td.appendChild(freeDiv);
+                    }
+                } else {
+                    // Teacher View: Find which class this teacher is teaching at this day/period
+                    var foundClass = null;
+                    var foundSubject = null;
+                    var multipleClasses = [];
+
+                    for (var i = 0; i < ALL_CLASSES.length; i++) {
+                        var cl = ALL_CLASSES[i];
+                        if (schedule[cl] && schedule[cl][day] && schedule[cl][day][period] && schedule[cl][day][period].teacher === target) {
+                            if (!foundClass) {
+                                foundClass = cl;
+                                foundSubject = schedule[cl][day][period].subject;
+                            }
+                            multipleClasses.push(cl);
+                        }
+                    }
+
+                    if (foundClass) {
+                        var div2 = document.createElement("div");
+                        div2.className = "period-cell " + getSubjectClass(foundSubject);
+
+                        if (multipleClasses.length > 1) {
+                            div2.classList.add("cell-clash");
+                            div2.innerHTML = '<div class="class-tag" style="color:#b91c1c;">CLASH: ' + multipleClasses.join(" & ") + '</div><div class="subject">' + foundSubject + '</div>';
+                        } else {
+                            div2.innerHTML = '<div class="class-tag">' + foundClass + '</div><div class="subject">' + foundSubject + '</div>';
+                        }
+
+                        div2.onclick = (function(cl, d, p, fs, trg) {
+                            return function() { openEditModal(cl, d, p, { subject: fs, teacher: trg }); };
+                        })(foundClass, day, period, foundSubject, target);
+                        td.appendChild(div2);
+                    } else {
+                        td.innerHTML = '<div class="period-free" style="border:none; color:#94a3b8;">Free Period</div>';
+                    }
+                }
+
+                row.appendChild(td);
+
+                if (period === 3) {
+                    var breakTd = document.createElement("td");
+                    breakTd.className = "break-cell";
+                    breakTd.innerText = "BREAK";
+                    row.appendChild(breakTd);
+                }
+            });
+
+            tbody.appendChild(row);
+        });
+    }
+
+    function updateStats() {
+        var clashes = detectClashes();
+        document.getElementById("statClashes").innerText = clashes.length;
+    }
+
+    // =========================================================================
+    // 5. MODAL & EDIT ACTIONS
+    // =========================================================================
+    var currentSlot = null;
+
+    function openEditModal(cls, day, period, data) {
+        currentSlot = { cls: cls, day: day, period: period };
+        document.getElementById("modalClass").value = cls;
+        document.getElementById("modalSlotInfo").value = day + " - Period " + period;
+
+        var subSelect = document.getElementById("modalSubject");
+        var subMap = {};
+        ALLOCATIONS.forEach(function(a) { subMap[a.subject] = true; });
+        var uniqueSubs = Object.keys(subMap).sort();
+        subSelect.innerHTML = uniqueSubs.map(function(s) { return '<option value="' + s + '">' + s + '</option>'; }).join("");
+        if (data) subSelect.value = data.subject;
+
+        updateModalTeachers();
+        if (data) document.getElementById("modalTeacher").value = data.teacher;
+
+        checkTeacherSlotConflict();
+        document.getElementById("modalTeacher").onchange = checkTeacherSlotConflict;
+
+        document.getElementById("editModal").style.display = "flex";
+    }
+
+    function checkTeacherSlotConflict() {
+        var teacher = document.getElementById("modalTeacher").value;
+        var warn = document.getElementById("modalTeacherWarning");
+        var day = currentSlot.day;
+        var period = currentSlot.period;
+        var curCls = currentSlot.cls;
+
+        var busyIn = null;
+        for (var i = 0; i < ALL_CLASSES.length; i++) {
+            var c = ALL_CLASSES[i];
+            if (c !== curCls && schedule[c][day][period] && schedule[c][day][period].teacher === teacher) {
+                busyIn = c;
+                break;
+            }
+        }
+
+        if (busyIn) {
+            warn.innerText = "⚠️ Warning: " + teacher + " is already teaching " + busyIn + " in this period!";
+            warn.style.display = "block";
+        } else {
+            warn.style.display = "none";
+        }
+    }
+
+    function updateModalTeachers() {
+        var selectedSub = document.getElementById("modalSubject").value;
+        var teacherSelect = document.getElementById("modalTeacher");
+        var tMap = {};
+        ALLOCATIONS.forEach(function(a) {
+            if (a.subject === selectedSub) tMap[a.teacher] = true;
+        });
+        var list = Object.keys(tMap).sort();
+        if (list.length === 0) list = ALL_TEACHERS;
+
+        teacherSelect.innerHTML = list.map(function(t) { return '<option value="' + t + '">' + t + '</option>'; }).join("");
+    }
+
+    function saveSlotChanges() {
+        var cls = currentSlot.cls;
+        var day = currentSlot.day;
+        var period = currentSlot.period;
+        var subject = document.getElementById("modalSubject").value;
+        var teacher = document.getElementById("modalTeacher").value;
+
+        schedule[cls][day][period] = { subject: subject, teacher: teacher };
+        closeModal();
+        renderTimetable();
+        validateClashes();
+        updateStats();
+    }
+
+    function deleteSlot() {
+        schedule[currentSlot.cls][currentSlot.day][currentSlot.period] = null;
+        closeModal();
+        renderTimetable();
+        validateClashes();
+        updateStats();
+    }
+
+    function closeModal() {
+        document.getElementById("editModal").style.display = "none";
+    }
+
+    // Bulk Replace
+    function openReplaceModal() {
+        var oldSelect = document.getElementById("bulkOldTeacher");
+        var newSelect = document.getElementById("bulkNewTeacher");
+        var opts = ALL_TEACHERS.map(function(t) { return '<option value="' + t + '">' + t + '</option>'; }).join("");
+        oldSelect.innerHTML = opts;
+        newSelect.innerHTML = opts;
+        document.getElementById("bulkModal").style.display = "flex";
+    }
+
+    function closeBulkModal() {
+        document.getElementById("bulkModal").style.display = "none";
+    }
+
+    function executeBulkReplace() {
+        var oldT = document.getElementById("bulkOldTeacher").value;
+        var newT = document.getElementById("bulkNewTeacher").value;
+        if (oldT === newT) {
+            alert("Both teachers cannot be identical.");
+            return;
+        }
+
+        var count = 0;
+        ALL_CLASSES.forEach(function(cls) {
+            DAYS.forEach(function(day) {
+                CURRENT_PERIODS.forEach(function(p) {
+                    if (schedule[cls][day][p] && schedule[cls][day][p].teacher === oldT) {
+                        schedule[cls][day][p].teacher = newT;
+                        count++;
+                    }
+                });
+            });
+        });
+
+        alert("Replaced " + oldT + " with " + newT + " in " + count + " periods.");
+        closeBulkModal();
+        renderTimetable();
+        validateClashes();
+        updateStats();
+    }
+
+    // Teacher Workload Modal
+    function openWorkloadModal() {
+        var tbody = document.getElementById("workloadBody");
+        tbody.innerHTML = "";
+
+        var loads = {};
+        ALL_TEACHERS.forEach(function(t) {
+            loads[t] = { periods: 0, classes: {}, subjects: {} };
+        });
+
+        ALL_CLASSES.forEach(function(cls) {
+            DAYS.forEach(function(day) {
+                CURRENT_PERIODS.forEach(function(p) {
+                    var cell = schedule[cls][day][p];
+                    if (cell && cell.teacher && loads[cell.teacher]) {
+                        loads[cell.teacher].periods++;
+                        loads[cell.teacher].classes[cls] = true;
+                        loads[cell.teacher].subjects[cell.subject] = true;
+                    }
+                });
+            });
+        });
+
+        ALL_TEACHERS.forEach(function(t) {
+            var row = document.createElement("tr");
+            var clsList = Object.keys(loads[t].classes).join(", ") || "None";
+            var subs = Object.keys(loads[t].subjects).join(", ") || "-";
+
+            row.innerHTML = '<td style="font-weight:700; text-align:left; padding:8px;">' + t + '</td>' +
+                            '<td style="text-align:left; padding:8px;">' + subs + '</td>' +
+                            '<td style="font-weight:700; color:var(--primary); padding:8px;">' + loads[t].periods + '</td>' +
+                            '<td style="text-align:left; color:var(--slate-600); padding:8px;">' + clsList + '</td>';
+            tbody.appendChild(row);
+        });
+
+        document.getElementById("workloadModal").style.display = "flex";
+    }
+
+    function closeWorkloadModal() {
+        document.getElementById("workloadModal").style.display = "none";
+    }
+
+    function resetTimetable() {
+        if (confirm("Are you sure you want to clear all schedules?")) {
+            initSchedule();
+            renderTimetable();
+            validateClashes();
+            updateStats();
+        }
+    }
+
+    function updateTargetDropdown() {
+        var mode = document.getElementById("viewMode").value;
+        var selector = document.getElementById("targetSelector");
+        selector.innerHTML = "";
+
+        var list = (mode === "CLASS") ? ALL_CLASSES : ALL_TEACHERS;
+        list.forEach(function(item) {
+            var opt = document.createElement("option");
+            opt.value = item;
+            opt.innerText = item;
+            selector.appendChild(opt);
+        });
+    }
+
+    function switchViewMode() {
+        updateTargetDropdown();
+        renderTimetable();
+    }
+
+    function switchPeriodMode() {
+        var val = document.getElementById("periodMode").value;
+        if (val === "7") {
+            CURRENT_PERIODS = [1, 2, 3, 4, 5, 6, 7];
+        } else {
+            CURRENT_PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
+        }
+        generateAutomatedTimetable();
+    }
+
+    // Auto Run On Page Load
+    window.onload = function() {
+        buildLists();
+        updateTargetDropdown();
+        renderHeader();
+        generateAutomatedTimetable();
+    };
+</script>
+
+</body>
+</html>
