@@ -190,8 +190,8 @@
         // Init connection to Supabase
         init: async function() {
             initLocalStorage();
-            var url = localStorage.getItem("SB_URL") || (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url);
-            var key = localStorage.getItem("SB_KEY") || (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.anonKey);
+            var url = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url) || localStorage.getItem("SB_URL");
+            var key = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.anonKey) || localStorage.getItem("SB_KEY");
 
             if (url && key && window.supabase && window.supabase.createClient) {
                 try {

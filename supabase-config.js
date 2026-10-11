@@ -11,7 +11,6 @@
 // =============================================================================
 
 window.SUPABASE_CONFIG = {
-    // If you prefer hardcoding them into the project repository, put them here:
-    url: localStorage.getItem("SB_URL") || "",
-    anonKey: localStorage.getItem("SB_KEY") || ""
+    url: "https://aoxloxnkctbccyqsdghk.supabase.co",
+    anonKey: "sb_publishable_WfV3i9xNoFmsiLUiJtzoRA_tWUcBtIW"
 };
