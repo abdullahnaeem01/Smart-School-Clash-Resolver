@@ -70,7 +70,10 @@
             { id: "t-sania", name: "Sania", department: "Nazra", subjects: ["Nazra"], max_periods_weekly: 35 },
             { id: "t-mudassira", name: "Mudassira", department: "Nazra", subjects: ["Nazra"], max_periods_weekly: 35 },
             { id: "t-haleema-nazra", name: "Haleema (Nazra)", department: "Nazra", subjects: ["Nazra"], max_periods_weekly: 35 }
-        ],
+        ].map(function(t) {
+            t.max_periods_daily = 6;
+            return t;
+        }),
 
         subjects: [
             { id: "s-maths", name: "Maths", code: "MATH", color_accent: "#3b82f6" },
@@ -134,8 +137,15 @@
                     t.subjects = defMap[t.name] || (t.department && t.department !== "General" ? [t.department] : []);
                     updated = true;
                 }
+                if (!t.max_periods_daily) {
+                    t.max_periods_daily = 6;
+                    updated = true;
+                }
             });
             if (updated) localStorage.setItem("SCH_TEACHERS", JSON.stringify(cachedTeachers));
+        }
+        if (!localStorage.getItem("SCH_SUBSTITUTIONS")) {
+            localStorage.setItem("SCH_SUBSTITUTIONS", JSON.stringify([]));
         }
         if (!localStorage.getItem("SCH_SUBJECTS")) {
             localStorage.setItem("SCH_SUBJECTS", JSON.stringify(DEFAULT_DATA.subjects));
@@ -249,6 +259,7 @@
             DEFAULT_DATA.teachers.forEach(function(t) { defMap[t.name] = t.subjects; });
 
             list.forEach(function(t) {
+                t.max_periods_daily = parseInt(t.max_periods_daily) || 6;
                 if (!t.subjects || t.subjects.length === 0) {
                     if (defMap[t.name]) {
                         t.subjects = defMap[t.name].slice();
@@ -269,14 +280,16 @@
                 name: teacher.name,
                 department: teacher.department || (subjects.length > 0 ? subjects.join(", ") : "General"),
                 subjects: subjects,
-                max_periods_weekly: parseInt(teacher.max_periods_weekly) || 35
+                max_periods_weekly: parseInt(teacher.max_periods_weekly) || 35,
+                max_periods_daily: parseInt(teacher.max_periods_daily) || 6
             };
 
             if (isConnected) {
                 var sbPayload = {
                     name: newT.name,
                     department: newT.department,
-                    max_periods_weekly: newT.max_periods_weekly
+                    max_periods_weekly: newT.max_periods_weekly,
+                    max_periods_daily: newT.max_periods_daily
                 };
                 var res = await supabaseClient.from("teachers").insert([sbPayload]).select().single();
                 if (!res.error && res.data) {
@@ -679,12 +692,152 @@
             };
         },
 
+        // ==========================
+        // SUBSTITUTIONS CRUD
+        // ==========================
+        getSubstitutions: async function(filterDay) {
+            var list = [];
+            if (isConnected) {
+                var query = supabaseClient.from("substitutions").select("*").order("created_at", { ascending: false });
+                if (filterDay) query = query.eq("day", filterDay);
+                var res = await query;
+                if (!res.error && res.data) list = res.data;
+            } else {
+                list = JSON.parse(localStorage.getItem("SCH_SUBSTITUTIONS") || "[]");
+                if (filterDay) {
+                    list = list.filter(function(s) { return s.day === filterDay; });
+                }
+            }
+            return list;
+        },
+
+        saveSubstitution: async function(sub) {
+            var newSub = {
+                id: sub.id || "sub-" + Date.now(),
+                day: sub.day,
+                period: parseInt(sub.period),
+                class_id: sub.class_id || sub.className || "",
+                original_teacher_id: sub.original_teacher_id || sub.originalTeacher || "",
+                substitute_teacher_id: sub.substitute_teacher_id || sub.substituteTeacher || "",
+                subject_id: sub.subject_id || sub.subject || "",
+                note: sub.note || "",
+                created_at: sub.created_at || new Date().toISOString()
+            };
+
+            if (isConnected) {
+                var res = await supabaseClient.from("substitutions").upsert([newSub]).select().single();
+                if (!res.error && res.data) return res.data;
+                if (res.error) console.error("Supabase saveSubstitution error:", res.error);
+            }
+
+            var list = JSON.parse(localStorage.getItem("SCH_SUBSTITUTIONS") || "[]");
+            var existingIdx = list.findIndex(function(s) {
+                return s.day === newSub.day && s.period === newSub.period && s.class_id === newSub.class_id;
+            });
+            if (existingIdx >= 0) {
+                list[existingIdx] = newSub;
+            } else {
+                list.push(newSub);
+            }
+            localStorage.setItem("SCH_SUBSTITUTIONS", JSON.stringify(list));
+            return newSub;
+        },
+
+        deleteSubstitution: async function(id) {
+            if (isConnected) {
+                await supabaseClient.from("substitutions").delete().eq("id", id);
+            }
+            var list = JSON.parse(localStorage.getItem("SCH_SUBSTITUTIONS") || "[]").filter(function(s) {
+                return s.id !== id;
+            });
+            localStorage.setItem("SCH_SUBSTITUTIONS", JSON.stringify(list));
+            return true;
+        },
+
+        // Helper: Find Free Teachers for any slot with intelligent ranking
+        getFreeTeachersForSlot: function(day, period, schedule, teachersList) {
+            var busyTeachers = new Set();
+            var dayLoads = {};
+            var weekLoads = {};
+
+            teachersList.forEach(function(t) {
+                dayLoads[t.name] = 0;
+                weekLoads[t.name] = 0;
+            });
+
+            // Calculate busy status and day/week counts from current schedule
+            for (var cls in schedule) {
+                for (var d in schedule[cls]) {
+                    for (var p in schedule[cls][d]) {
+                        var cell = schedule[cls][d][p];
+                        if (cell && cell.teacher) {
+                            weekLoads[cell.teacher] = (weekLoads[cell.teacher] || 0) + 1;
+                            if (d === day) {
+                                dayLoads[cell.teacher] = (dayLoads[cell.teacher] || 0) + 1;
+                                if (parseInt(p) === parseInt(period)) {
+                                    busyTeachers.add(cell.teacher);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            var freeTeachers = [];
+            teachersList.forEach(function(t) {
+                if (!busyTeachers.has(t.name)) {
+                    var maxD = t.max_periods_daily || 6;
+                    var maxW = t.max_periods_weekly || 35;
+                    var todayCnt = dayLoads[t.name] || 0;
+                    var weekCnt = weekLoads[t.name] || 0;
+                    var canTakeMoreToday = (todayCnt < maxD);
+
+                    freeTeachers.push({
+                        id: t.id,
+                        name: t.name,
+                        department: t.department,
+                        subjects: t.subjects || [],
+                        periods_today: todayCnt,
+                        max_periods_daily: maxD,
+                        periods_weekly: weekCnt,
+                        max_periods_weekly: maxW,
+                        can_take_more_today: canTakeMoreToday,
+                        available_slots_today: Math.max(0, maxD - todayCnt)
+                    });
+                }
+            });
+
+            // Rank free teachers:
+            // 1. Teachers who can take more today (todayCnt < maxD) come first
+            // 2. Fewest periods today
+            // 3. Fewest periods this week
+            freeTeachers.sort(function(a, b) {
+                if (a.can_take_more_today !== b.can_take_more_today) {
+                    return a.can_take_more_today ? -1 : 1;
+                }
+                if (a.periods_today !== b.periods_today) {
+                    return a.periods_today - b.periods_today;
+                }
+                return a.periods_weekly - b.periods_weekly;
+            });
+
+            return {
+                day: day,
+                period: period,
+                totalTeachers: teachersList.length,
+                busyCount: busyTeachers.size,
+                freeCount: freeTeachers.length,
+                freeTeachers: freeTeachers
+            };
+        },
+
         // Reset to Initial Seed Data
         resetToDefault: function() {
             localStorage.removeItem("SCH_TEACHERS");
             localStorage.removeItem("SCH_SUBJECTS");
             localStorage.removeItem("SCH_CLASSES");
             localStorage.removeItem("SCH_ALLOCATIONS");
+            localStorage.removeItem("SCH_SUBSTITUTIONS");
             initLocalStorage();
         }
     };

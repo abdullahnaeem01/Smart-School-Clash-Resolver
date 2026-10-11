@@ -10,6 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. DROP EXISTING TABLES IF ANY (Clean start)
 DROP TABLE IF EXISTS timetable_slots CASCADE;
+DROP TABLE IF EXISTS substitutions CASCADE;
 DROP TABLE IF EXISTS allocations CASCADE;
 DROP TABLE IF EXISTS classes CASCADE;
 DROP TABLE IF EXISTS subjects CASCADE;
@@ -21,6 +22,7 @@ CREATE TABLE teachers (
     name TEXT NOT NULL UNIQUE,
     department TEXT DEFAULT 'General',
     max_periods_weekly INT DEFAULT 35,
+    max_periods_daily INT DEFAULT 6,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -65,18 +67,34 @@ CREATE TABLE timetable_slots (
     UNIQUE(class_id, day, period)
 );
 
--- 7. ENABLE ROW LEVEL SECURITY (RLS) & ALLOW PUBLIC ACCESS VIA ANON KEY
+-- 7. CREATE SUBSTITUTIONS TABLE
+CREATE TABLE substitutions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    day TEXT NOT NULL,
+    period INT NOT NULL,
+    class_id UUID NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+    original_teacher_id UUID NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+    substitute_teacher_id UUID NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+    subject_id UUID NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+    note TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(class_id, day, period)
+);
+
+-- 8. ENABLE ROW LEVEL SECURITY (RLS) & ALLOW PUBLIC ACCESS VIA ANON KEY
 ALTER TABLE teachers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE allocations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE timetable_slots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE substitutions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public read access on teachers" ON teachers FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public read access on subjects" ON subjects FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public read access on classes" ON classes FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public read access on allocations" ON allocations FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public read access on timetable_slots" ON timetable_slots FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public read access on substitutions" ON substitutions FOR ALL USING (true) WITH CHECK (true);
 
 -- =============================================================================
 -- SEED DATA: POPULATE REAL SCHOOL RECORDS
