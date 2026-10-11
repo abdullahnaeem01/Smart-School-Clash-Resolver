@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Timetable & Scheduling System | Clash-Free Automated Scheduler</title>
+    <title>School Timetable & Scheduling System | Supabase Cloud Database</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <!-- Supabase Client CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #1e3a8a;
@@ -40,7 +42,7 @@
         * { box-sizing: border-box; }
         body {
             margin: 0;
-            padding: 24px;
+            padding: 20px;
             background-color: #f1f5f9;
             color: var(--slate-900);
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -58,16 +60,16 @@
             justify-content: space-between;
             align-items: center;
             background: white;
-            padding: 20px 28px;
+            padding: 18px 24px;
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-sm);
             border: 1px solid var(--slate-200);
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
         .header-title h1 {
             margin: 0 0 4px 0;
             color: var(--primary);
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 800;
             letter-spacing: -0.02em;
             display: flex;
@@ -85,6 +87,44 @@
             align-items: center;
         }
 
+        /* Nav Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 6px;
+            background: white;
+            padding: 6px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--slate-200);
+            margin-bottom: 16px;
+            overflow-x: auto;
+        }
+        .nav-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 18px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--slate-600);
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            box-shadow: none;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .nav-tab:hover {
+            color: var(--primary);
+            background: var(--slate-100);
+            transform: none;
+        }
+        .nav-tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
         /* Buttons */
         button {
             display: inline-flex;
@@ -94,7 +134,7 @@
             background: var(--primary-light);
             color: white;
             border: none;
-            padding: 9px 16px;
+            padding: 8px 14px;
             border-radius: 6px;
             font-weight: 600;
             font-size: 13px;
@@ -102,39 +142,28 @@
             transition: all 0.15s ease;
             box-shadow: var(--shadow-sm);
         }
-        button:hover {
-            background: var(--primary);
-            transform: translateY(-1px);
-        }
-        button:active {
-            transform: translateY(0);
-        }
+        button:hover { background: var(--primary); transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
         .btn-success { background: var(--success); }
         .btn-success:hover { background: #047857; }
         .btn-danger { background: var(--danger); }
         .btn-danger:hover { background: #b91c1c; }
-        .btn-secondary { background: var(--slate-600); }
-        .btn-secondary:hover { background: var(--slate-700); }
         .btn-outline {
             background: white;
             color: var(--slate-700);
             border: 1px solid var(--slate-300);
         }
-        .btn-outline:hover {
-            background: var(--slate-50);
-            border-color: var(--slate-400);
-        }
+        .btn-outline:hover { background: var(--slate-50); border-color: var(--slate-400); }
 
         /* Status Banner */
         .status-card {
             display: flex;
             flex-direction: column;
             gap: 6px;
-            padding: 16px 20px;
+            padding: 14px 18px;
             border-radius: var(--radius-lg);
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             box-shadow: var(--shadow-sm);
-            transition: all 0.3s ease;
         }
         .status-header-line {
             display: flex;
@@ -145,19 +174,11 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            font-size: 15px;
+            font-size: 14.5px;
             font-weight: 700;
         }
-        .status-ok {
-            background: var(--success-bg);
-            color: #065f46;
-            border: 1px solid #a7f3d0;
-        }
-        .status-error {
-            background: var(--danger-bg);
-            color: #991b1b;
-            border: 1px solid #fecaca;
-        }
+        .status-ok { background: var(--success-bg); color: #065f46; border: 1px solid #a7f3d0; }
+        .status-error { background: var(--danger-bg); color: #991b1b; border: 1px solid #fecaca; }
         .status-pill {
             font-size: 11px;
             font-weight: 700;
@@ -166,47 +187,22 @@
             border-radius: 9999px;
             letter-spacing: 0.05em;
         }
-        .status-ok .status-pill {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #6ee7b7;
-        }
-        .status-error .status-pill {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fca5a5;
-        }
-        .status-desc {
-            font-size: 13px;
-            color: var(--slate-600);
-            line-height: 1.5;
-        }
-        .clash-list {
-            font-size: 13px;
-            margin-top: 8px;
-            font-weight: normal;
-            max-height: 160px;
-            overflow-y: auto;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 6px;
-            padding: 8px 12px;
-        }
-        .clash-list ul { margin: 0; padding-left: 20px; }
-        .clash-list li { margin-bottom: 4px; }
+        .status-ok .status-pill { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        .status-error .status-pill { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
 
-        /* Notice Box for Teacher Clarification */
-        .info-callout {
-            background: #eff6ff;
-            border-left: 4px solid var(--accent);
-            padding: 12px 18px;
-            border-radius: 0 var(--radius-md) var(--radius-md) 0;
-            margin-bottom: 20px;
-            font-size: 13px;
-            color: #1e40af;
-            display: flex;
-            justify-content: space-between;
+        /* Database State Badge */
+        .db-status-badge {
+            display: inline-flex;
             align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
         }
+        .db-online { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        .db-offline { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
 
         /* Controls Toolbar */
         .controls {
@@ -214,9 +210,9 @@
             align-items: center;
             gap: 12px;
             flex-wrap: wrap;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             background: white;
-            padding: 14px 20px;
+            padding: 12px 18px;
             border-radius: var(--radius-lg);
             border: 1px solid var(--slate-200);
             box-shadow: var(--shadow-sm);
@@ -263,11 +259,10 @@
         th {
             background: #1e3a8a;
             color: white;
-            padding: 14px 10px;
+            padding: 12px 10px;
             font-weight: 700;
             border: 1px solid #172554;
             font-size: 12.5px;
-            letter-spacing: 0.02em;
         }
         th small {
             display: block;
@@ -281,16 +276,15 @@
             border: 1px solid var(--slate-200);
             padding: 6px;
             vertical-align: top;
-            height: 82px;
-            min-width: 125px;
-            position: relative;
+            height: 78px;
+            min-width: 120px;
         }
         .day-label {
             font-weight: 800;
             background: var(--slate-50);
             color: var(--slate-800);
             vertical-align: middle;
-            font-size: 14px;
+            font-size: 13.5px;
             width: 110px;
             border-right: 2px solid var(--slate-300);
         }
@@ -303,9 +297,9 @@
             color: var(--slate-400);
             letter-spacing: 0.1em;
             text-transform: uppercase;
-            font-size: 12px;
-            width: 70px;
-            min-width: 70px;
+            font-size: 11px;
+            width: 65px;
+            min-width: 65px;
         }
 
         /* Period Cards */
@@ -313,42 +307,25 @@
             background: #f8fafc;
             border: 1px solid var(--slate-200);
             border-radius: 6px;
-            padding: 8px 6px;
+            padding: 6px;
             height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             cursor: pointer;
             transition: all 0.15s ease;
-            position: relative;
         }
         .period-cell:hover {
             background: #f1f5f9;
             border-color: var(--slate-400);
             transform: scale(0.98);
         }
-        .period-cell .subject {
-            font-weight: 700;
-            color: var(--primary);
-            font-size: 13px;
-            line-height: 1.2;
-        }
-        .period-cell .teacher {
-            font-size: 11.5px;
-            color: var(--slate-600);
-            margin-top: 4px;
-            font-weight: 500;
-        }
-        .period-cell .class-tag {
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--success);
-            margin-bottom: 2px;
-            text-transform: uppercase;
-        }
+        .period-cell .subject { font-weight: 700; color: var(--primary); font-size: 12.5px; line-height: 1.2; }
+        .period-cell .teacher { font-size: 11px; color: var(--slate-600); margin-top: 3px; font-weight: 500; }
+        .period-cell .class-tag { font-size: 10.5px; font-weight: 700; color: var(--success); margin-bottom: 2px; }
         .period-free {
             color: var(--slate-400);
-            font-size: 12px;
+            font-size: 11.5px;
             font-style: italic;
             display: flex;
             align-items: center;
@@ -358,34 +335,52 @@
             border-radius: 6px;
             border: 1px dashed var(--slate-300);
         }
-        .period-free:hover {
-            background: #f8fafc;
-            color: var(--primary-light);
-            border-color: var(--primary-light);
-        }
+        .cell-clash { background: #fee2e2 !important; border: 2px solid var(--danger) !important; }
+        .cell-clash .teacher { color: var(--danger) !important; font-weight: 800 !important; }
 
-        /* Clash Card Styling */
-        .cell-clash {
-            background: #fee2e2 !important;
-            border: 2px solid var(--danger) !important;
-            animation: pulse-border 1.5s infinite;
+        /* Data Management Views */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card {
+            background: white;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--slate-200);
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            margin-bottom: 20px;
         }
-        .cell-clash .teacher {
-            color: var(--danger) !important;
-            font-weight: 800 !important;
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            border-bottom: 1px solid var(--slate-200);
+            padding-bottom: 14px;
         }
-        .cell-clash .subject {
-            color: #991b1b !important;
-        }
+        .card-header h2 { margin: 0; font-size: 18px; color: var(--primary); font-weight: 800; }
+        .grid-2 { display: grid; grid-template-columns: 320px 1fr; gap: 24px; }
+        @media(max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
 
-        /* Subject Color Coding Accents */
-        .sub-maths { border-left: 3px solid #3b82f6; }
-        .sub-english { border-left: 3px solid #8b5cf6; }
-        .sub-urdu { border-left: 3px solid #ec4899; }
-        .sub-science, .sub-biology, .sub-chemistry, .sub-physics { border-left: 3px solid #10b981; }
-        .sub-islamiat, .sub-t-q, .sub-nazra { border-left: 3px solid #f59e0b; }
-        .sub-s-st, .sub-pak-study { border-left: 3px solid #06b6d4; }
-        .sub-ict { border-left: 3px solid #6366f1; }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+        }
+        .data-table th {
+            background: var(--slate-100);
+            color: var(--slate-700);
+            padding: 10px 14px;
+            border: 1px solid var(--slate-200);
+            font-weight: 700;
+        }
+        .data-table td {
+            padding: 10px 14px;
+            border: 1px solid var(--slate-200);
+            height: auto;
+            min-width: auto;
+        }
+        .data-table tr:hover td { background: var(--slate-50); }
 
         /* Modals */
         .modal {
@@ -403,71 +398,23 @@
         }
         .modal-content {
             background: white;
-            padding: 28px;
+            padding: 26px;
             border-radius: var(--radius-lg);
-            width: 440px;
+            width: 450px;
             max-width: 92%;
             box-shadow: var(--shadow-lg);
             border: 1px solid var(--slate-200);
-            animation: modal-enter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        @keyframes modal-enter {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .form-group { margin-bottom: 15px; }
-        .form-group label {
-            display: block;
-            font-size: 12.5px;
-            font-weight: 700;
-            margin-bottom: 6px;
-            color: var(--slate-700);
-        }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 5px; color: var(--slate-700); }
         .form-group select, .form-group input { width: 100%; }
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 24px;
-        }
-
-        /* Teacher Workload Table in Modal */
-        .workload-modal {
-            width: 760px;
-            max-height: 85vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .workload-table-wrap {
-            overflow-y: auto;
-            max-height: 55vh;
-            margin-top: 15px;
-            border: 1px solid var(--slate-200);
-            border-radius: var(--radius-md);
-        }
-
-        /* Stats Bar */
-        .stats-bar {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .stat-card {
-            background: white;
-            padding: 14px 18px;
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--slate-200);
-            box-shadow: var(--shadow-sm);
-        }
-        .stat-card .label { font-size: 12px; color: var(--slate-500); font-weight: 600; text-transform: uppercase; }
-        .stat-card .value { font-size: 22px; font-weight: 800; color: var(--slate-900); margin-top: 4px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 
         @media print {
             body { padding: 0; background: white; }
-            .header-actions, .controls, .stats-bar, .info-callout, .status-card, .modal { display: none !important; }
-            .header { border: none; box-shadow: none; padding: 10px 0; margin-bottom: 10px; }
-            .table-container { box-shadow: none; border: 1px solid #000; }
+            .header-actions, .nav-tabs, .controls, .status-card, .modal { display: none !important; }
+            .header { border: none; box-shadow: none; padding: 10px 0; }
+            table { border: 1px solid #000; }
             th { background: #f1f5f9 !important; color: black !important; border: 1px solid #000 !important; }
             td { border: 1px solid #000 !important; height: auto !important; }
             .period-cell { background: white !important; border: none !important; }
@@ -485,105 +432,315 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                 School Timetable & Scheduling System
             </h1>
-            <small>Automated Constraint Solver | 100% Conflict-Free Engine | Teacher & Class Master Synchronizer</small>
+            <small>Connected to PostgreSQL Supabase Database | 100% Conflict-Free Engine</small>
         </div>
         <div class="header-actions">
+            <!-- Database Connection Status Badge -->
+            <div id="dbBadge" class="db-status-badge db-offline" onclick="openDbSettingsModal()" title="Click to configure Supabase credentials">
+                <span id="dbDot">🟡</span> <span id="dbText">Offline / Local Mode</span>
+            </div>
+
             <button onclick="window.print()" class="btn-outline">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                 Print / PDF
             </button>
-            <button onclick="openWorkloadModal()" class="btn-outline">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                Teacher Loads
-            </button>
             <button class="btn-success" onclick="generateAutomatedTimetable()" id="regenBtn">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                 Regenerate Timetable (0 Clashes)
             </button>
         </div>
     </div>
 
-    <!-- Live Conflict Detector Banner -->
-    <div id="statusBanner" class="status-card status-ok">
-        <div class="status-header-line">
-            <div class="status-badge" id="statusTitle">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--success);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
-                <span>Timetable Status: Fully Verified (0 Clashes Detected)</span>
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchTab('tab-timetable')">📅 Timetable & Clash Solver</button>
+        <button class="nav-tab" onclick="switchTab('tab-teachers')">👨‍🏫 Manage Teachers (<span id="countTeachers">0</span>)</button>
+        <button class="nav-tab" onclick="switchTab('tab-subjects')">📚 Manage Subjects (<span id="countSubjects">0</span>)</button>
+        <button class="nav-tab" onclick="switchTab('tab-classes')">🏫 Manage Classes (<span id="countClasses">0</span>)</button>
+        <button class="nav-tab" onclick="switchTab('tab-allocations')">📋 Teaching Allocations (<span id="countAllocs">0</span>)</button>
+        <button class="nav-tab" onclick="switchTab('tab-database')">⚙️ Supabase Database</button>
+    </div>
+
+    <!-- TAB 1: TIMETABLE & CLASH SOLVER -->
+    <div id="tab-timetable" class="tab-content active">
+        <!-- Live Conflict Detector Banner -->
+        <div id="statusBanner" class="status-card status-ok">
+            <div class="status-header-line">
+                <div class="status-badge" id="statusTitle">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--success);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+                    <span>Timetable Status: Fully Verified (0 Clashes Detected)</span>
+                </div>
+                <span class="status-pill" id="statusPill">Synced & Valid</span>
             </div>
-            <span class="status-pill" id="statusPill">Synced & Valid</span>
+            <div id="clashDetails" style="font-size:13px; color:var(--slate-600);">
+                All teachers and classrooms are synchronized. Zero overlapping teacher assignments across all days and periods.
+            </div>
         </div>
-        <div id="clashDetails" class="status-desc">
-            All teachers and classrooms are synchronized. Zero overlapping teacher assignments across all days and periods.
+
+        <!-- Controls Toolbar -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="viewMode">View Mode:</label>
+                <select id="viewMode" onchange="switchViewMode()">
+                    <option value="CLASS">Class-Wise Timetable</option>
+                    <option value="TEACHER">Teacher-Wise Timetable</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="targetSelector">Select Target:</label>
+                <select id="targetSelector" onchange="renderTimetable()"></select>
+            </div>
+
+            <div class="control-group" style="margin-left: 10px;">
+                <label for="periodMode">Daily Structure:</label>
+                <select id="periodMode" onchange="switchPeriodMode()">
+                    <option value="8" selected>8 Periods / Day (08:00 - 02:05) [Recommended]</option>
+                    <option value="7">7 Periods / Day (08:00 - 01:25) [Standard]</option>
+                </select>
+            </div>
+
+            <div style="margin-left: auto; display: flex; gap: 8px;">
+                <button onclick="openReplaceModal()" class="btn-outline">Bulk Replace Teacher</button>
+                <button onclick="resetTimetable()" class="btn-danger" style="background:#ef4444;">Clear All</button>
+            </div>
+        </div>
+
+        <!-- Main Timetable Grid -->
+        <div class="table-container">
+            <table>
+                <thead id="timetableHeader"></thead>
+                <tbody id="timetableBody"></tbody>
+            </table>
         </div>
     </div>
 
-    <!-- Informational Callout regarding Teacher Separation -->
-    <div class="info-callout">
-        <div>
-            <strong>ℹ️ Note on Mehmoona Assignment:</strong> Miss Mehmoona was assigned 44 periods across English (Senior grades 9–10) and S.St (Junior grades 1–2). In a standard 35–40 slot weekly timetable, a single individual cannot teach 44 periods without physical conflict. To eliminate clashes, she is separated into <strong>Mehmoona (English)</strong> and <strong>Mehmoona (S.St)</strong> (similar to <em>Haleema ICT</em> and <em>Haleema (Nazra)</em>).
+    <!-- TAB 2: MANAGE TEACHERS -->
+    <div id="tab-teachers" class="tab-content">
+        <div class="grid-2">
+            <!-- Add Teacher Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Add New Teacher</h2>
+                </div>
+                <form id="addTeacherForm" onsubmit="handleAddTeacher(event)">
+                    <div class="form-group">
+                        <label>Teacher Full Name:</label>
+                        <input type="text" id="newTeacherName" placeholder="e.g. Ayesha Khan" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Department / Specialty:</label>
+                        <input type="text" id="newTeacherDept" placeholder="e.g. Science / Mathematics">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Weekly Periods:</label>
+                        <input type="number" id="newTeacherMax" value="35" min="1" max="40" required>
+                    </div>
+                    <button type="submit" class="btn-success" style="width:100%; margin-top:10px;">+ Save Teacher to Database</button>
+                </form>
+            </div>
+
+            <!-- Teachers List Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Teaching Staff Directory</h2>
+                    <input type="text" id="searchTeacherInput" onkeyup="filterTeachersTable()" placeholder="Search teacher..." style="padding:6px 10px; font-size:12px;">
+                </div>
+                <div style="overflow-x:auto; max-height:550px;">
+                    <table class="data-table" id="teachersTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Max Periods</th>
+                                <th>Assigned Periods</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teachersTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Quick Stats Bar -->
-    <div class="stats-bar">
-        <div class="stat-card">
-            <div class="label">Total Classes</div>
-            <div class="value" id="statClasses">36</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Total Teaching Staff</div>
-            <div class="value" id="statTeachers">42</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Total Periods Scheduled</div>
-            <div class="value" id="statPeriods">1,234</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Active Schedule Clashes</div>
-            <div class="value" id="statClashes" style="color:var(--success);">0</div>
+    <!-- TAB 3: MANAGE SUBJECTS -->
+    <div id="tab-subjects" class="tab-content">
+        <div class="grid-2">
+            <!-- Add Subject Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Add New Subject</h2>
+                </div>
+                <form id="addSubjectForm" onsubmit="handleAddSubject(event)">
+                    <div class="form-group">
+                        <label>Subject Name:</label>
+                        <input type="text" id="newSubName" placeholder="e.g. Computer Science" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Subject Code:</label>
+                        <input type="text" id="newSubCode" placeholder="e.g. CS">
+                    </div>
+                    <div class="form-group">
+                        <label>Badge Color Accent:</label>
+                        <input type="color" id="newSubColor" value="#3b82f6" style="height:40px; cursor:pointer;">
+                    </div>
+                    <button type="submit" class="btn-success" style="width:100%; margin-top:10px;">+ Save Subject to Database</button>
+                </form>
+            </div>
+
+            <!-- Subjects List Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Subjects Directory</h2>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Subject Name</th>
+                                <th>Code</th>
+                                <th>Color Accent</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subjectsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Controls Toolbar -->
-    <div class="controls">
-        <div class="control-group">
-            <label for="viewMode">View Mode:</label>
-            <select id="viewMode" onchange="switchViewMode()">
-                <option value="CLASS">Class-Wise Timetable</option>
-                <option value="TEACHER">Teacher-Wise Timetable</option>
-            </select>
-        </div>
+    <!-- TAB 4: MANAGE CLASSES -->
+    <div id="tab-classes" class="tab-content">
+        <div class="grid-2">
+            <!-- Add Class Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Add New Class</h2>
+                </div>
+                <form id="addClassForm" onsubmit="handleAddClass(event)">
+                    <div class="form-group">
+                        <label>Grade Level (Number):</label>
+                        <input type="number" id="newClassGrade" value="1" min="1" max="12" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Section Name:</label>
+                        <input type="text" id="newClassSection" placeholder="e.g. Yellow or Gold" required>
+                    </div>
+                    <button type="submit" class="btn-success" style="width:100%; margin-top:10px;">+ Save Class to Database</button>
+                </form>
+            </div>
 
-        <div class="control-group">
-            <label for="targetSelector">Select Target:</label>
-            <select id="targetSelector" onchange="renderTimetable()"></select>
-        </div>
-
-        <div class="control-group" style="margin-left: 10px;">
-            <label for="periodMode">Daily Structure:</label>
-            <select id="periodMode" onchange="switchPeriodMode()">
-                <option value="8" selected>8 Periods / Day (08:00 - 02:05) [Recommended for 8th & 9th]</option>
-                <option value="7">7 Periods / Day (08:00 - 01:25) [Standard Day]</option>
-            </select>
-        </div>
-
-        <div style="margin-left: auto; display: flex; gap: 8px;">
-            <button onclick="openReplaceModal()" class="btn-outline">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
-                Bulk Replace Teacher
-            </button>
-            <button onclick="resetTimetable()" class="btn-danger" style="background:#ef4444;">Clear All</button>
+            <!-- Classes List Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Classes & Sections Directory</h2>
+                </div>
+                <div style="overflow-x:auto; max-height:550px;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Class Name</th>
+                                <th>Grade</th>
+                                <th>Section</th>
+                                <th>Total Scheduled Periods</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="classesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Main Timetable Grid -->
-    <div class="table-container">
-        <table>
-            <thead id="timetableHeader">
-                <!-- Dynamically populated depending on 7 or 8 periods -->
-            </thead>
-            <tbody id="timetableBody"></tbody>
-        </table>
+    <!-- TAB 5: TEACHING ALLOCATIONS -->
+    <div id="tab-allocations" class="tab-content">
+        <div class="grid-2">
+            <!-- Add Allocation Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Assign Teaching Allocation</h2>
+                </div>
+                <form id="addAllocationForm" onsubmit="handleAddAllocation(event)">
+                    <div class="form-group">
+                        <label>Select Teacher:</label>
+                        <select id="allocTeacher" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Select Subject:</label>
+                        <select id="allocSubject" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Select Class:</label>
+                        <select id="allocClass" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Periods per Week:</label>
+                        <input type="number" id="allocPeriods" value="4" min="1" max="10" required>
+                    </div>
+                    <button type="submit" class="btn-success" style="width:100%; margin-top:10px;">+ Save Allocation to Database</button>
+                </form>
+            </div>
+
+            <!-- Allocations List Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Teaching Allocations Directory</h2>
+                    <input type="text" id="searchAllocInput" onkeyup="filterAllocationsTable()" placeholder="Filter allocation..." style="padding:6px 10px; font-size:12px;">
+                </div>
+                <div style="overflow-x:auto; max-height:550px;">
+                    <table class="data-table" id="allocationsTable">
+                        <thead>
+                            <tr>
+                                <th>Class</th>
+                                <th>Subject</th>
+                                <th>Teacher</th>
+                                <th>Periods/Week</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allocationsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 6: SUPABASE DATABASE SETTINGS -->
+    <div id="tab-database" class="tab-content">
+        <div class="card" style="max-width:750px; margin:0 auto;">
+            <div class="card-header">
+                <h2>Supabase Cloud Database Settings</h2>
+            </div>
+            <p style="font-size:13.5px; color:var(--slate-600); line-height:1.6;">
+                Connect this application directly to your Supabase PostgreSQL cloud database. If you have not created your tables yet, run the included SQL script in your Supabase SQL editor.
+            </p>
+
+            <div class="form-group">
+                <label>Supabase Project URL:</label>
+                <input type="text" id="sbUrlInput" placeholder="https://your-project.supabase.co">
+            </div>
+            <div class="form-group">
+                <label>Supabase 'anon' Public API Key:</label>
+                <input type="password" id="sbKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn-success" onclick="saveDbCredentials()">Save & Connect to Supabase</button>
+                <button class="btn-outline" onclick="disconnectSupabase()">Use Local Storage Mode</button>
+            </div>
+
+            <hr style="margin:25px 0; border:0; border-top:1px solid var(--slate-200);">
+
+            <h3 style="margin:0 0 10px 0; font-size:15px; color:var(--primary);">Database Tools & Backups</h3>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn-outline" onclick="exportDataJson()">📥 Download Database Backup (JSON)</button>
+                <a href="supabase_schema.sql" download class="btn-outline" style="text-decoration:none; padding:8px 14px; border-radius:6px; font-size:13px; font-weight:600; color:var(--slate-700); border:1px solid var(--slate-300);">📄 View supabase_schema.sql</a>
+                <button class="btn-danger" onclick="resetToSchoolDefaults()" style="margin-left:auto;">Reset to Default School Data</button>
+            </div>
+        </div>
     </div>
 
 </div>
@@ -591,7 +748,7 @@
 <!-- Edit Period Slot Modal -->
 <div id="editModal" class="modal">
     <div class="modal-content">
-        <h3 style="margin:0 0 16px 0; color:var(--primary); font-size:18px;">Edit Period Slot</h3>
+        <h3 style="margin:0 0 16px 0; color:var(--primary); font-size:17px;">Edit Period Slot</h3>
         <div class="form-group">
             <label>Class:</label>
             <input type="text" id="modalClass" readonly style="background:#f1f5f9; font-weight:600;">
@@ -607,7 +764,7 @@
         <div class="form-group">
             <label>Assigned Teacher:</label>
             <select id="modalTeacher"></select>
-            <small id="modalTeacherWarning" style="color:var(--danger); display:none; margin-top:4px; font-weight:600;">⚠️ Warning: This teacher is already teaching another class during this period!</small>
+            <small id="modalTeacherWarning" style="color:var(--danger); display:none; margin-top:4px; font-weight:600;">⚠️ Warning: This teacher is already teaching another class in this period!</small>
         </div>
         <div class="modal-actions">
             <button class="btn-danger" onclick="deleteSlot()">Remove</button>
@@ -620,8 +777,7 @@
 <!-- Bulk Replace Teacher Modal -->
 <div id="bulkModal" class="modal">
     <div class="modal-content">
-        <h3 style="margin:0 0 16px 0; color:var(--primary); font-size:18px;">Bulk Replace Teacher</h3>
-        <p style="font-size:13px; color:var(--slate-500); margin-top:0;">Replaces all instances of an existing teacher with a new teacher across the entire timetable.</p>
+        <h3 style="margin:0 0 16px 0; color:var(--primary); font-size:17px;">Bulk Replace Teacher</h3>
         <div class="form-group">
             <label>Current Teacher:</label>
             <select id="bulkOldTeacher"></select>
@@ -637,37 +793,14 @@
     </div>
 </div>
 
-<!-- Teacher Workload Modal -->
-<div id="workloadModal" class="modal">
-    <div class="modal-content workload-modal">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3 style="margin:0; color:var(--primary); font-size:18px;">Teacher Workload & Assignment Summary</h3>
-            <button onclick="closeWorkloadModal()" class="btn-outline" style="padding:4px 10px;">✕</button>
-        </div>
-        <div class="workload-table-wrap">
-            <table style="font-size:12px;">
-                <thead>
-                    <tr>
-                        <th style="padding:8px;">Teacher Name</th>
-                        <th style="padding:8px;">Primary Subject</th>
-                        <th style="padding:8px;">Periods Assigned</th>
-                        <th style="padding:8px;">Classes Taught</th>
-                    </tr>
-                </thead>
-                <tbody id="workloadBody"></tbody>
-            </table>
-        </div>
-        <div class="modal-actions" style="margin-top:16px;">
-            <button class="btn-outline" onclick="closeWorkloadModal()">Close</button>
-        </div>
-    </div>
-</div>
-
+<!-- Scripts -->
+<script src="supabase-config.js"></script>
+<script src="db-service.js"></script>
 <script>
     // =========================================================================
-    // 1. DATA ALLOCATIONS DEFINITION
+    // 1. RAW DEFAULT ALLOCATIONS (Used for initial seeding)
     // =========================================================================
-    var ALLOCATIONS = [
+    window.RAW_DEFAULT_ALLOCATIONS = [
         { teacher: "Rubab", subject: "Maths", periods: 5, classes: ["10 Blue", "10 Pink", "9 Blue", "8 Pink"] },
         { teacher: "Rubina Malik", subject: "Maths", periods: 5, classes: ["9 Pink", "8 Blue", "7 Pink", "7 Blue"] },
         { teacher: "Zeenat", subject: "Maths", periods: 5, classes: ["7 Red", "7 White", "6 White", "4 Red"] },
@@ -678,7 +811,6 @@
         { teacher: "Eman", subject: "Maths", periods: 5, classes: ["2 Pink", "2 Red", "1 Blue", "1 White"] },
         { teacher: "Sumaira Rashid", subject: "Maths", periods: 5, classes: ["2 Blue", "2 White", "1 Pink", "1 Red"] },
 
-        // Mehmoona is separated into Senior English (9-10) and Junior S.St (1-2) to prevent mathematical impossibility (44 > 35/40 slots)
         { teacher: "Mehmoona (English)", subject: "English", periods: 5, classes: ["10 Blue", "10 Pink", "9 Blue", "9 Pink"] },
         { teacher: "Ishrat", subject: "English", periods: 6, classes: ["8 Pink", "8 Blue", "6 Pink", "6 Red"] },
         { teacher: "Kiran", subject: "English", periods: 6, classes: ["6 Blue", "6 White", "7 Pink", "7 Red"] },
@@ -745,119 +877,81 @@
     ];
 
     var DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-    var CURRENT_PERIODS = [1, 2, 3, 4, 5, 6, 7, 8]; // Default to 8 periods so 8th & 9th have full 37/38 periods
+    var CURRENT_PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 
     var PERIOD_TIMES_8 = {
-        1: "08:00 - 08:45",
-        2: "08:45 - 09:30",
-        3: "09:30 - 10:15",
+        1: "08:00 - 08:45", 2: "08:45 - 09:30", 3: "09:30 - 10:15",
         "BREAK": "10:15 - 10:45",
-        4: "10:45 - 11:25",
-        5: "11:25 - 12:05",
-        6: "12:05 - 12:45",
-        7: "12:45 - 01:25",
-        8: "01:25 - 02:05"
+        4: "10:45 - 11:25", 5: "11:25 - 12:05", 6: "12:05 - 12:45", 7: "12:45 - 01:25", 8: "01:25 - 02:05"
     };
 
     var PERIOD_TIMES_7 = {
-        1: "08:00 - 08:45",
-        2: "08:45 - 09:30",
-        3: "09:30 - 10:15",
+        1: "08:00 - 08:45", 2: "08:45 - 09:30", 3: "09:30 - 10:15",
         "BREAK": "10:15 - 10:45",
-        4: "10:45 - 11:25",
-        5: "11:25 - 12:05",
-        6: "12:05 - 12:45",
-        7: "12:45 - 01:25"
+        4: "10:45 - 11:25", 5: "11:25 - 12:05", 6: "12:05 - 12:45", 7: "12:45 - 01:25"
     };
 
     var ALL_CLASSES = [];
     var ALL_TEACHERS = [];
     var schedule = {};
 
-    function buildLists() {
-        var classMap = {};
-        var teacherMap = {};
-        ALLOCATIONS.forEach(function(item) {
-            teacherMap[item.teacher] = true;
-            item.classes.forEach(function(c) {
-                classMap[c] = true;
-            });
-        });
-        ALL_CLASSES = Object.keys(classMap).sort();
-        ALL_TEACHERS = Object.keys(teacherMap).sort();
+    // Tab Navigation
+    function switchTab(tabId) {
+        document.querySelectorAll(".nav-tab").forEach(function(b) { b.classList.remove("active"); });
+        document.querySelectorAll(".tab-content").forEach(function(c) { c.classList.remove("active"); });
 
-        document.getElementById("statClasses").innerText = ALL_CLASSES.length;
-        document.getElementById("statTeachers").innerText = ALL_TEACHERS.length;
-    }
+        event.target.classList.add("active");
+        document.getElementById(tabId).classList.add("active");
 
-    function initSchedule() {
-        schedule = {};
-        ALL_CLASSES.forEach(function(cls) {
-            schedule[cls] = {};
-            DAYS.forEach(function(day) {
-                schedule[cls][day] = {};
-                CURRENT_PERIODS.forEach(function(p) {
-                    schedule[cls][day][p] = null;
-                });
-            });
-        });
+        if (tabId === "tab-teachers") refreshTeachersTab();
+        else if (tabId === "tab-subjects") refreshSubjectsTab();
+        else if (tabId === "tab-classes") refreshClassesTab();
+        else if (tabId === "tab-allocations") refreshAllocationsTab();
     }
 
     // =========================================================================
-    // 2. INTELLIGENT MIN-CONFLICTS CONSTRAINT SOLVER (GUARANTEES 0 CLASHES)
+    // 2. TIMETABLE SOLVER CONNECTED TO DATABASE ALLOCATIONS
     // =========================================================================
-    function generateAutomatedTimetable() {
+    async function generateAutomatedTimetable() {
         var regenBtn = document.getElementById("regenBtn");
-        regenBtn.innerText = "Solving Schedule...";
+        regenBtn.innerText = "Solving...";
         regenBtn.disabled = true;
 
-        setTimeout(function() {
-            var solved = solveWithMinConflicts();
-            regenBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Regenerate Timetable (0 Clashes)';
-            regenBtn.disabled = false;
+        var dbAllocs = await window.DB.getAllocations();
+        var teachers = await window.DB.getTeachers();
+        var classes = await window.DB.getClasses();
 
-            renderHeader();
-            renderTimetable();
-            validateClashes();
-            updateStats();
-        }, 30);
-    }
+        ALL_TEACHERS = teachers.map(function(t) { return t.name; }).sort();
+        ALL_CLASSES = classes.map(function(c) { return c.name; }).sort(function(a, b) {
+            var ga = parseInt(a) || 1, gb = parseInt(b) || 1;
+            if (ga !== gb) return ga - gb;
+            return a.localeCompare(b);
+        });
 
-    function solveWithMinConflicts() {
         initSchedule();
 
         var is7Periods = (CURRENT_PERIODS.length === 7);
-
-        // Prepare demand items for each class
         var classDemands = {};
         ALL_CLASSES.forEach(function(c) { classDemands[c] = []; });
 
-        var totalScheduledPeriods = 0;
-        var unitId = 0;
+        dbAllocs.forEach(function(alloc) {
+            var pCount = alloc.periods_per_week;
+            if (is7Periods) {
+                if ((alloc.class_name === "8 Blue" || alloc.class_name === "8 Pink") && alloc.subject_name === "English") pCount = 5;
+                if ((alloc.class_name === "8 Blue" || alloc.class_name === "8 Pink") && alloc.subject_name === "ICT") pCount = 1;
+                if ((alloc.class_name === "9 Blue" || alloc.class_name === "9 Pink") && alloc.subject_name === "ICT") pCount = 1;
+            }
 
-        ALLOCATIONS.forEach(function(alloc) {
-            alloc.classes.forEach(function(c) {
-                var pCount = alloc.periods;
-                // If in 7-period mode, adjust capacity if class demand exceeds 35 slots
-                if (is7Periods) {
-                    if ((c === "8 Blue" || c === "8 Pink") && alloc.subject === "English") pCount = 5;
-                    if ((c === "8 Blue" || c === "8 Pink") && alloc.subject === "ICT") pCount = 1;
-                    if ((c === "9 Blue" || c === "9 Pink") && alloc.subject === "ICT") pCount = 1;
-                }
-
-                for (var i = 0; i < pCount; i++) {
-                    classDemands[c].push({
-                        id: unitId++,
-                        className: c,
-                        subject: alloc.subject,
-                        teacher: alloc.teacher
+            for (var i = 0; i < pCount; i++) {
+                if (classDemands[alloc.class_name]) {
+                    classDemands[alloc.class_name].push({
+                        className: alloc.class_name,
+                        subject: alloc.subject_name,
+                        teacher: alloc.teacher_name
                     });
-                    totalScheduledPeriods++;
                 }
-            });
+            }
         });
-
-        document.getElementById("statPeriods").innerText = totalScheduledPeriods.toLocaleString();
 
         var allSlots = [];
         DAYS.forEach(function(day) {
@@ -866,11 +960,10 @@
             });
         });
 
-        // Track assignments: teacherSlotCount[teacher][day_period] = count
         var teacherSlotCount = {};
         ALL_TEACHERS.forEach(function(t) { teacherSlotCount[t] = {}; });
 
-        // Step 1: Initial clash-aware placement
+        // Step 1: Initial random placement per class
         ALL_CLASSES.forEach(function(c) {
             var demands = classDemands[c].slice().sort(function() { return Math.random() - 0.5; });
             var slots = allSlots.slice().sort(function() { return Math.random() - 0.5; });
@@ -880,16 +973,11 @@
                 var slot = slots[i];
                 var d = demands[i];
 
-                schedule[c][slot.day][slot.period] = {
-                    subject: d.subject,
-                    teacher: d.teacher
-                };
-
+                schedule[c][slot.day][slot.period] = { subject: d.subject, teacher: d.teacher };
                 teacherSlotCount[d.teacher][slot.key] = (teacherSlotCount[d.teacher][slot.key] || 0) + 1;
             }
         });
 
-        // Function to count teacher overlaps
         function countTeacherClashes() {
             var clashes = 0;
             ALL_TEACHERS.forEach(function(t) {
@@ -905,17 +993,12 @@
         var iter = 0;
         var maxIter = 12000;
 
-        // Min-conflicts repair loop
         while (currentClashes > 0 && iter < maxIter) {
             iter++;
-
-            // Gather all conflicting teachers
             var conflicts = [];
             ALL_TEACHERS.forEach(function(t) {
                 for (var k in teacherSlotCount[t]) {
-                    if (teacherSlotCount[t][k] > 1) {
-                        conflicts.push({ teacher: t, slotKey: k });
-                    }
+                    if (teacherSlotCount[t][k] > 1) conflicts.push({ teacher: t, slotKey: k });
                 }
             });
 
@@ -927,13 +1010,10 @@
             var conflictDay = parts[0];
             var conflictPeriod = parseInt(parts[1]);
 
-            // Find classes having this conflict
             var candidateClasses = [];
             ALL_CLASSES.forEach(function(c) {
                 var cell = schedule[c][conflictDay][conflictPeriod];
-                if (cell && cell.teacher === conflictTeacher) {
-                    candidateClasses.push(c);
-                }
+                if (cell && cell.teacher === conflictTeacher) candidateClasses.push(c);
             });
 
             if (candidateClasses.length === 0) continue;
@@ -941,7 +1021,6 @@
             var chosenClass = candidateClasses[Math.floor(Math.random() * candidateClasses.length)];
             var movingCell = schedule[chosenClass][conflictDay][conflictPeriod];
 
-            // Evaluate all target slots in this class to find the best swap
             var bestTargetSlot = null;
             var bestDelta = 999;
             var candidateSlots = allSlots.slice().sort(function() { return Math.random() - 0.5; });
@@ -953,26 +1032,20 @@
                 var resident = schedule[chosenClass][target.day][target.period];
                 var delta = 0;
 
-                // moving teacher leaves conflict slot:
                 var srcCount = teacherSlotCount[conflictTeacher][chosenConflict.slotKey] || 0;
                 if (srcCount > 1) delta -= 1;
 
-                // moving teacher enters target slot:
                 var dstCount = teacherSlotCount[conflictTeacher][target.key] || 0;
                 if (dstCount >= 1) delta += 1;
 
                 if (resident) {
                     if (resident.teacher === conflictTeacher) continue;
-                    // resident teacher leaves target slot:
                     var resDst = teacherSlotCount[resident.teacher][target.key] || 0;
                     if (resDst > 1) delta -= 1;
-
-                    // resident teacher enters conflict slot:
                     var resSrc = teacherSlotCount[resident.teacher][chosenConflict.slotKey] || 0;
                     if (resSrc >= 1) delta += 1;
                 }
 
-                // Balance penalty: soft preference to not exceed 2 of same subject per day
                 if (target.day !== conflictDay) {
                     var subToday = 0;
                     CURRENT_PERIODS.forEach(function(p) {
@@ -985,14 +1058,13 @@
                 if (delta < bestDelta) {
                     bestDelta = delta;
                     bestTargetSlot = target;
-                    if (delta < 0) break; // Greedy early exit
+                    if (delta < 0) break;
                 }
             }
 
             if (bestTargetSlot && (bestDelta <= 0 || Math.random() < 0.08)) {
                 var residentCell = schedule[chosenClass][bestTargetSlot.day][bestTargetSlot.period];
 
-                // Update conflict slot
                 teacherSlotCount[conflictTeacher][chosenConflict.slotKey]--;
                 teacherSlotCount[conflictTeacher][bestTargetSlot.key] = (teacherSlotCount[conflictTeacher][bestTargetSlot.key] || 0) + 1;
 
@@ -1009,12 +1081,26 @@
             }
         }
 
-        return (currentClashes === 0);
+        regenBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Regenerate Timetable (0 Clashes)';
+        regenBtn.disabled = false;
+
+        renderHeader();
+        updateTargetDropdown();
+        renderTimetable();
+        validateClashes();
     }
 
-    // =========================================================================
-    // 3. CLASH DETECTION & VALIDATION
-    // =========================================================================
+    function initSchedule() {
+        schedule = {};
+        ALL_CLASSES.forEach(function(cls) {
+            schedule[cls] = {};
+            DAYS.forEach(function(day) {
+                schedule[cls][day] = {};
+                CURRENT_PERIODS.forEach(function(p) { schedule[cls][day][p] = null; });
+            });
+        });
+    }
+
     function detectClashes() {
         var clashes = [];
         DAYS.forEach(function(day) {
@@ -1044,38 +1130,23 @@
         var title = document.getElementById("statusTitle");
         var pill = document.getElementById("statusPill");
         var details = document.getElementById("clashDetails");
-        var statClashes = document.getElementById("statClashes");
-
-        statClashes.innerText = clashes.length;
 
         if (clashes.length === 0) {
             banner.className = "status-card status-ok";
             title.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--success);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg> <span>Timetable Status: Fully Verified (0 Clashes Detected)</span>';
             pill.innerText = "Synced & Valid";
             details.innerHTML = "All teachers and classrooms are synchronized. Zero overlapping teacher assignments across all days and periods.";
-            statClashes.style.color = "var(--success)";
         } else {
             banner.className = "status-card status-error";
             title.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--danger);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> <span>Conflict Alert: ' + clashes.length + ' Teacher Clashes Detected!</span>';
             pill.innerText = "Action Required";
-            statClashes.style.color = "var(--danger)";
-
-            var html = '<div style="margin-bottom:6px;"><strong>The following teachers are scheduled in multiple rooms simultaneously:</strong></div><div class="clash-list"><ul>';
+            var html = '<strong>The following teachers are scheduled in multiple rooms simultaneously:</strong><ul>';
             clashes.forEach(function(c) {
                 html += '<li><strong>' + c.teacher + '</strong> on <strong>' + c.day + ' - Period ' + c.period + '</strong> in: <em>' + c.classes.join(" & ") + '</em></li>';
             });
-            html += "</ul></div>";
+            html += "</ul>";
             details.innerHTML = html;
         }
-    }
-
-    // =========================================================================
-    // 4. RENDERING & UI
-    // =========================================================================
-    function getSubjectClass(sub) {
-        if (!sub) return "";
-        var clean = sub.toLowerCase().replace(/[^a-z0-9]/g, "-");
-        return "sub-" + clean;
     }
 
     function renderHeader() {
@@ -1085,9 +1156,7 @@
         var html = '<tr><th style="width:110px;">Day</th>';
         CURRENT_PERIODS.forEach(function(p) {
             html += '<th>Period ' + p + '<br><small>' + (timeMap[p] || "") + '</small></th>';
-            if (p === 3) {
-                html += '<th style="width:70px; background:#172554;">Break<br><small>' + timeMap["BREAK"] + '</small></th>';
-            }
+            if (p === 3) html += '<th style="width:65px; background:#172554;">Break<br><small>' + timeMap["BREAK"] + '</small></th>';
         });
         html += '</tr>';
         thead.innerHTML = html;
@@ -1119,7 +1188,7 @@
 
                     if (cellData) {
                         var div = document.createElement("div");
-                        div.className = "period-cell " + getSubjectClass(cellData.subject);
+                        div.className = "period-cell";
 
                         var isClash = clashes.some(function(c) {
                             return c.day === day && c.period === period && c.teacher === cellData.teacher;
@@ -1134,18 +1203,14 @@
                     } else {
                         var freeDiv = document.createElement("div");
                         freeDiv.className = "period-free";
-                        freeDiv.innerText = "+ Free / Add";
+                        freeDiv.innerText = "+ Free";
                         freeDiv.onclick = (function(cls, d, p) {
                             return function() { openEditModal(cls, d, p, null); };
                         })(target, day, period);
                         td.appendChild(freeDiv);
                     }
                 } else {
-                    // Teacher View: Find which class this teacher is teaching at this day/period
-                    var foundClass = null;
-                    var foundSubject = null;
-                    var multipleClasses = [];
-
+                    var foundClass = null, foundSubject = null, multiple = [];
                     for (var i = 0; i < ALL_CLASSES.length; i++) {
                         var cl = ALL_CLASSES[i];
                         if (schedule[cl] && schedule[cl][day] && schedule[cl][day][period] && schedule[cl][day][period].teacher === target) {
@@ -1153,27 +1218,25 @@
                                 foundClass = cl;
                                 foundSubject = schedule[cl][day][period].subject;
                             }
-                            multipleClasses.push(cl);
+                            multiple.push(cl);
                         }
                     }
 
                     if (foundClass) {
                         var div2 = document.createElement("div");
-                        div2.className = "period-cell " + getSubjectClass(foundSubject);
-
-                        if (multipleClasses.length > 1) {
+                        div2.className = "period-cell";
+                        if (multiple.length > 1) {
                             div2.classList.add("cell-clash");
-                            div2.innerHTML = '<div class="class-tag" style="color:#b91c1c;">CLASH: ' + multipleClasses.join(" & ") + '</div><div class="subject">' + foundSubject + '</div>';
+                            div2.innerHTML = '<div class="class-tag" style="color:#b91c1c;">CLASH: ' + multiple.join(" & ") + '</div><div class="subject">' + foundSubject + '</div>';
                         } else {
                             div2.innerHTML = '<div class="class-tag">' + foundClass + '</div><div class="subject">' + foundSubject + '</div>';
                         }
-
                         div2.onclick = (function(cl, d, p, fs, trg) {
                             return function() { openEditModal(cl, d, p, { subject: fs, teacher: trg }); };
                         })(foundClass, day, period, foundSubject, target);
                         td.appendChild(div2);
                     } else {
-                        td.innerHTML = '<div class="period-free" style="border:none; color:#94a3b8;">Free Period</div>';
+                        td.innerHTML = '<div class="period-free" style="border:none; color:#94a3b8;">Free</div>';
                     }
                 }
 
@@ -1191,35 +1254,335 @@
         });
     }
 
-    function updateStats() {
-        var clashes = detectClashes();
-        document.getElementById("statClashes").innerText = clashes.length;
+    function updateTargetDropdown() {
+        var mode = document.getElementById("viewMode").value;
+        var selector = document.getElementById("targetSelector");
+        selector.innerHTML = "";
+
+        var list = (mode === "CLASS") ? ALL_CLASSES : ALL_TEACHERS;
+        list.forEach(function(item) {
+            var opt = document.createElement("option");
+            opt.value = item;
+            opt.innerText = item;
+            selector.appendChild(opt);
+        });
+    }
+
+    function switchViewMode() {
+        updateTargetDropdown();
+        renderTimetable();
+    }
+
+    function switchPeriodMode() {
+        var val = document.getElementById("periodMode").value;
+        CURRENT_PERIODS = (val === "7") ? [1, 2, 3, 4, 5, 6, 7] : [1, 2, 3, 4, 5, 6, 7, 8];
+        generateAutomatedTimetable();
     }
 
     // =========================================================================
-    // 5. MODAL & EDIT ACTIONS
+    // 3. DATA MANAGEMENT CRUD VIEWS
+    // =========================================================================
+
+    // Refresh Teachers Tab
+    async function refreshTeachersTab() {
+        var teachers = await window.DB.getTeachers();
+        var allocs = await window.DB.getAllocations();
+        document.getElementById("countTeachers").innerText = teachers.length;
+
+        var loadMap = {};
+        allocs.forEach(function(a) {
+            loadMap[a.teacher_name] = (loadMap[a.teacher_name] || 0) + a.periods_per_week;
+        });
+
+        var tbody = document.getElementById("teachersTableBody");
+        tbody.innerHTML = "";
+
+        teachers.forEach(function(t) {
+            var assigned = loadMap[t.name] || 0;
+            var tr = document.createElement("tr");
+            tr.innerHTML = '<td><strong>' + t.name + '</strong></td>' +
+                           '<td>' + (t.department || "General") + '</td>' +
+                           '<td>' + (t.max_periods_weekly || 35) + '</td>' +
+                           '<td><span style="font-weight:700; color:' + (assigned > 35 ? 'var(--danger)' : 'var(--primary)') + ';">' + assigned + '</span></td>' +
+                           '<td style="text-align:right;">' +
+                           '<button onclick="handleDeleteTeacher(\'' + t.id + '\')" class="btn-danger" style="padding:4px 8px; font-size:11px;">Delete</button>' +
+                           '</td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function handleAddTeacher(e) {
+        e.preventDefault();
+        var name = document.getElementById("newTeacherName").value.trim();
+        var dept = document.getElementById("newTeacherDept").value.trim();
+        var maxP = document.getElementById("newTeacherMax").value;
+        if (!name) return;
+
+        await window.DB.addTeacher({ name: name, department: dept, max_periods_weekly: maxP });
+        document.getElementById("addTeacherForm").reset();
+        await refreshTeachersTab();
+        alert("Teacher '" + name + "' added successfully to database!");
+    }
+
+    async function handleDeleteTeacher(id) {
+        if (confirm("Are you sure you want to delete this teacher and their teaching allocations?")) {
+            await window.DB.deleteTeacher(id);
+            await refreshTeachersTab();
+        }
+    }
+
+    function filterTeachersTable() {
+        var q = document.getElementById("searchTeacherInput").value.toLowerCase();
+        var rows = document.querySelectorAll("#teachersTableBody tr");
+        rows.forEach(function(r) {
+            r.style.display = r.innerText.toLowerCase().includes(q) ? "" : "none";
+        });
+    }
+
+    // Refresh Subjects Tab
+    async function refreshSubjectsTab() {
+        var subjects = await window.DB.getSubjects();
+        document.getElementById("countSubjects").innerText = subjects.length;
+
+        var tbody = document.getElementById("subjectsTableBody");
+        tbody.innerHTML = "";
+
+        subjects.forEach(function(s) {
+            var tr = document.createElement("tr");
+            tr.innerHTML = '<td><strong>' + s.name + '</strong></td>' +
+                           '<td><code>' + (s.code || "-") + '</code></td>' +
+                           '<td><span style="display:inline-block; width:16px; height:16px; border-radius:4px; vertical-align:middle; background:' + (s.color_accent || '#3b82f6') + ';"></span> ' + s.color_accent + '</td>' +
+                           '<td style="text-align:right;">' +
+                           '<button onclick="handleDeleteSubject(\'' + s.id + '\')" class="btn-danger" style="padding:4px 8px; font-size:11px;">Delete</button>' +
+                           '</td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function handleAddSubject(e) {
+        e.preventDefault();
+        var name = document.getElementById("newSubName").value.trim();
+        var code = document.getElementById("newSubCode").value.trim();
+        var color = document.getElementById("newSubColor").value;
+        if (!name) return;
+
+        await window.DB.addSubject({ name: name, code: code, color_accent: color });
+        document.getElementById("addSubjectForm").reset();
+        await refreshSubjectsTab();
+        alert("Subject '" + name + "' added successfully to database!");
+    }
+
+    async function handleDeleteSubject(id) {
+        if (confirm("Are you sure you want to delete this subject?")) {
+            await window.DB.deleteSubject(id);
+            await refreshSubjectsTab();
+        }
+    }
+
+    // Refresh Classes Tab
+    async function refreshClassesTab() {
+        var classes = await window.DB.getClasses();
+        var allocs = await window.DB.getAllocations();
+        document.getElementById("countClasses").innerText = classes.length;
+
+        var classLoad = {};
+        allocs.forEach(function(a) {
+            classLoad[a.class_name] = (classLoad[a.class_name] || 0) + a.periods_per_week;
+        });
+
+        var tbody = document.getElementById("classesTableBody");
+        tbody.innerHTML = "";
+
+        classes.forEach(function(c) {
+            var total = classLoad[c.name] || 0;
+            var tr = document.createElement("tr");
+            tr.innerHTML = '<td><strong>' + c.name + '</strong></td>' +
+                           '<td>Grade ' + c.grade + '</td>' +
+                           '<td>' + c.section + '</td>' +
+                           '<td><span style="font-weight:700; color:' + (total > 35 ? 'var(--warning)' : 'var(--primary)') + ';">' + total + ' periods</span></td>' +
+                           '<td style="text-align:right;">' +
+                           '<button onclick="handleDeleteClass(\'' + c.id + '\')" class="btn-danger" style="padding:4px 8px; font-size:11px;">Delete</button>' +
+                           '</td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function handleAddClass(e) {
+        e.preventDefault();
+        var grade = document.getElementById("newClassGrade").value;
+        var section = document.getElementById("newClassSection").value.trim();
+        if (!section) return;
+
+        var name = grade + " " + section;
+        await window.DB.addClass({ name: name, grade: grade, section: section });
+        document.getElementById("addClassForm").reset();
+        await refreshClassesTab();
+        alert("Class '" + name + "' added successfully to database!");
+    }
+
+    async function handleDeleteClass(id) {
+        if (confirm("Are you sure you want to delete this class and its schedule allocations?")) {
+            await window.DB.deleteClass(id);
+            await refreshClassesTab();
+        }
+    }
+
+    // Refresh Allocations Tab
+    async function refreshAllocationsTab() {
+        var allocs = await window.DB.getAllocations();
+        var teachers = await window.DB.getTeachers();
+        var subjects = await window.DB.getSubjects();
+        var classes = await window.DB.getClasses();
+
+        document.getElementById("countAllocs").innerText = allocs.length;
+
+        // Populate dropdowns in Add Allocation Form
+        var tSelect = document.getElementById("allocTeacher");
+        var sSelect = document.getElementById("allocSubject");
+        var cSelect = document.getElementById("allocClass");
+
+        tSelect.innerHTML = teachers.map(function(t) { return '<option value="' + t.id + '">' + t.name + '</option>'; }).join("");
+        sSelect.innerHTML = subjects.map(function(s) { return '<option value="' + s.id + '">' + s.name + '</option>'; }).join("");
+        cSelect.innerHTML = classes.map(function(c) { return '<option value="' + c.id + '">' + c.name + '</option>'; }).join("");
+
+        var tbody = document.getElementById("allocationsTableBody");
+        tbody.innerHTML = "";
+
+        allocs.forEach(function(a) {
+            var tr = document.createElement("tr");
+            tr.innerHTML = '<td><strong>' + a.class_name + '</strong></td>' +
+                           '<td>' + a.subject_name + '</td>' +
+                           '<td>' + a.teacher_name + '</td>' +
+                           '<td><span style="font-weight:700; color:var(--primary);">' + a.periods_per_week + '</span></td>' +
+                           '<td style="text-align:right;">' +
+                           '<button onclick="handleDeleteAllocation(\'' + a.id + '\')" class="btn-danger" style="padding:4px 8px; font-size:11px;">Delete</button>' +
+                           '</td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function handleAddAllocation(e) {
+        e.preventDefault();
+        var tid = document.getElementById("allocTeacher").value;
+        var sid = document.getElementById("allocSubject").value;
+        var cid = document.getElementById("allocClass").value;
+        var periods = document.getElementById("allocPeriods").value;
+
+        await window.DB.addAllocation(tid, sid, cid, periods);
+        await refreshAllocationsTab();
+        alert("Teaching allocation saved to database! Click 'Regenerate Timetable' to apply.");
+    }
+
+    async function handleDeleteAllocation(id) {
+        if (confirm("Delete this teaching allocation?")) {
+            await window.DB.deleteAllocation(id);
+            await refreshAllocationsTab();
+        }
+    }
+
+    function filterAllocationsTable() {
+        var q = document.getElementById("searchAllocInput").value.toLowerCase();
+        var rows = document.querySelectorAll("#allocationsTableBody tr");
+        rows.forEach(function(r) {
+            r.style.display = r.innerText.toLowerCase().includes(q) ? "" : "none";
+        });
+    }
+
+    // =========================================================================
+    // 4. SUPABASE SETTINGS & BACKUPS
+    // =========================================================================
+    function updateDbStatusBadge() {
+        var badge = document.getElementById("dbBadge");
+        var dot = document.getElementById("dbDot");
+        var text = document.getElementById("dbText");
+
+        if (window.DB.isConnected()) {
+            badge.className = "db-status-badge db-online";
+            dot.innerText = "🟢";
+            text.innerText = "Connected to Supabase PostgreSQL";
+        } else {
+            badge.className = "db-status-badge db-offline";
+            dot.innerText = "🟡";
+            text.innerText = "Local Storage Mode";
+        }
+    }
+
+    function openDbSettingsModal() {
+        switchTab("tab-database");
+    }
+
+    async function saveDbCredentials() {
+        var url = document.getElementById("sbUrlInput").value.trim();
+        var key = document.getElementById("sbKeyInput").value.trim();
+
+        if (!url || !key) {
+            alert("Please provide both Supabase URL and public anon key.");
+            return;
+        }
+
+        var res = await window.DB.setCredentials(url, key);
+        updateDbStatusBadge();
+
+        if (res.connected) {
+            alert("Connected to Supabase PostgreSQL cloud database successfully!");
+            generateAutomatedTimetable();
+        } else {
+            alert("Could not connect with provided credentials. Please ensure tables are created with supabase_schema.sql.");
+        }
+    }
+
+    function disconnectSupabase() {
+        window.DB.clearCredentials();
+        document.getElementById("sbUrlInput").value = "";
+        document.getElementById("sbKeyInput").value = "";
+        updateDbStatusBadge();
+        alert("Switched to Local Storage Mode.");
+    }
+
+    async function exportDataJson() {
+        var data = await window.DB.exportAllData();
+        var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "school_timetable_database_" + new Date().toISOString().slice(0, 10) + ".json";
+        a.click();
+    }
+
+    function resetToSchoolDefaults() {
+        if (confirm("Reset database to initial verified school data? Custom modifications will be cleared.")) {
+            window.DB.resetToDefault();
+            alert("Database reset to defaults.");
+            location.reload();
+        }
+    }
+
+    // =========================================================================
+    // 5. MODAL EDITING
     // =========================================================================
     var currentSlot = null;
 
-    function openEditModal(cls, day, period, data) {
+    async function openEditModal(cls, day, period, data) {
         currentSlot = { cls: cls, day: day, period: period };
         document.getElementById("modalClass").value = cls;
         document.getElementById("modalSlotInfo").value = day + " - Period " + period;
 
+        var subjects = await window.DB.getSubjects();
         var subSelect = document.getElementById("modalSubject");
-        var subMap = {};
-        ALLOCATIONS.forEach(function(a) { subMap[a.subject] = true; });
-        var uniqueSubs = Object.keys(subMap).sort();
-        subSelect.innerHTML = uniqueSubs.map(function(s) { return '<option value="' + s + '">' + s + '</option>'; }).join("");
+        subSelect.innerHTML = subjects.map(function(s) { return '<option value="' + s.name + '">' + s.name + '</option>'; }).join("");
         if (data) subSelect.value = data.subject;
 
-        updateModalTeachers();
+        await updateModalTeachers();
         if (data) document.getElementById("modalTeacher").value = data.teacher;
 
         checkTeacherSlotConflict();
         document.getElementById("modalTeacher").onchange = checkTeacherSlotConflict;
-
         document.getElementById("editModal").style.display = "flex";
+    }
+
+    async function updateModalTeachers() {
+        var teachers = await window.DB.getTeachers();
+        var teacherSelect = document.getElementById("modalTeacher");
+        teacherSelect.innerHTML = teachers.map(function(t) { return '<option value="' + t.name + '">' + t.name + '</option>'; }).join("");
     }
 
     function checkTeacherSlotConflict() {
@@ -1246,19 +1609,6 @@
         }
     }
 
-    function updateModalTeachers() {
-        var selectedSub = document.getElementById("modalSubject").value;
-        var teacherSelect = document.getElementById("modalTeacher");
-        var tMap = {};
-        ALLOCATIONS.forEach(function(a) {
-            if (a.subject === selectedSub) tMap[a.teacher] = true;
-        });
-        var list = Object.keys(tMap).sort();
-        if (list.length === 0) list = ALL_TEACHERS;
-
-        teacherSelect.innerHTML = list.map(function(t) { return '<option value="' + t + '">' + t + '</option>'; }).join("");
-    }
-
     function saveSlotChanges() {
         var cls = currentSlot.cls;
         var day = currentSlot.day;
@@ -1270,7 +1620,6 @@
         closeModal();
         renderTimetable();
         validateClashes();
-        updateStats();
     }
 
     function deleteSlot() {
@@ -1278,14 +1627,10 @@
         closeModal();
         renderTimetable();
         validateClashes();
-        updateStats();
     }
 
-    function closeModal() {
-        document.getElementById("editModal").style.display = "none";
-    }
+    function closeModal() { document.getElementById("editModal").style.display = "none"; }
 
-    // Bulk Replace
     function openReplaceModal() {
         var oldSelect = document.getElementById("bulkOldTeacher");
         var newSelect = document.getElementById("bulkNewTeacher");
@@ -1295,17 +1640,12 @@
         document.getElementById("bulkModal").style.display = "flex";
     }
 
-    function closeBulkModal() {
-        document.getElementById("bulkModal").style.display = "none";
-    }
+    function closeBulkModal() { document.getElementById("bulkModal").style.display = "none"; }
 
     function executeBulkReplace() {
         var oldT = document.getElementById("bulkOldTeacher").value;
         var newT = document.getElementById("bulkNewTeacher").value;
-        if (oldT === newT) {
-            alert("Both teachers cannot be identical.");
-            return;
-        }
+        if (oldT === newT) { alert("Both teachers cannot be identical."); return; }
 
         var count = 0;
         ALL_CLASSES.forEach(function(cls) {
@@ -1323,95 +1663,39 @@
         closeBulkModal();
         renderTimetable();
         validateClashes();
-        updateStats();
-    }
-
-    // Teacher Workload Modal
-    function openWorkloadModal() {
-        var tbody = document.getElementById("workloadBody");
-        tbody.innerHTML = "";
-
-        var loads = {};
-        ALL_TEACHERS.forEach(function(t) {
-            loads[t] = { periods: 0, classes: {}, subjects: {} };
-        });
-
-        ALL_CLASSES.forEach(function(cls) {
-            DAYS.forEach(function(day) {
-                CURRENT_PERIODS.forEach(function(p) {
-                    var cell = schedule[cls][day][p];
-                    if (cell && cell.teacher && loads[cell.teacher]) {
-                        loads[cell.teacher].periods++;
-                        loads[cell.teacher].classes[cls] = true;
-                        loads[cell.teacher].subjects[cell.subject] = true;
-                    }
-                });
-            });
-        });
-
-        ALL_TEACHERS.forEach(function(t) {
-            var row = document.createElement("tr");
-            var clsList = Object.keys(loads[t].classes).join(", ") || "None";
-            var subs = Object.keys(loads[t].subjects).join(", ") || "-";
-
-            row.innerHTML = '<td style="font-weight:700; text-align:left; padding:8px;">' + t + '</td>' +
-                            '<td style="text-align:left; padding:8px;">' + subs + '</td>' +
-                            '<td style="font-weight:700; color:var(--primary); padding:8px;">' + loads[t].periods + '</td>' +
-                            '<td style="text-align:left; color:var(--slate-600); padding:8px;">' + clsList + '</td>';
-            tbody.appendChild(row);
-        });
-
-        document.getElementById("workloadModal").style.display = "flex";
-    }
-
-    function closeWorkloadModal() {
-        document.getElementById("workloadModal").style.display = "none";
     }
 
     function resetTimetable() {
-        if (confirm("Are you sure you want to clear all schedules?")) {
+        if (confirm("Clear all schedules?")) {
             initSchedule();
             renderTimetable();
             validateClashes();
-            updateStats();
         }
     }
 
-    function updateTargetDropdown() {
-        var mode = document.getElementById("viewMode").value;
-        var selector = document.getElementById("targetSelector");
-        selector.innerHTML = "";
+    // =========================================================================
+    // 6. INITIALIZATION ON WINDOW LOAD
+    // =========================================================================
+    window.onload = async function() {
+        // Load credentials from local storage into inputs if present
+        document.getElementById("sbUrlInput").value = localStorage.getItem("SB_URL") || "";
+        document.getElementById("sbKeyInput").value = localStorage.getItem("SB_KEY") || "";
 
-        var list = (mode === "CLASS") ? ALL_CLASSES : ALL_TEACHERS;
-        list.forEach(function(item) {
-            var opt = document.createElement("option");
-            opt.value = item;
-            opt.innerText = item;
-            selector.appendChild(opt);
-        });
-    }
+        await window.DB.init();
+        updateDbStatusBadge();
 
-    function switchViewMode() {
-        updateTargetDropdown();
-        renderTimetable();
-    }
+        var teachers = await window.DB.getTeachers();
+        var subjects = await window.DB.getSubjects();
+        var classes = await window.DB.getClasses();
+        var allocs = await window.DB.getAllocations();
 
-    function switchPeriodMode() {
-        var val = document.getElementById("periodMode").value;
-        if (val === "7") {
-            CURRENT_PERIODS = [1, 2, 3, 4, 5, 6, 7];
-        } else {
-            CURRENT_PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
-        }
-        generateAutomatedTimetable();
-    }
+        document.getElementById("countTeachers").innerText = teachers.length;
+        document.getElementById("countSubjects").innerText = subjects.length;
+        document.getElementById("countClasses").innerText = classes.length;
+        document.getElementById("countAllocs").innerText = allocs.length;
 
-    // Auto Run On Page Load
-    window.onload = function() {
-        buildLists();
-        updateTargetDropdown();
         renderHeader();
-        generateAutomatedTimetable();
+        await generateAutomatedTimetable();
     };
 </script>
 

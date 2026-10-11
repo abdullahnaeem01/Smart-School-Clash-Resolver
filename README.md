@@ -1,36 +1,53 @@
 # Smart-School-Clash-Resolver
 
-A high-performance automated school timetable generator and clash detection system built for primary and secondary schools.
+A modern automated school timetable generation, clash detection, and database management system powered by **Supabase PostgreSQL**.
 
 ---
 
 ## 🚀 Key Features
 
 - **Guaranteed 0 Teacher Clashes**: Powered by an intelligent **Min-Conflicts Constraint Satisfaction (CSP)** solver that dynamically repairs conflicts in under 100 milliseconds.
+- **Supabase PostgreSQL Cloud Database**:
+  - Full relational schema with normalized tables: `teachers`, `subjects`, `classes`, `allocations`, and `timetable_slots`.
+  - Connects directly to Supabase via `@supabase/supabase-js`.
+  - Dual-mode operation: Runs seamlessly in **Supabase Cloud Mode** or **Offline Local Mode**.
+- **Interactive Data Management Portal (CRUD)**:
+  - 👨‍🏫 **Manage Teachers**: Add new teachers, assign departments, set weekly period limits, edit, and delete.
+  - 📚 **Manage Subjects**: Add subjects, define codes, and customize color accents.
+  - 🏫 **Manage Classes**: Add grade levels and sections.
+  - 📋 **Teaching Allocations**: Assign any teacher to any subject & class with custom periods per week.
+  - ⚙️ **Database Backup & Sync**: 1-click JSON backup download and live Supabase credentials setup.
 - **Dual Structure Support (7 & 8 Periods)**:
   - **8 Periods Mode (Recommended)**: Accommodates extended demands for Grade 8 (37 periods) and Grade 9 (38 periods) with natural period distribution.
   - **7 Periods Mode (Standard)**: Accommodates standard 35-period weekly schedules with synchronized elective group balancing.
 - **Dual Viewing Modes**:
   - **Class-Wise Timetable**: Complete weekly view per section with subject badges and assigned teacher tags.
   - **Teacher-Wise Timetable**: Complete weekly view per teacher displaying assigned classes and free periods.
-- **Teacher Workload Overview**: Real-time breakdown of total weekly periods, assigned classes, and subjects across all teaching staff.
-- **Interactive Slot Editor**: Edit, reassign, or remove slots on the fly with live collision detection warning before saving.
-- **Bulk Teacher Replacement**: Swap any teacher across the entire timetable in a single click with instant re-verification.
 - **Print & PDF Optimized**: Tailored print stylesheet for clean printing on standard A4 paper.
 
 ---
 
-## 🛠️ How to Run
+## 🗄️ Setting Up Supabase Database
 
-1. Open `index.html` directly in any modern web browser (Google Chrome, Microsoft Edge, Firefox, Safari).
-2. The timetable solver runs automatically on launch, guaranteeing 0 clashes.
-3. Switch between **Class-Wise** and **Teacher-Wise** views using the dropdown.
-4. Click **Regenerate Timetable (0 Clashes)** to generate fresh conflict-free allocations anytime.
+To link your own Supabase project:
+
+1. **Create a Supabase Project**:
+   - Go to [supabase.com](https://supabase.com) and create a free project.
+2. **Run the Database Schema**:
+   - In your Supabase Dashboard, open **SQL Editor** from the left navigation.
+   - Click **New Query**, copy and paste the contents of [`supabase_schema.sql`](supabase_schema.sql), and click **Run**.
+   - This creates all 5 tables and pre-seeds all 42 teachers, 13 subjects, 36 classes, and allocations automatically!
+3. **Connect the App**:
+   - Open `index.html` in your browser.
+   - Click the **⚙️ Supabase Database** tab.
+   - Paste your **Project URL** and **anon public API Key** (found in Supabase *Project Settings -> API*).
+   - Click **Save & Connect to Supabase**.
+   - The indicator will turn **🟢 Connected to Supabase PostgreSQL**!
+
+*Note: The app also works in **🟡 Local Storage Mode** out of the box with zero setup needed.*
 
 ---
 
-## 📋 Data Model & Allocations
+## 🛠️ How to Run Locally
 
-- Supports 36 classes (Grades 1 through 10 with sections: Blue, Pink, Red, White, Green).
-- 42+ specialized subject teachers across Maths, English, Urdu, Biology, Chemistry, Physics, General Science, Social Studies, Islamiat, Tarjuma-tul-Quran (T.Q), Nazra, and ICT.
-- Resolves name ambiguities (e.g., separating senior and junior section teachers) to ensure physical viability across all time slots.
+Double-click `index.html` to open it in any modern browser (Google Chrome, Microsoft Edge, Firefox, Safari).
