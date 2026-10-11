@@ -195,1760 +195,307 @@ INSERT INTO classes (name, grade, section) VALUES
     ('10 Blue', 10, 'Blue'),
     ('10 Pink', 10, 'Pink');
 
--- Seed Allocations Linking Teachers, Subjects & Classes
+-- Seed Allocations Linking Teachers, Subjects & Classes via JOIN (100% Valid PostgreSQL)
 INSERT INTO allocations (teacher_id, subject_id, class_id, periods_per_week)
-(
-    (SELECT id FROM teachers WHERE name = 'Rubab'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '10 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rubab'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '10 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rubab'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '9 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rubab'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '8 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rubina Malik'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '9 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rubina Malik'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '8 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rubina Malik'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '7 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rubina Malik'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '7 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Zeenat'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '7 Red'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Zeenat'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '7 White'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Zeenat'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '6 White'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Zeenat'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '4 Red'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Beenish'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '6 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Beenish'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '6 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Beenish'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '6 Red'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Beenish'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '5 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Samina Gul'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '5 Red'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Samina Gul'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '5 White'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Samina Gul'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '5 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Samina Gul'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '4 White'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Misbah Sohail'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '4 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Misbah Sohail'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '4 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Misbah Sohail'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '4 Green'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Misbah Sohail'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '3 Green'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Faiza'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '3 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Faiza'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '3 White'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Faiza'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '3 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Faiza'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '3 Red'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Eman'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '2 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Eman'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '2 Red'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Eman'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '1 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Eman'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '1 White'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sumaira Rashid'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '2 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sumaira Rashid'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '2 White'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sumaira Rashid'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '1 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sumaira Rashid'),
-    (SELECT id FROM subjects WHERE name = 'Maths'),
-    (SELECT id FROM classes WHERE name = '1 Red'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehmoona (English)'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '10 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehmoona (English)'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '10 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehmoona (English)'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '9 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehmoona (English)'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '9 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Ishrat'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '8 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Ishrat'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '8 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Ishrat'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '6 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Ishrat'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '6 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Kiran'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '6 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Kiran'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '6 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Kiran'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '7 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Kiran'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '7 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Salma'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '7 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Salma'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '7 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Salma'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '5 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Zarmeen'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '5 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Zarmeen'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '4 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Zarmeen'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '4 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Zarmeen'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '4 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Farah'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '5 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Farah'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '5 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Farah'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '4 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Farah'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '4 Green'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Tasneem'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '3 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Tasneem'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '3 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Tasneem'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '3 Green'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sarwat'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '3 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sarwat'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '2 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sarwat'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '2 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sarwat'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '1 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Anum'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '2 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Anum'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '3 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Anum'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '1 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Anum'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '1 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Urooj'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '2 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Urooj'),
-    (SELECT id FROM subjects WHERE name = 'English'),
-    (SELECT id FROM classes WHERE name = '1 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sadia Waseem'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '10 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sadia Waseem'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '10 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sadia Waseem'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '9 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sadia Waseem'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '8 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sadia Waseem'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '8 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sonia'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '9 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sonia'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '7 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Naseem'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '7 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Naseem'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '7 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Naseem'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '7 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Naseem'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '5 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Nazia'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '6 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Nazia'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '6 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Nazia'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '5 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Nazia'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '6 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Summaiya'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '5 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Summaiya'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '4 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Summaiya'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '3 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Summaiya'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '6 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'New 1'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '5 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Shazia Sohail'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '4 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Shazia Sohail'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '4 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Shazia Sohail'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '4 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Shazia Sohail'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '3 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saiqa'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '3 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saiqa'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '4 Green'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saiqa'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '3 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saiqa'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '3 Green'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Atiya'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '1 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Atiya'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '1 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Atiya'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '2 Red'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Atiya'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '2 White'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Nabeela'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '1 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Nabeela'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '1 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Nabeela'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '2 Pink'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Nabeela'),
-    (SELECT id FROM subjects WHERE name = 'Urdu'),
-    (SELECT id FROM classes WHERE name = '2 Blue'),
-    6
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Meharyan'),
-    (SELECT id FROM subjects WHERE name = 'Biology'),
-    (SELECT id FROM classes WHERE name = '10 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Meharyan'),
-    (SELECT id FROM subjects WHERE name = 'Biology'),
-    (SELECT id FROM classes WHERE name = '10 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Meharyan'),
-    (SELECT id FROM subjects WHERE name = 'Biology'),
-    (SELECT id FROM classes WHERE name = '9 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Meharyan'),
-    (SELECT id FROM subjects WHERE name = 'Biology'),
-    (SELECT id FROM classes WHERE name = '9 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Meharyan'),
-    (SELECT id FROM subjects WHERE name = 'Biology'),
-    (SELECT id FROM classes WHERE name = '8 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Meharyan'),
-    (SELECT id FROM subjects WHERE name = 'Biology'),
-    (SELECT id FROM classes WHERE name = '8 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saira'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '7 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saira'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '7 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saira'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '6 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saira'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '5 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saira'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '5 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saira'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '5 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Kinza'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '7 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Kinza'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '6 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Kinza'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '6 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Kinza'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '5 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Kinza'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '4 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Ifza'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '6 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Ifza'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '3 Green'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Ifza'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '4 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Ifza'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '4 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Ifza'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '4 Green'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Ifza'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '8 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sadia Sarwar'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '3 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sadia Sarwar'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '4 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sadia Sarwar'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '3 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Yusra'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '2 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Yusra'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '2 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Yusra'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '2 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Yusra'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '2 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Yusra'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '3 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Yusra'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '3 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saleha'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '1 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saleha'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '1 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saleha'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '1 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saleha'),
-    (SELECT id FROM subjects WHERE name = 'Science'),
-    (SELECT id FROM classes WHERE name = '1 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sajida'),
-    (SELECT id FROM subjects WHERE name = 'Chemistry'),
-    (SELECT id FROM classes WHERE name = '10 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sajida'),
-    (SELECT id FROM subjects WHERE name = 'Chemistry'),
-    (SELECT id FROM classes WHERE name = '9 Blue'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sajida'),
-    (SELECT id FROM subjects WHERE name = 'Chemistry'),
-    (SELECT id FROM classes WHERE name = '8 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sajida'),
-    (SELECT id FROM subjects WHERE name = 'Chemistry'),
-    (SELECT id FROM classes WHERE name = '8 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sajida'),
-    (SELECT id FROM subjects WHERE name = 'Chemistry'),
-    (SELECT id FROM classes WHERE name = '7 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sidra'),
-    (SELECT id FROM subjects WHERE name = 'Physics'),
-    (SELECT id FROM classes WHERE name = '10 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sidra'),
-    (SELECT id FROM subjects WHERE name = 'Physics'),
-    (SELECT id FROM classes WHERE name = '10 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sidra'),
-    (SELECT id FROM subjects WHERE name = 'Physics'),
-    (SELECT id FROM classes WHERE name = '9 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sidra'),
-    (SELECT id FROM subjects WHERE name = 'Physics'),
-    (SELECT id FROM classes WHERE name = '9 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sidra'),
-    (SELECT id FROM subjects WHERE name = 'Physics'),
-    (SELECT id FROM classes WHERE name = '8 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sadia Sarwar'),
-    (SELECT id FROM subjects WHERE name = 'Chemistry'),
-    (SELECT id FROM classes WHERE name = '10 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sadia Sarwar'),
-    (SELECT id FROM subjects WHERE name = 'Chemistry'),
-    (SELECT id FROM classes WHERE name = '9 Pink'),
-    5
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sumaira Gul'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '10 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sumaira Gul'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '10 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sumaira Gul'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '9 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sumaira Gul'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '8 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sumaira Gul'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '8 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sumaira Gul'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '9 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sumaira Gul'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '8 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sumaira Gul'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '8 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Farhat'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '9 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Farhat'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '7 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Farhat'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '7 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Farhat'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '7 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Farhat'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '7 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Farhat'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '9 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Farhat'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '7 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Farhat'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '7 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'New 1'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '6 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'New 1'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '6 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'New 1'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '6 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'New 1'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '6 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'New 1'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '5 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'New 1'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '5 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Huma'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '6 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Huma'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '6 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Huma'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '6 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Huma'),
-    (SELECT id FROM subjects WHERE name = 'T.Q'),
-    (SELECT id FROM classes WHERE name = '6 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Huma'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '7 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Huma'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '7 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Huma'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '5 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Huma'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '5 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Aima'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '3 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Aima'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '3 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Aima'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '3 Green'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Aima'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '4 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Aima'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '4 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Aima'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '4 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Aima'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '4 Green'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Aima'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '4 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Arshia'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '1 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Arshia'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '1 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Arshia'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '2 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Arshia'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '2 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Arshia'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '2 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Arshia'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '2 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Arshia'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '3 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Arshia'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '3 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saleha'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '1 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Saleha'),
-    (SELECT id FROM subjects WHERE name = 'Islamiat'),
-    (SELECT id FROM classes WHERE name = '1 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehwish'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '6 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehwish'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '6 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehwish'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '6 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehwish'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '7 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehwish'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '7 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehwish'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '7 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sehrish'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '7 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sehrish'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '6 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sehrish'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '5 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sehrish'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '5 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sehrish'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '4 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sehrish'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '4 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Bushra'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '5 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Bushra'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '5 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Bushra'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '4 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Bushra'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '4 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Bushra'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '3 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Bushra'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '4 Green'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Habiba'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '3 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Habiba'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '3 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Habiba'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '3 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Habiba'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '2 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Habiba'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '2 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Habiba'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '3 Green'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehmoona (S.St)'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '1 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehmoona (S.St)'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '1 Red'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehmoona (S.St)'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '1 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehmoona (S.St)'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '1 White'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehmoona (S.St)'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '2 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mehmoona (S.St)'),
-    (SELECT id FROM subjects WHERE name = 'S.St'),
-    (SELECT id FROM classes WHERE name = '2 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Salma'),
-    (SELECT id FROM subjects WHERE name = 'Pak. Study'),
-    (SELECT id FROM classes WHERE name = '10 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Salma'),
-    (SELECT id FROM subjects WHERE name = 'Pak. Study'),
-    (SELECT id FROM classes WHERE name = '10 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Musarat'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '9 Pink'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Musarat'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '9 Blue'),
-    4
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Musarat'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '7 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Musarat'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '7 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Musarat'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '7 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Musarat'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '7 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Musarat'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '8 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Musarat'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '8 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Humaira'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '6 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Humaira'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '6 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Humaira'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '6 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Humaira'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '6 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Humaira'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '5 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Humaira'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '5 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Humaira'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '5 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Humaira'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '5 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rabiya'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '2 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rabiya'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '2 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rabiya'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '3 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rabiya'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '3 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rabiya'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '4 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rabiya'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '4 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rabiya'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '3 Green'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rabiya'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '1 Pink'),
-    2
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Rabiya'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '1 Blue'),
-    2
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema ICT'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '2 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema ICT'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '2 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema ICT'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '3 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema ICT'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '3 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema ICT'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '4 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema ICT'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '4 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema ICT'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '4 Green'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema ICT'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '1 Red'),
-    2
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema ICT'),
-    (SELECT id FROM subjects WHERE name = 'ICT'),
-    (SELECT id FROM classes WHERE name = '1 White'),
-    2
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sania'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '1 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sania'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '2 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sania'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '3 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sania'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '3 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sania'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '4 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sania'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '4 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sania'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '5 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Sania'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '5 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mudassira'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '1 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mudassira'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '2 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mudassira'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '3 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mudassira'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '3 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mudassira'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '4 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mudassira'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '4 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mudassira'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '5 Pink'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Mudassira'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '5 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema (Nazra)'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '1 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema (Nazra)'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '1 White'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema (Nazra)'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '2 Red'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema (Nazra)'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '2 Blue'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema (Nazra)'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '3 Green'),
-    3
-),
-(
-    (SELECT id FROM teachers WHERE name = 'Haleema (Nazra)'),
-    (SELECT id FROM subjects WHERE name = 'Nazra'),
-    (SELECT id FROM classes WHERE name = '4 Green'),
-    3
-);
+SELECT t.id, s.id, c.id, v.periods
+FROM (
+    VALUES
+    ('Rubab', 'Maths', '10 Blue', 5),
+    ('Rubab', 'Maths', '10 Pink', 5),
+    ('Rubab', 'Maths', '9 Blue', 5),
+    ('Rubab', 'Maths', '8 Pink', 5),
+    ('Rubina Malik', 'Maths', '9 Pink', 5),
+    ('Rubina Malik', 'Maths', '8 Blue', 5),
+    ('Rubina Malik', 'Maths', '7 Pink', 5),
+    ('Rubina Malik', 'Maths', '7 Blue', 5),
+    ('Zeenat', 'Maths', '7 Red', 5),
+    ('Zeenat', 'Maths', '7 White', 5),
+    ('Zeenat', 'Maths', '6 White', 5),
+    ('Zeenat', 'Maths', '4 Red', 5),
+    ('Beenish', 'Maths', '6 Blue', 5),
+    ('Beenish', 'Maths', '6 Pink', 5),
+    ('Beenish', 'Maths', '6 Red', 5),
+    ('Beenish', 'Maths', '5 Blue', 5),
+    ('Samina Gul', 'Maths', '5 Red', 5),
+    ('Samina Gul', 'Maths', '5 White', 5),
+    ('Samina Gul', 'Maths', '5 Pink', 5),
+    ('Samina Gul', 'Maths', '4 White', 5),
+    ('Misbah Sohail', 'Maths', '4 Pink', 5),
+    ('Misbah Sohail', 'Maths', '4 Blue', 5),
+    ('Misbah Sohail', 'Maths', '4 Green', 5),
+    ('Misbah Sohail', 'Maths', '3 Green', 5),
+    ('Faiza', 'Maths', '3 Blue', 5),
+    ('Faiza', 'Maths', '3 White', 5),
+    ('Faiza', 'Maths', '3 Pink', 5),
+    ('Faiza', 'Maths', '3 Red', 5),
+    ('Eman', 'Maths', '2 Pink', 5),
+    ('Eman', 'Maths', '2 Red', 5),
+    ('Eman', 'Maths', '1 Blue', 5),
+    ('Eman', 'Maths', '1 White', 5),
+    ('Sumaira Rashid', 'Maths', '2 Blue', 5),
+    ('Sumaira Rashid', 'Maths', '2 White', 5),
+    ('Sumaira Rashid', 'Maths', '1 Pink', 5),
+    ('Sumaira Rashid', 'Maths', '1 Red', 5),
+    ('Mehmoona (English)', 'English', '10 Blue', 5),
+    ('Mehmoona (English)', 'English', '10 Pink', 5),
+    ('Mehmoona (English)', 'English', '9 Blue', 5),
+    ('Mehmoona (English)', 'English', '9 Pink', 5),
+    ('Ishrat', 'English', '8 Pink', 6),
+    ('Ishrat', 'English', '8 Blue', 6),
+    ('Ishrat', 'English', '6 Pink', 6),
+    ('Ishrat', 'English', '6 Red', 6),
+    ('Kiran', 'English', '6 Blue', 6),
+    ('Kiran', 'English', '6 White', 6),
+    ('Kiran', 'English', '7 Pink', 6),
+    ('Kiran', 'English', '7 Red', 6),
+    ('Salma', 'English', '7 Blue', 6),
+    ('Salma', 'English', '7 White', 6),
+    ('Salma', 'English', '5 Red', 6),
+    ('Zarmeen', 'English', '5 Pink', 6),
+    ('Zarmeen', 'English', '4 Red', 6),
+    ('Zarmeen', 'English', '4 Blue', 6),
+    ('Zarmeen', 'English', '4 White', 6),
+    ('Farah', 'English', '5 Blue', 6),
+    ('Farah', 'English', '5 White', 6),
+    ('Farah', 'English', '4 Pink', 6),
+    ('Farah', 'English', '4 Green', 6),
+    ('Tasneem', 'English', '3 Blue', 6),
+    ('Tasneem', 'English', '3 White', 6),
+    ('Tasneem', 'English', '3 Green', 6),
+    ('Sarwat', 'English', '3 Red', 6),
+    ('Sarwat', 'English', '2 Blue', 6),
+    ('Sarwat', 'English', '2 White', 6),
+    ('Sarwat', 'English', '1 Pink', 6),
+    ('Anum', 'English', '2 Pink', 6),
+    ('Anum', 'English', '3 Pink', 6),
+    ('Anum', 'English', '1 Blue', 6),
+    ('Anum', 'English', '1 White', 6),
+    ('Urooj', 'English', '2 Red', 6),
+    ('Urooj', 'English', '1 Red', 6),
+    ('Sadia Waseem', 'Urdu', '10 Pink', 5),
+    ('Sadia Waseem', 'Urdu', '10 Blue', 5),
+    ('Sadia Waseem', 'Urdu', '9 Pink', 5),
+    ('Sadia Waseem', 'Urdu', '8 Pink', 5),
+    ('Sadia Waseem', 'Urdu', '8 Blue', 5),
+    ('Sonia', 'Urdu', '9 Blue', 5),
+    ('Sonia', 'Urdu', '7 Pink', 6),
+    ('Naseem', 'Urdu', '7 Red', 6),
+    ('Naseem', 'Urdu', '7 Blue', 6),
+    ('Naseem', 'Urdu', '7 White', 6),
+    ('Naseem', 'Urdu', '5 Red', 6),
+    ('Nazia', 'Urdu', '6 Pink', 6),
+    ('Nazia', 'Urdu', '6 Blue', 6),
+    ('Nazia', 'Urdu', '5 Blue', 6),
+    ('Nazia', 'Urdu', '6 White', 6),
+    ('Summaiya', 'Urdu', '5 Pink', 6),
+    ('Summaiya', 'Urdu', '4 Pink', 6),
+    ('Summaiya', 'Urdu', '3 Pink', 6),
+    ('Summaiya', 'Urdu', '6 Red', 6),
+    ('New 1', 'Urdu', '5 White', 6),
+    ('Shazia Sohail', 'Urdu', '4 Blue', 6),
+    ('Shazia Sohail', 'Urdu', '4 White', 6),
+    ('Shazia Sohail', 'Urdu', '4 Red', 6),
+    ('Shazia Sohail', 'Urdu', '3 Red', 6),
+    ('Saiqa', 'Urdu', '3 Blue', 6),
+    ('Saiqa', 'Urdu', '4 Green', 6),
+    ('Saiqa', 'Urdu', '3 White', 6),
+    ('Saiqa', 'Urdu', '3 Green', 6),
+    ('Atiya', 'Urdu', '1 Red', 6),
+    ('Atiya', 'Urdu', '1 White', 6),
+    ('Atiya', 'Urdu', '2 Red', 6),
+    ('Atiya', 'Urdu', '2 White', 6),
+    ('Nabeela', 'Urdu', '1 Pink', 6),
+    ('Nabeela', 'Urdu', '1 Blue', 6),
+    ('Nabeela', 'Urdu', '2 Pink', 6),
+    ('Nabeela', 'Urdu', '2 Blue', 6),
+    ('Meharyan', 'Biology', '10 Pink', 4),
+    ('Meharyan', 'Biology', '10 Blue', 4),
+    ('Meharyan', 'Biology', '9 Pink', 4),
+    ('Meharyan', 'Biology', '9 Blue', 4),
+    ('Meharyan', 'Biology', '8 Pink', 4),
+    ('Meharyan', 'Biology', '8 Blue', 4),
+    ('Saira', 'Science', '7 Blue', 4),
+    ('Saira', 'Science', '7 White', 4),
+    ('Saira', 'Science', '6 Pink', 4),
+    ('Saira', 'Science', '5 Pink', 4),
+    ('Saira', 'Science', '5 Red', 4),
+    ('Saira', 'Science', '5 Blue', 4),
+    ('Kinza', 'Science', '7 Red', 4),
+    ('Kinza', 'Science', '6 Blue', 4),
+    ('Kinza', 'Science', '6 White', 4),
+    ('Kinza', 'Science', '5 White', 4),
+    ('Kinza', 'Science', '4 White', 4),
+    ('Ifza', 'Science', '6 Red', 4),
+    ('Ifza', 'Science', '3 Green', 4),
+    ('Ifza', 'Science', '4 Pink', 4),
+    ('Ifza', 'Science', '4 Red', 4),
+    ('Ifza', 'Science', '4 Green', 4),
+    ('Ifza', 'Science', '8 Pink', 4),
+    ('Sadia Sarwar', 'Science', '3 White', 4),
+    ('Sadia Sarwar', 'Science', '4 Blue', 4),
+    ('Sadia Sarwar', 'Science', '3 Blue', 4),
+    ('Yusra', 'Science', '2 Blue', 4),
+    ('Yusra', 'Science', '2 White', 4),
+    ('Yusra', 'Science', '2 Pink', 4),
+    ('Yusra', 'Science', '2 Red', 4),
+    ('Yusra', 'Science', '3 Pink', 4),
+    ('Yusra', 'Science', '3 Red', 4),
+    ('Saleha', 'Science', '1 Pink', 4),
+    ('Saleha', 'Science', '1 Red', 4),
+    ('Saleha', 'Science', '1 Blue', 4),
+    ('Saleha', 'Science', '1 White', 4),
+    ('Sajida', 'Chemistry', '10 Blue', 5),
+    ('Sajida', 'Chemistry', '9 Blue', 5),
+    ('Sajida', 'Chemistry', '8 Blue', 4),
+    ('Sajida', 'Chemistry', '8 Pink', 4),
+    ('Sajida', 'Chemistry', '7 Pink', 4),
+    ('Sidra', 'Physics', '10 Blue', 4),
+    ('Sidra', 'Physics', '10 Pink', 4),
+    ('Sidra', 'Physics', '9 Blue', 4),
+    ('Sidra', 'Physics', '9 Pink', 4),
+    ('Sidra', 'Physics', '8 Blue', 4),
+    ('Sadia Sarwar', 'Chemistry', '10 Pink', 5),
+    ('Sadia Sarwar', 'Chemistry', '9 Pink', 5),
+    ('Sumaira Gul', 'T.Q', '10 Pink', 3),
+    ('Sumaira Gul', 'T.Q', '10 Blue', 3),
+    ('Sumaira Gul', 'T.Q', '9 Pink', 3),
+    ('Sumaira Gul', 'T.Q', '8 Pink', 3),
+    ('Sumaira Gul', 'T.Q', '8 Blue', 3),
+    ('Sumaira Gul', 'Islamiat', '9 Pink', 3),
+    ('Sumaira Gul', 'Islamiat', '8 Pink', 3),
+    ('Sumaira Gul', 'Islamiat', '8 Blue', 3),
+    ('Farhat', 'T.Q', '9 Blue', 3),
+    ('Farhat', 'T.Q', '7 Pink', 3),
+    ('Farhat', 'T.Q', '7 Red', 3),
+    ('Farhat', 'T.Q', '7 Blue', 3),
+    ('Farhat', 'T.Q', '7 White', 3),
+    ('Farhat', 'Islamiat', '9 Blue', 3),
+    ('Farhat', 'Islamiat', '7 Pink', 3),
+    ('Farhat', 'Islamiat', '7 Blue', 3),
+    ('New 1', 'Islamiat', '6 Pink', 3),
+    ('New 1', 'Islamiat', '6 Red', 3),
+    ('New 1', 'Islamiat', '6 Blue', 3),
+    ('New 1', 'Islamiat', '6 White', 3),
+    ('New 1', 'Islamiat', '5 Pink', 3),
+    ('New 1', 'Islamiat', '5 Red', 3),
+    ('Huma', 'T.Q', '6 Pink', 3),
+    ('Huma', 'T.Q', '6 Red', 3),
+    ('Huma', 'T.Q', '6 Blue', 3),
+    ('Huma', 'T.Q', '6 White', 3),
+    ('Huma', 'Islamiat', '7 White', 3),
+    ('Huma', 'Islamiat', '7 Red', 3),
+    ('Huma', 'Islamiat', '5 Blue', 3),
+    ('Huma', 'Islamiat', '5 White', 3),
+    ('Aima', 'Islamiat', '3 Pink', 3),
+    ('Aima', 'Islamiat', '3 Blue', 3),
+    ('Aima', 'Islamiat', '3 Green', 3),
+    ('Aima', 'Islamiat', '4 Pink', 3),
+    ('Aima', 'Islamiat', '4 Red', 3),
+    ('Aima', 'Islamiat', '4 White', 3),
+    ('Aima', 'Islamiat', '4 Green', 3),
+    ('Aima', 'Islamiat', '4 Blue', 3),
+    ('Arshia', 'Islamiat', '1 Blue', 3),
+    ('Arshia', 'Islamiat', '1 White', 3),
+    ('Arshia', 'Islamiat', '2 Pink', 3),
+    ('Arshia', 'Islamiat', '2 Red', 3),
+    ('Arshia', 'Islamiat', '2 White', 3),
+    ('Arshia', 'Islamiat', '2 Blue', 3),
+    ('Arshia', 'Islamiat', '3 Red', 3),
+    ('Arshia', 'Islamiat', '3 White', 3),
+    ('Saleha', 'Islamiat', '1 Pink', 3),
+    ('Saleha', 'Islamiat', '1 Red', 3),
+    ('Mehwish', 'S.St', '6 Pink', 4),
+    ('Mehwish', 'S.St', '6 Blue', 4),
+    ('Mehwish', 'S.St', '6 White', 4),
+    ('Mehwish', 'S.St', '7 Red', 4),
+    ('Mehwish', 'S.St', '7 Blue', 4),
+    ('Mehwish', 'S.St', '7 White', 4),
+    ('Sehrish', 'S.St', '7 Pink', 4),
+    ('Sehrish', 'S.St', '6 Red', 4),
+    ('Sehrish', 'S.St', '5 Pink', 4),
+    ('Sehrish', 'S.St', '5 Red', 4),
+    ('Sehrish', 'S.St', '4 Blue', 4),
+    ('Sehrish', 'S.St', '4 White', 4),
+    ('Bushra', 'S.St', '5 Blue', 4),
+    ('Bushra', 'S.St', '5 White', 4),
+    ('Bushra', 'S.St', '4 Pink', 4),
+    ('Bushra', 'S.St', '4 Red', 4),
+    ('Bushra', 'S.St', '3 Pink', 4),
+    ('Bushra', 'S.St', '4 Green', 4),
+    ('Habiba', 'S.St', '3 Red', 4),
+    ('Habiba', 'S.St', '3 Blue', 4),
+    ('Habiba', 'S.St', '3 White', 4),
+    ('Habiba', 'S.St', '2 Red', 4),
+    ('Habiba', 'S.St', '2 White', 4),
+    ('Habiba', 'S.St', '3 Green', 4),
+    ('Mehmoona (S.St)', 'S.St', '1 Pink', 4),
+    ('Mehmoona (S.St)', 'S.St', '1 Red', 4),
+    ('Mehmoona (S.St)', 'S.St', '1 Blue', 4),
+    ('Mehmoona (S.St)', 'S.St', '1 White', 4),
+    ('Mehmoona (S.St)', 'S.St', '2 Pink', 4),
+    ('Mehmoona (S.St)', 'S.St', '2 Blue', 4),
+    ('Salma', 'Pak. Study', '10 Pink', 3),
+    ('Salma', 'Pak. Study', '10 Blue', 3),
+    ('Musarat', 'ICT', '9 Pink', 4),
+    ('Musarat', 'ICT', '9 Blue', 4),
+    ('Musarat', 'ICT', '7 Pink', 3),
+    ('Musarat', 'ICT', '7 Red', 3),
+    ('Musarat', 'ICT', '7 Blue', 3),
+    ('Musarat', 'ICT', '7 White', 3),
+    ('Musarat', 'ICT', '8 Pink', 3),
+    ('Musarat', 'ICT', '8 Blue', 3),
+    ('Humaira', 'ICT', '6 Pink', 3),
+    ('Humaira', 'ICT', '6 Red', 3),
+    ('Humaira', 'ICT', '6 Blue', 3),
+    ('Humaira', 'ICT', '6 White', 3),
+    ('Humaira', 'ICT', '5 Pink', 3),
+    ('Humaira', 'ICT', '5 Red', 3),
+    ('Humaira', 'ICT', '5 Blue', 3),
+    ('Humaira', 'ICT', '5 White', 3),
+    ('Rabiya', 'ICT', '2 Pink', 3),
+    ('Rabiya', 'ICT', '2 Blue', 3),
+    ('Rabiya', 'ICT', '3 Red', 3),
+    ('Rabiya', 'ICT', '3 White', 3),
+    ('Rabiya', 'ICT', '4 Red', 3),
+    ('Rabiya', 'ICT', '4 White', 3),
+    ('Rabiya', 'ICT', '3 Green', 3),
+    ('Rabiya', 'ICT', '1 Pink', 2),
+    ('Rabiya', 'ICT', '1 Blue', 2),
+    ('Haleema ICT', 'ICT', '2 Red', 3),
+    ('Haleema ICT', 'ICT', '2 White', 3),
+    ('Haleema ICT', 'ICT', '3 Pink', 3),
+    ('Haleema ICT', 'ICT', '3 Blue', 3),
+    ('Haleema ICT', 'ICT', '4 Pink', 3),
+    ('Haleema ICT', 'ICT', '4 Blue', 3),
+    ('Haleema ICT', 'ICT', '4 Green', 3),
+    ('Haleema ICT', 'ICT', '1 Red', 2),
+    ('Haleema ICT', 'ICT', '1 White', 2),
+    ('Sania', 'Nazra', '1 Pink', 3),
+    ('Sania', 'Nazra', '2 White', 3),
+    ('Sania', 'Nazra', '3 Blue', 3),
+    ('Sania', 'Nazra', '3 White', 3),
+    ('Sania', 'Nazra', '4 Blue', 3),
+    ('Sania', 'Nazra', '4 White', 3),
+    ('Sania', 'Nazra', '5 Blue', 3),
+    ('Sania', 'Nazra', '5 White', 3),
+    ('Mudassira', 'Nazra', '1 Red', 3),
+    ('Mudassira', 'Nazra', '2 Pink', 3),
+    ('Mudassira', 'Nazra', '3 Pink', 3),
+    ('Mudassira', 'Nazra', '3 Red', 3),
+    ('Mudassira', 'Nazra', '4 Pink', 3),
+    ('Mudassira', 'Nazra', '4 Red', 3),
+    ('Mudassira', 'Nazra', '5 Pink', 3),
+    ('Mudassira', 'Nazra', '5 Red', 3),
+    ('Haleema (Nazra)', 'Nazra', '1 Blue', 3),
+    ('Haleema (Nazra)', 'Nazra', '1 White', 3),
+    ('Haleema (Nazra)', 'Nazra', '2 Red', 3),
+    ('Haleema (Nazra)', 'Nazra', '2 Blue', 3),
+    ('Haleema (Nazra)', 'Nazra', '3 Green', 3),
+    ('Haleema (Nazra)', 'Nazra', '4 Green', 3)
+) AS v(teacher_name, subject_name, class_name, periods)
+JOIN teachers t ON t.name = v.teacher_name
+JOIN subjects s ON s.name = v.subject_name
+JOIN classes c ON c.name = v.class_name;
 
 -- =============================================================================
 -- END OF SCHEMA SCRIPT
