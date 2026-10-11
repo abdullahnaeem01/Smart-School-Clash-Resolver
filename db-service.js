@@ -191,6 +191,18 @@
                     if (!test.error) {
                         isConnected = true;
                         console.log("Connected to Supabase PostgreSQL Database successfully!");
+
+                        // Auto-check: if teachers are still marked "General", auto-sync their subject specializations
+                        try {
+                            var generalCheck = await supabaseClient.from("teachers").select("id").eq("department", "General").limit(1);
+                            if (!generalCheck.error && generalCheck.data && generalCheck.data.length > 0) {
+                                console.log("Detected unassigned 'General' teachers in Supabase. Auto-syncing subject specializations to cloud...");
+                                this.syncTeacherSubjectsToSupabase();
+                            }
+                        } catch (syncErr) {
+                            console.warn("Background subject sync error:", syncErr);
+                        }
+
                         return { connected: true, client: supabaseClient };
                     } else {
                         console.warn("Supabase credentials entered, but test query returned:", test.error.message);
@@ -628,6 +640,26 @@
             localStorage.setItem("SCH_TEACHERS", JSON.stringify(localTeachers));
 
             return { success: true };
+        },
+
+        // Sync All Teacher Specializations directly to Supabase Cloud Database
+        syncTeacherSubjectsToSupabase: async function() {
+            if (!isConnected) {
+                return { success: false, message: "Not connected to Supabase" };
+            }
+            var defMap = {};
+            DEFAULT_DATA.teachers.forEach(function(t) {
+                defMap[t.name] = t.department || (t.subjects ? t.subjects.join(", ") : "General");
+            });
+
+            var count = 0;
+            for (var name in defMap) {
+                var dept = defMap[name];
+                var res = await supabaseClient.from("teachers").update({ department: dept }).eq("name", name);
+                if (!res.error) count++;
+            }
+            console.log("Successfully synced " + count + " teacher specializations to Supabase cloud tables!");
+            return { success: true, updatedCount: count };
         },
 
         // Export All Database Records as JSON

@@ -839,6 +839,7 @@
 
             <h3 style="margin:0 0 10px 0; font-size:15px; color:var(--primary);">Database Tools & Backups</h3>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn-success" onclick="handleSyncSubjectsToCloud()" id="btnSyncCloud">🔄 Push Teacher Specializations to Supabase Cloud</button>
                 <button class="btn-outline" onclick="exportDataJson()">📥 Download Database Backup (JSON)</button>
                 <a href="supabase_schema.sql" download class="btn-outline" style="text-decoration:none; padding:8px 14px; border-radius:6px; font-size:13px; font-weight:600; color:var(--slate-700); border:1px solid var(--slate-300);">📄 View supabase_schema.sql</a>
                 <button class="btn-danger" onclick="resetToSchoolDefaults()" style="margin-left:auto;">Reset to Default School Data</button>
@@ -1939,6 +1940,26 @@
         document.getElementById("sbKeyInput").value = "";
         updateDbStatusBadge();
         alert("Switched to Local Storage Mode.");
+    }
+
+    async function handleSyncSubjectsToCloud() {
+        if (!window.DB.isConnected()) {
+            alert("Please save your Supabase credentials first to connect to the cloud database.");
+            return;
+        }
+        var btn = document.getElementById("btnSyncCloud");
+        btn.disabled = true;
+        btn.innerText = "Syncing to Cloud...";
+        try {
+            var res = await window.DB.syncTeacherSubjectsToSupabase();
+            alert("✅ Successfully updated " + res.updatedCount + " teacher specializations directly in your Supabase PostgreSQL tables!");
+            await refreshTeachersTab();
+        } catch (e) {
+            alert("Error syncing to Supabase: " + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "🔄 Push Teacher Specializations to Supabase Cloud";
+        }
     }
 
     async function exportDataJson() {
