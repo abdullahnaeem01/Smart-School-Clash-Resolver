@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="accentGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="blueGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+    <filter id="shadow512" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded rect -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad512)" />
+
+  <!-- Calendar card -->
+  <g filter="url(#shadow512)">
+    <rect x="96" y="100" width="320" height="310" rx="48" fill="#ffffff" />
+    <!-- Header banner -->
+    <path d="M 96 148 C 96 122 122 100 144 100 L 368 100 C 390 100 416 122 416 148 L 416 190 L 96 190 Z" fill="url(#blueGrad512)" />
+    
+    <!-- Calendar Rings -->
+    <rect x="160" y="70" width="26" height="64" rx="13" fill="#f1f5f9" stroke="#1e3a8a" stroke-width="6" />
+    <rect x="326" y="70" width="26" height="64" rx="13" fill="#f1f5f9" stroke="#1e3a8a" stroke-width="6" />
+
+    <!-- Schedule grid blocks -->
+    <rect x="128" y="224" width="74" height="48" rx="10" fill="url(#accentGrad512)" />
+    <rect x="219" y="224" width="74" height="48" rx="10" fill="#e2e8f0" />
+    <rect x="310" y="224" width="74" height="48" rx="10" fill="url(#blueGrad512)" />
+
+    <rect x="128" y="288" width="74" height="48" rx="10" fill="#e2e8f0" />
+    <rect x="219" y="288" width="74" height="48" rx="10" fill="url(#accentGrad512)" />
+    <rect x="310" y="288" width="74" height="48" rx="10" fill="#e2e8f0" />
+
+    <rect x="128" y="352" width="74" height="34" rx="8" fill="url(#blueGrad512)" opacity="0.7" />
+    <rect x="219" y="352" width="74" height="34" rx="8" fill="#e2e8f0" />
+    <rect x="310" y="352" width="74" height="34" rx="8" fill="url(#accentGrad512)" />
+  </g>
+
+  <!-- Sparkle badge -->
+  <circle cx="406" cy="106" r="38" fill="#10b981" />
+  <path d="M 406 84 L 411 100 L 428 106 L 411 112 L 406 128 L 401 112 L 384 106 L 401 100 Z" fill="#ffffff" />
+</svg>

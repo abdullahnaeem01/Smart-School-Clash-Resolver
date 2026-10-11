@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Timetable & Scheduling System | Supabase Cloud Database</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Smart Timetable">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icon-192.svg">
+    <link rel="apple-touch-icon" href="icon-192.svg">
+    <title>Smart School Timetable & Clash Resolver</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -242,17 +249,32 @@
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
 
-        /* Table Container */
+        /* Table Container & Mobile Scrolling */
         .table-container {
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
             background: white;
             border-radius: var(--radius-lg);
             border: 1px solid var(--slate-200);
             box-shadow: var(--shadow-sm);
+            position: relative;
+        }
+        .mobile-swipe-hint {
+            display: none;
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px dashed #93c5fd;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 11.5px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 8px;
         }
         table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             text-align: center;
             font-size: 13px;
         }
@@ -263,6 +285,9 @@
             font-weight: 700;
             border: 1px solid #172554;
             font-size: 12.5px;
+            position: sticky;
+            top: 0;
+            z-index: 20;
         }
         th small {
             display: block;
@@ -281,12 +306,22 @@
         }
         .day-label {
             font-weight: 800;
-            background: var(--slate-50);
+            background: #f8fafc;
             color: var(--slate-800);
             vertical-align: middle;
             font-size: 13.5px;
             width: 110px;
             border-right: 2px solid var(--slate-300);
+            position: sticky;
+            left: 0;
+            z-index: 10;
+        }
+        thead th:first-child {
+            position: sticky;
+            left: 0;
+            top: 0;
+            z-index: 30;
+            background: #172554;
         }
         .break-cell {
             background: #f8fafc;
@@ -604,6 +639,176 @@
             letter-spacing: 0.05em;
         }
 
+        .matrix-teacher-name {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 5;
+            font-weight: 700;
+            border-right: 2px solid var(--slate-300);
+            box-shadow: 2px 0 4px -2px rgba(0,0,0,0.08);
+        }
+        #matrixTable thead th:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 25;
+            background: var(--slate-200);
+        }
+
+        /* Mobile Responsive Styles (< 768px) */
+        @media (max-width: 768px) {
+            body {
+                padding: 8px 6px;
+            }
+            .container {
+                max-width: 100%;
+            }
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+                padding: 14px 12px;
+                border-radius: var(--radius-md);
+            }
+            .header-title h1 {
+                font-size: 17px;
+                gap: 8px;
+            }
+            .header-title small {
+                font-size: 11.5px;
+            }
+            .header-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                width: 100%;
+            }
+            .header-actions .db-status-badge {
+                grid-column: span 2;
+                justify-content: center;
+                text-align: center;
+                padding: 7px 12px;
+            }
+            .header-actions button {
+                width: 100%;
+                padding: 10px 8px;
+                font-size: 12px;
+                justify-content: center;
+            }
+            .nav-tabs {
+                padding: 4px;
+                gap: 4px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                margin-bottom: 12px;
+            }
+            .nav-tabs::-webkit-scrollbar {
+                display: none;
+            }
+            .nav-tab {
+                padding: 8px 12px;
+                font-size: 12px;
+                min-height: 40px;
+                flex-shrink: 0;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                padding: 12px;
+            }
+            .control-group {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 4px;
+            }
+            .control-group label {
+                font-size: 12px;
+            }
+            select, input {
+                width: 100%;
+                min-height: 40px;
+                font-size: 13px;
+                padding: 8px 10px;
+            }
+            .mobile-swipe-hint {
+                display: block;
+            }
+            .table-container td {
+                min-width: 105px;
+                height: 74px;
+                padding: 4px;
+            }
+            .table-container th {
+                padding: 8px 6px;
+                font-size: 11.5px;
+            }
+            .day-label {
+                width: 78px;
+                min-width: 78px;
+                font-size: 12px;
+                padding: 4px;
+            }
+            .break-cell {
+                width: 48px;
+                min-width: 48px;
+                font-size: 9.5px;
+                padding: 2px;
+            }
+            .period-cell .subject {
+                font-size: 11.5px;
+            }
+            .period-cell .teacher {
+                font-size: 10px;
+            }
+            .period-cell .class-tag {
+                font-size: 9.5px;
+            }
+            .status-card {
+                padding: 10px 12px;
+            }
+            .status-badge {
+                font-size: 13px;
+            }
+            .grid-2 {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .card {
+                padding: 16px;
+                border-radius: var(--radius-md);
+            }
+            .card-header h2 {
+                font-size: 16px;
+            }
+            .modal-content, .modal-lg {
+                width: 96% !important;
+                max-width: 96% !important;
+                max-height: 92vh;
+                overflow-y: auto;
+                padding: 16px;
+                border-radius: var(--radius-md);
+            }
+            .modal-actions {
+                flex-direction: column-reverse;
+                gap: 8px;
+            }
+            .modal-actions button {
+                width: 100%;
+                min-height: 42px;
+            }
+            #freeCardsContainer {
+                grid-template-columns: 1fr !important;
+            }
+            .classes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+                max-height: 180px;
+            }
+        }
+
         @media print {
             body { padding: 0; background: white; }
             .header-actions, .nav-tabs, .controls, .status-card, .modal { display: none !important; }
@@ -699,6 +904,11 @@
                 <button onclick="openReplaceModal()" class="btn-outline">Bulk Replace Teacher</button>
                 <button onclick="resetTimetable()" class="btn-danger" style="background:#ef4444;">Clear All</button>
             </div>
+        </div>
+
+        <!-- Mobile Swipe Indicator Hint -->
+        <div class="mobile-swipe-hint">
+            <span>👈 Swipe table horizontally to view all periods 👉</span>
         </div>
 
         <!-- Main Timetable Grid -->
@@ -2748,7 +2958,7 @@
             var subPill = (t.subjects && t.subjects[0]) || t.department || "General";
             var bgCol = colorMap[subPill] || "#3b82f6";
 
-            var html = '<td><strong>' + t.name + '</strong></td>' +
+            var html = '<td class="matrix-teacher-name"><strong>' + t.name + '</strong></td>' +
                        '<td><span class="subject-badge" style="background:' + bgCol + ';">' + subPill + '</span></td>' +
                        '<td><span class="badge-daily">' + todayCnt + ' / ' + (t.max_periods_daily || 6) + '</span></td>';
 
@@ -3012,6 +3222,17 @@
         renderHeader();
         await generateAutomatedTimetable();
     };
+
+    // Register PWA Service Worker for Mobile & Offline Support
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./sw.js').then(function(reg) {
+                console.log('Smart Timetable PWA ServiceWorker active:', reg.scope);
+            }).catch(function(err) {
+                console.log('ServiceWorker registration error:', err);
+            });
+        });
+    }
 </script>
 
 </body>
