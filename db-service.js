@@ -9,67 +9,67 @@
     // Default Seed Data
     var DEFAULT_DATA = {
         teachers: [
-            { id: "t-rubab", name: "Rubab", department: "Maths", max_periods_weekly: 35 },
-            { id: "t-rubina", name: "Rubina Malik", department: "Maths", max_periods_weekly: 35 },
-            { id: "t-zeenat", name: "Zeenat", department: "Maths", max_periods_weekly: 35 },
-            { id: "t-beenish", name: "Beenish", department: "Maths", max_periods_weekly: 35 },
-            { id: "t-samina", name: "Samina Gul", department: "Maths", max_periods_weekly: 35 },
-            { id: "t-misbah", name: "Misbah Sohail", department: "Maths", max_periods_weekly: 35 },
-            { id: "t-faiza", name: "Faiza", department: "Maths", max_periods_weekly: 35 },
-            { id: "t-eman", name: "Eman", department: "Maths", max_periods_weekly: 35 },
-            { id: "t-sumaira-r", name: "Sumaira Rashid", department: "Maths", max_periods_weekly: 35 },
+            { id: "t-rubab", name: "Rubab", department: "Maths", subjects: ["Maths"], max_periods_weekly: 35 },
+            { id: "t-rubina", name: "Rubina Malik", department: "Maths", subjects: ["Maths"], max_periods_weekly: 35 },
+            { id: "t-zeenat", name: "Zeenat", department: "Maths", subjects: ["Maths"], max_periods_weekly: 35 },
+            { id: "t-beenish", name: "Beenish", department: "Maths", subjects: ["Maths"], max_periods_weekly: 35 },
+            { id: "t-samina", name: "Samina Gul", department: "Maths", subjects: ["Maths"], max_periods_weekly: 35 },
+            { id: "t-misbah", name: "Misbah Sohail", department: "Maths", subjects: ["Maths"], max_periods_weekly: 35 },
+            { id: "t-faiza", name: "Faiza", department: "Maths", subjects: ["Maths"], max_periods_weekly: 35 },
+            { id: "t-eman", name: "Eman", department: "Maths", subjects: ["Maths"], max_periods_weekly: 35 },
+            { id: "t-sumaira-r", name: "Sumaira Rashid", department: "Maths", subjects: ["Maths"], max_periods_weekly: 35 },
 
-            { id: "t-mehmoona-eng", name: "Mehmoona (English)", department: "Senior English", max_periods_weekly: 35 },
-            { id: "t-ishrat", name: "Ishrat", department: "English", max_periods_weekly: 35 },
-            { id: "t-kiran", name: "Kiran", department: "English", max_periods_weekly: 35 },
-            { id: "t-salma", name: "Salma", department: "English", max_periods_weekly: 35 },
-            { id: "t-zarmeen", name: "Zarmeen", department: "English", max_periods_weekly: 35 },
-            { id: "t-farah", name: "Farah", department: "English", max_periods_weekly: 35 },
-            { id: "t-tasneem", name: "Tasneem", department: "English", max_periods_weekly: 35 },
-            { id: "t-sarwat", name: "Sarwat", department: "English", max_periods_weekly: 35 },
-            { id: "t-anum", name: "Anum", department: "English", max_periods_weekly: 35 },
-            { id: "t-urooj", name: "Urooj", department: "English", max_periods_weekly: 35 },
+            { id: "t-mehmoona-eng", name: "Mehmoona (English)", department: "Senior English", subjects: ["English"], max_periods_weekly: 35 },
+            { id: "t-ishrat", name: "Ishrat", department: "English", subjects: ["English"], max_periods_weekly: 35 },
+            { id: "t-kiran", name: "Kiran", department: "English", subjects: ["English"], max_periods_weekly: 35 },
+            { id: "t-salma", name: "Salma", department: "English & Pak. Study", subjects: ["English", "Pak. Study"], max_periods_weekly: 35 },
+            { id: "t-zarmeen", name: "Zarmeen", department: "English", subjects: ["English"], max_periods_weekly: 35 },
+            { id: "t-farah", name: "Farah", department: "English", subjects: ["English"], max_periods_weekly: 35 },
+            { id: "t-tasneem", name: "Tasneem", department: "English", subjects: ["English"], max_periods_weekly: 35 },
+            { id: "t-sarwat", name: "Sarwat", department: "English", subjects: ["English"], max_periods_weekly: 35 },
+            { id: "t-anum", name: "Anum", department: "English", subjects: ["English"], max_periods_weekly: 35 },
+            { id: "t-urooj", name: "Urooj", department: "English", subjects: ["English"], max_periods_weekly: 35 },
 
-            { id: "t-sadia-w", name: "Sadia Waseem", department: "Urdu", max_periods_weekly: 35 },
-            { id: "t-sonia", name: "Sonia", department: "Urdu", max_periods_weekly: 35 },
-            { id: "t-naseem", name: "Naseem", department: "Urdu", max_periods_weekly: 35 },
-            { id: "t-nazia", name: "Nazia", department: "Urdu", max_periods_weekly: 35 },
-            { id: "t-summaiya", name: "Summaiya", department: "Urdu", max_periods_weekly: 35 },
-            { id: "t-new1", name: "New 1", department: "General", max_periods_weekly: 35 },
-            { id: "t-shazia", name: "Shazia Sohail", department: "Urdu", max_periods_weekly: 35 },
-            { id: "t-saiqa", name: "Saiqa", department: "Urdu", max_periods_weekly: 35 },
-            { id: "t-atiya", name: "Atiya", department: "Urdu", max_periods_weekly: 35 },
-            { id: "t-nabeela", name: "Nabeela", department: "Urdu", max_periods_weekly: 35 },
+            { id: "t-sadia-w", name: "Sadia Waseem", department: "Urdu", subjects: ["Urdu"], max_periods_weekly: 35 },
+            { id: "t-sonia", name: "Sonia", department: "Urdu", subjects: ["Urdu"], max_periods_weekly: 35 },
+            { id: "t-naseem", name: "Naseem", department: "Urdu", subjects: ["Urdu"], max_periods_weekly: 35 },
+            { id: "t-nazia", name: "Nazia", department: "Urdu", subjects: ["Urdu"], max_periods_weekly: 35 },
+            { id: "t-summaiya", name: "Summaiya", department: "Urdu", subjects: ["Urdu"], max_periods_weekly: 35 },
+            { id: "t-new1", name: "New 1", department: "Urdu & Islamiat", subjects: ["Urdu", "Islamiat"], max_periods_weekly: 35 },
+            { id: "t-shazia", name: "Shazia Sohail", department: "Urdu", subjects: ["Urdu"], max_periods_weekly: 35 },
+            { id: "t-saiqa", name: "Saiqa", department: "Urdu", subjects: ["Urdu"], max_periods_weekly: 35 },
+            { id: "t-atiya", name: "Atiya", department: "Urdu", subjects: ["Urdu"], max_periods_weekly: 35 },
+            { id: "t-nabeela", name: "Nabeela", department: "Urdu", subjects: ["Urdu"], max_periods_weekly: 35 },
 
-            { id: "t-meharyan", name: "Meharyan", department: "Biology", max_periods_weekly: 35 },
-            { id: "t-saira", name: "Saira", department: "Science", max_periods_weekly: 35 },
-            { id: "t-kinza", name: "Kinza", department: "Science", max_periods_weekly: 35 },
-            { id: "t-ifza", name: "Ifza", department: "Science", max_periods_weekly: 35 },
-            { id: "t-sadia-s", name: "Sadia Sarwar", department: "Chemistry & Science", max_periods_weekly: 35 },
-            { id: "t-yusra", name: "Yusra", department: "Science", max_periods_weekly: 35 },
-            { id: "t-saleha", name: "Saleha", department: "Science & Islamiat", max_periods_weekly: 35 },
-            { id: "t-sajida", name: "Sajida", department: "Chemistry", max_periods_weekly: 35 },
-            { id: "t-sidra", name: "Sidra", department: "Physics", max_periods_weekly: 35 },
+            { id: "t-meharyan", name: "Meharyan", department: "Biology", subjects: ["Biology"], max_periods_weekly: 35 },
+            { id: "t-saira", name: "Saira", department: "Science", subjects: ["Science"], max_periods_weekly: 35 },
+            { id: "t-kinza", name: "Kinza", department: "Science", subjects: ["Science"], max_periods_weekly: 35 },
+            { id: "t-ifza", name: "Ifza", department: "Science", subjects: ["Science"], max_periods_weekly: 35 },
+            { id: "t-sadia-s", name: "Sadia Sarwar", department: "Science & Chemistry", subjects: ["Science", "Chemistry"], max_periods_weekly: 35 },
+            { id: "t-yusra", name: "Yusra", department: "Science", subjects: ["Science"], max_periods_weekly: 35 },
+            { id: "t-saleha", name: "Saleha", department: "Science & Islamiat", subjects: ["Science", "Islamiat"], max_periods_weekly: 35 },
+            { id: "t-sajida", name: "Sajida", department: "Chemistry", subjects: ["Chemistry"], max_periods_weekly: 35 },
+            { id: "t-sidra", name: "Sidra", department: "Physics", subjects: ["Physics"], max_periods_weekly: 35 },
 
-            { id: "t-sumaira-g", name: "Sumaira Gul", department: "T.Q & Islamiat", max_periods_weekly: 35 },
-            { id: "t-farhat", name: "Farhat", department: "T.Q & Islamiat", max_periods_weekly: 35 },
-            { id: "t-huma", name: "Huma", department: "T.Q & Islamiat", max_periods_weekly: 35 },
-            { id: "t-aima", name: "Aima", department: "Islamiat", max_periods_weekly: 35 },
-            { id: "t-arshia", name: "Arshia", department: "Islamiat", max_periods_weekly: 35 },
+            { id: "t-sumaira-g", name: "Sumaira Gul", department: "T.Q & Islamiat", subjects: ["T.Q", "Islamiat"], max_periods_weekly: 35 },
+            { id: "t-farhat", name: "Farhat", department: "T.Q & Islamiat", subjects: ["T.Q", "Islamiat"], max_periods_weekly: 35 },
+            { id: "t-huma", name: "Huma", department: "T.Q & Islamiat", subjects: ["T.Q", "Islamiat"], max_periods_weekly: 35 },
+            { id: "t-aima", name: "Aima", department: "Islamiat", subjects: ["Islamiat"], max_periods_weekly: 35 },
+            { id: "t-arshia", name: "Arshia", department: "Islamiat", subjects: ["Islamiat"], max_periods_weekly: 35 },
 
-            { id: "t-mehwish", name: "Mehwish", department: "S.St", max_periods_weekly: 35 },
-            { id: "t-sehrish", name: "Sehrish", department: "S.St", max_periods_weekly: 35 },
-            { id: "t-bushra", name: "Bushra", department: "S.St", max_periods_weekly: 35 },
-            { id: "t-habiba", name: "Habiba", department: "S.St", max_periods_weekly: 35 },
-            { id: "t-mehmoona-sst", name: "Mehmoona (S.St)", department: "Junior S.St", max_periods_weekly: 35 },
+            { id: "t-mehwish", name: "Mehwish", department: "S.St", subjects: ["S.St"], max_periods_weekly: 35 },
+            { id: "t-sehrish", name: "Sehrish", department: "S.St", subjects: ["S.St"], max_periods_weekly: 35 },
+            { id: "t-bushra", name: "Bushra", department: "S.St", subjects: ["S.St"], max_periods_weekly: 35 },
+            { id: "t-habiba", name: "Habiba", department: "S.St", subjects: ["S.St"], max_periods_weekly: 35 },
+            { id: "t-mehmoona-sst", name: "Mehmoona (S.St)", department: "Junior S.St", subjects: ["S.St"], max_periods_weekly: 35 },
 
-            { id: "t-musarat", name: "Musarat", department: "ICT", max_periods_weekly: 35 },
-            { id: "t-humaira", name: "Humaira", department: "ICT", max_periods_weekly: 35 },
-            { id: "t-rabiya", name: "Rabiya", department: "ICT", max_periods_weekly: 35 },
-            { id: "t-haleema-ict", name: "Haleema ICT", department: "ICT", max_periods_weekly: 35 },
-            { id: "t-sania", name: "Sania", department: "Nazra", max_periods_weekly: 35 },
-            { id: "t-mudassira", name: "Mudassira", department: "Nazra", max_periods_weekly: 35 },
-            { id: "t-haleema-nazra", name: "Haleema (Nazra)", department: "Nazra", max_periods_weekly: 35 }
+            { id: "t-musarat", name: "Musarat", department: "ICT", subjects: ["ICT"], max_periods_weekly: 35 },
+            { id: "t-humaira", name: "Humaira", department: "ICT", subjects: ["ICT"], max_periods_weekly: 35 },
+            { id: "t-rabiya", name: "Rabiya", department: "ICT", subjects: ["ICT"], max_periods_weekly: 35 },
+            { id: "t-haleema-ict", name: "Haleema ICT", department: "ICT", subjects: ["ICT"], max_periods_weekly: 35 },
+            { id: "t-sania", name: "Sania", department: "Nazra", subjects: ["Nazra"], max_periods_weekly: 35 },
+            { id: "t-mudassira", name: "Mudassira", department: "Nazra", subjects: ["Nazra"], max_periods_weekly: 35 },
+            { id: "t-haleema-nazra", name: "Haleema (Nazra)", department: "Nazra", subjects: ["Nazra"], max_periods_weekly: 35 }
         ],
 
         subjects: [
@@ -123,6 +123,19 @@
     function initLocalStorage() {
         if (!localStorage.getItem("SCH_TEACHERS")) {
             localStorage.setItem("SCH_TEACHERS", JSON.stringify(DEFAULT_DATA.teachers));
+        } else {
+            // Ensure existing cached teachers have subjects array populated
+            var cachedTeachers = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
+            var updated = false;
+            var defMap = {};
+            DEFAULT_DATA.teachers.forEach(function(t) { defMap[t.name] = t.subjects; });
+            cachedTeachers.forEach(function(t) {
+                if (!t.subjects || t.subjects.length === 0) {
+                    t.subjects = defMap[t.name] || (t.department && t.department !== "General" ? [t.department] : []);
+                    updated = true;
+                }
+            });
+            if (updated) localStorage.setItem("SCH_TEACHERS", JSON.stringify(cachedTeachers));
         }
         if (!localStorage.getItem("SCH_SUBJECTS")) {
             localStorage.setItem("SCH_SUBJECTS", JSON.stringify(DEFAULT_DATA.subjects));
@@ -212,24 +225,52 @@
         // TEACHERS CRUD
         // ==========================
         getTeachers: async function() {
+            var list = [];
             if (isConnected) {
                 var res = await supabaseClient.from("teachers").select("*").order("name");
-                if (!res.error && res.data) return res.data;
+                if (!res.error && res.data) list = res.data;
+            } else {
+                list = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
             }
-            return JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
+
+            var defMap = {};
+            DEFAULT_DATA.teachers.forEach(function(t) { defMap[t.name] = t.subjects; });
+
+            list.forEach(function(t) {
+                if (!t.subjects || t.subjects.length === 0) {
+                    if (defMap[t.name]) {
+                        t.subjects = defMap[t.name].slice();
+                    } else if (t.department && t.department !== "General") {
+                        t.subjects = t.department.split(",").map(function(s) { return s.trim(); });
+                    } else {
+                        t.subjects = [];
+                    }
+                }
+            });
+            return list;
         },
 
         addTeacher: async function(teacher) {
+            var subjects = Array.isArray(teacher.subjects) ? teacher.subjects : (teacher.subjects ? [teacher.subjects] : (teacher.department ? [teacher.department] : []));
             var newT = {
                 id: teacher.id || "t-" + Date.now(),
                 name: teacher.name,
-                department: teacher.department || "General",
+                department: teacher.department || (subjects.length > 0 ? subjects.join(", ") : "General"),
+                subjects: subjects,
                 max_periods_weekly: parseInt(teacher.max_periods_weekly) || 35
             };
 
             if (isConnected) {
-                var res = await supabaseClient.from("teachers").insert([newT]).select().single();
-                if (!res.error && res.data) return res.data;
+                var sbPayload = {
+                    name: newT.name,
+                    department: newT.department,
+                    max_periods_weekly: newT.max_periods_weekly
+                };
+                var res = await supabaseClient.from("teachers").insert([sbPayload]).select().single();
+                if (!res.error && res.data) {
+                    newT.id = res.data.id;
+                    return newT;
+                }
             }
 
             var list = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
@@ -240,8 +281,10 @@
 
         updateTeacher: async function(id, updates) {
             if (isConnected) {
-                var res = await supabaseClient.from("teachers").update(updates).eq("id", id).select().single();
-                if (!res.error && res.data) return res.data;
+                var sbUpdates = Object.assign({}, updates);
+                delete sbUpdates.subjects;
+                var res = await supabaseClient.from("teachers").update(sbUpdates).eq("id", id).select().single();
+                if (res.error) console.error("Supabase updateTeacher error:", res.error);
             }
 
             var list = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
@@ -434,6 +477,157 @@
             var list = JSON.parse(localStorage.getItem("SCH_ALLOCATIONS") || "[]").filter(function(a) { return a.id !== id; });
             localStorage.setItem("SCH_ALLOCATIONS", JSON.stringify(list));
             return true;
+        },
+
+        // ==========================
+        // TEACHER-SUBJECT MAPPING & BATCH REASSIGNMENT
+        // ==========================
+        getTeacherSubjectsMap: async function() {
+            var teachers = await this.getTeachers();
+            var allocs = await this.getAllocations();
+            var map = {};
+            teachers.forEach(function(t) {
+                map[t.name] = (t.subjects && t.subjects.length > 0) ? t.subjects.slice() : [];
+            });
+            allocs.forEach(function(a) {
+                if (a.teacher_name && a.subject_name) {
+                    if (!map[a.teacher_name]) map[a.teacher_name] = [];
+                    if (!map[a.teacher_name].includes(a.subject_name)) {
+                        map[a.teacher_name].push(a.subject_name);
+                    }
+                }
+            });
+            return map;
+        },
+
+        getSubjectTeachersMap: async function() {
+            var tMap = await this.getTeacherSubjectsMap();
+            var sMap = {};
+            for (var t in tMap) {
+                tMap[t].forEach(function(s) {
+                    if (!sMap[s]) sMap[s] = [];
+                    if (!sMap[s].includes(t)) sMap[s].push(t);
+                });
+            }
+            return sMap;
+        },
+
+        getTeachersForSubject: async function(subjectName) {
+            var sMap = await this.getSubjectTeachersMap();
+            var tNames = sMap[subjectName] || [];
+            var teachers = await this.getTeachers();
+            return teachers.filter(function(t) { return tNames.includes(t.name); });
+        },
+
+        getSubjectsForTeacher: async function(teacherName) {
+            var tMap = await this.getTeacherSubjectsMap();
+            return tMap[teacherName] || [];
+        },
+
+        getSubjectObjectsForTeacher: async function(teacherName) {
+            var tMap = await this.getTeacherSubjectsMap();
+            var sNames = tMap[teacherName] || [];
+            var subjects = await this.getSubjects();
+            return subjects.filter(function(s) { return sNames.includes(s.name); });
+        },
+
+        getAllocationsForTeacher: async function(teacherId) {
+            var allocs = await this.getAllocations();
+            return allocs.filter(function(a) { return a.teacher_id === teacherId; });
+        },
+
+        reassignTeacherClassesAndSubjects: async function(teacherId, payload) {
+            // Supports high-level payload:
+            // { subjectName: "Maths", periodsPerWeek: 5, classNames: ["10 Blue", "9 Blue"] }
+            // Or low-level payload:
+            // { newSubjects: ["Maths"], department: "Maths", allocations: [...] }
+            var teachers = await this.getTeachers();
+            var allSubjects = await this.getSubjects();
+            var allClasses = await this.getClasses();
+
+            var teacher = teachers.find(function(t) { return t.id === teacherId; });
+            var teacherName = teacher ? teacher.name : "";
+
+            if (payload.subjectName) {
+                var foundSub = allSubjects.find(function(s) {
+                    return s.name.toLowerCase() === payload.subjectName.toLowerCase();
+                });
+                var subId = foundSub ? foundSub.id : ("s-" + payload.subjectName.toLowerCase().replace(/\s+/g, '-'));
+
+                payload.newSubjects = [payload.subjectName];
+                payload.department = payload.subjectName;
+
+                var allocList = [];
+                var pCount = parseInt(payload.periodsPerWeek) || 5;
+                (payload.classNames || []).forEach(function(cName) {
+                    var foundCls = allClasses.find(function(c) { return c.name === cName; });
+                    var clsId = foundCls ? foundCls.id : ("c-" + cName.toLowerCase().replace(/\s+/g, '-'));
+                    allocList.push({
+                        subject_id: subId,
+                        class_id: clsId,
+                        periods_per_week: pCount
+                    });
+                });
+                payload.allocations = allocList;
+            }
+
+            if (isConnected) {
+                // 1. Delete all existing allocations for this teacher in Supabase
+                var del = await supabaseClient.from("allocations").delete().eq("teacher_id", teacherId);
+                if (del.error) console.error("Supabase delete allocations error:", del.error);
+
+                // 2. Insert new allocations
+                if (payload.allocations && payload.allocations.length > 0) {
+                    var rows = payload.allocations.map(function(a) {
+                        return {
+                            teacher_id: teacherId,
+                            subject_id: a.subject_id,
+                            class_id: a.class_id,
+                            periods_per_week: parseInt(a.periods_per_week) || 1
+                        };
+                    });
+                    var ins = await supabaseClient.from("allocations").insert(rows);
+                    if (ins.error) console.error("Supabase insert allocations error:", ins.error);
+                }
+
+                // 3. Update department / subject specialization
+                if (payload.department || (payload.newSubjects && payload.newSubjects.length > 0)) {
+                    var dept = payload.department || payload.newSubjects.join(", ");
+                    await supabaseClient.from("teachers").update({ department: dept }).eq("id", teacherId);
+                }
+            }
+
+            // Always update Local Storage as well
+            var allAllocs = JSON.parse(localStorage.getItem("SCH_ALLOCATIONS") || "[]");
+            allAllocs = allAllocs.filter(function(a) { return a.teacher_id !== teacherId; });
+
+            if (payload.allocations && payload.allocations.length > 0) {
+                var startId = Date.now();
+                payload.allocations.forEach(function(a, idx) {
+                    allAllocs.push({
+                        id: "alloc-" + (startId + idx),
+                        teacher_id: teacherId,
+                        subject_id: a.subject_id,
+                        class_id: a.class_id,
+                        periods_per_week: parseInt(a.periods_per_week) || 1
+                    });
+                });
+            }
+            localStorage.setItem("SCH_ALLOCATIONS", JSON.stringify(allAllocs));
+
+            // Update teacher in local storage
+            var localTeachers = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
+            for (var j = 0; j < localTeachers.length; j++) {
+                if (localTeachers[j].id === teacherId) {
+                    if (payload.newSubjects) localTeachers[j].subjects = payload.newSubjects;
+                    if (payload.department) localTeachers[j].department = payload.department;
+                    else if (payload.newSubjects) localTeachers[j].department = payload.newSubjects.join(", ");
+                    break;
+                }
+            }
+            localStorage.setItem("SCH_TEACHERS", JSON.stringify(localTeachers));
+
+            return { success: true };
         },
 
         // Export All Database Records as JSON

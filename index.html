@@ -410,6 +410,99 @@
         .form-group select, .form-group input { width: 100%; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 
+        /* Reassignment Modal, Badges & Grid */
+        .modal-lg {
+            width: 720px;
+            max-width: 95%;
+        }
+        .classes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+            gap: 8px;
+            max-height: 230px;
+            overflow-y: auto;
+            padding: 12px;
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+        }
+        .class-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+        .class-checkbox-label:hover {
+            background: #e2e8f0;
+        }
+        .class-checkbox-label input[type="checkbox"] {
+            margin: 0;
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+        }
+        .grade-quick-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .btn-chip {
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 9999px;
+            background: var(--slate-100);
+            color: var(--slate-700);
+            border: 1px solid var(--slate-300);
+            cursor: pointer;
+            box-shadow: none;
+        }
+        .btn-chip:hover {
+            background: var(--primary-bg);
+            color: var(--primary);
+            border-color: var(--primary-light);
+            transform: none;
+        }
+        .subject-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            background: var(--primary-light);
+            margin: 2px 3px 2px 0;
+            white-space: nowrap;
+        }
+        .class-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10.5px;
+            font-weight: 600;
+            background: #e0f2fe;
+            color: #0369a1;
+            margin: 1px;
+            white-space: nowrap;
+        }
+        .workload-summary-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
         @media print {
             body { padding: 0; background: white; }
             .header-actions, .nav-tabs, .controls, .status-card, .modal { display: none !important; }
@@ -529,7 +622,11 @@
                         <input type="text" id="newTeacherName" placeholder="e.g. Ayesha Khan" required>
                     </div>
                     <div class="form-group">
-                        <label>Department / Specialty:</label>
+                        <label>Respective Subject:</label>
+                        <select id="newTeacherSubjectSelect"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Department / Specialty Notes:</label>
                         <input type="text" id="newTeacherDept" placeholder="e.g. Science / Mathematics">
                     </div>
                     <div class="form-group">
@@ -551,7 +648,8 @@
                         <thead>
                             <tr>
                                 <th>Name</th>
-                                <th>Department</th>
+                                <th>Respective Subject(s)</th>
+                                <th>Assigned Classes</th>
                                 <th>Max Periods</th>
                                 <th>Assigned Periods</th>
                                 <th style="text-align:right;">Actions</th>
@@ -665,12 +763,17 @@
                 </div>
                 <form id="addAllocationForm" onsubmit="handleAddAllocation(event)">
                     <div class="form-group">
-                        <label>Select Teacher:</label>
-                        <select id="allocTeacher" required></select>
+                        <label>Select Subject:</label>
+                        <select id="allocSubject" onchange="onAllocSubjectChange()" required></select>
                     </div>
                     <div class="form-group">
-                        <label>Select Subject:</label>
-                        <select id="allocSubject" required></select>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                            <label style="margin:0;">Select Teacher:</label>
+                            <label style="font-size:11px; font-weight:normal; color:var(--slate-500); cursor:pointer;">
+                                <input type="checkbox" id="allocFilterBySub" checked onchange="onAllocSubjectChange()" style="width:auto; vertical-align:middle;"> Only teachers for this subject
+                            </label>
+                        </div>
+                        <select id="allocTeacher" required></select>
                     </div>
                     <div class="form-group">
                         <label>Select Class:</label>
@@ -762,8 +865,14 @@
             <select id="modalSubject" onchange="updateModalTeachers()"></select>
         </div>
         <div class="form-group">
-            <label>Assigned Teacher:</label>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <label style="margin:0;">Assigned Teacher:</label>
+                <label style="font-size:11px; font-weight:normal; color:var(--slate-500); cursor:pointer;">
+                    <input type="checkbox" id="modalShowAllTeachers" onchange="updateModalTeachers()" style="width:auto; vertical-align:middle;"> Show all teachers
+                </label>
+            </div>
             <select id="modalTeacher"></select>
+            <small id="modalSubjectWarning" style="color:var(--warning); display:none; margin-top:4px; font-weight:600;"></small>
             <small id="modalTeacherWarning" style="color:var(--danger); display:none; margin-top:4px; font-weight:600;">⚠️ Warning: This teacher is already teaching another class in this period!</small>
         </div>
         <div class="modal-actions">
@@ -780,15 +889,93 @@
         <h3 style="margin:0 0 16px 0; color:var(--primary); font-size:17px;">Bulk Replace Teacher</h3>
         <div class="form-group">
             <label>Current Teacher:</label>
-            <select id="bulkOldTeacher"></select>
+            <select id="bulkOldTeacher" onchange="updateBulkNewTeacherOptions()"></select>
         </div>
         <div class="form-group">
-            <label>New Teacher:</label>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <label style="margin:0;">New Teacher:</label>
+                <label style="font-size:11px; font-weight:normal; color:var(--slate-500); cursor:pointer;">
+                    <input type="checkbox" id="bulkShowAllTeachers" onchange="updateBulkNewTeacherOptions()" style="width:auto; vertical-align:middle;"> Show all teachers
+                </label>
+            </div>
             <select id="bulkNewTeacher"></select>
         </div>
         <div class="modal-actions">
             <button class="btn-outline" onclick="closeBulkModal()">Cancel</button>
             <button class="btn-success" onclick="executeBulkReplace()">Replace Everywhere</button>
+        </div>
+    </div>
+</div>
+
+<!-- Reassign Teacher Classes & Subject Modal -->
+<div id="reassignModal" class="modal">
+    <div class="modal-content modal-lg">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--slate-200); padding-bottom:10px;">
+            <h3 style="margin:0; color:var(--primary); font-size:18px; display:flex; align-items:center; gap:8px;">
+                <span>🔄 Reassign Teacher Classes & Subject</span>
+            </h3>
+            <span id="reassignTeacherBadge" style="font-size:13px; font-weight:700; background:var(--primary-bg); color:var(--primary); padding:5px 12px; border-radius:9999px; border:1px solid #bfdbfe;"></span>
+        </div>
+
+        <input type="hidden" id="reassignTeacherId">
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+            <div class="form-group">
+                <label>Designated Subject for this Teacher:</label>
+                <select id="reassignSubjectSelect" onchange="updateReassignSummary()"></select>
+            </div>
+            <div class="form-group">
+                <label>Periods per Week per Class:</label>
+                <input type="number" id="reassignPeriodsInput" value="5" min="1" max="10" oninput="updateReassignSummary()">
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label style="margin:0;">Select Classes (Teacher will be strictly assigned to these classes):</label>
+                <div>
+                    <button type="button" class="btn-chip" onclick="toggleAllReassignClasses(true)">Select All</button>
+                    <button type="button" class="btn-chip" onclick="toggleAllReassignClasses(false)">Clear All</button>
+                </div>
+            </div>
+
+            <!-- Grade Quick Filters -->
+            <div class="grade-quick-btns">
+                <span style="font-size:11px; color:var(--slate-500); align-self:center; margin-right:4px; font-weight:600;">Grade:</span>
+                <button type="button" class="btn-chip" onclick="toggleGradeClasses(10)">G10</button>
+                <button type="button" class="btn-chip" onclick="toggleGradeClasses(9)">G9</button>
+                <button type="button" class="btn-chip" onclick="toggleGradeClasses(8)">G8</button>
+                <button type="button" class="btn-chip" onclick="toggleGradeClasses(7)">G7</button>
+                <button type="button" class="btn-chip" onclick="toggleGradeClasses(6)">G6</button>
+                <button type="button" class="btn-chip" onclick="toggleGradeClasses(5)">G5</button>
+                <button type="button" class="btn-chip" onclick="toggleGradeClasses(4)">G4</button>
+                <button type="button" class="btn-chip" onclick="toggleGradeClasses(3)">G3</button>
+                <button type="button" class="btn-chip" onclick="toggleGradeClasses(2)">G2</button>
+                <button type="button" class="btn-chip" onclick="toggleGradeClasses(1)">G1</button>
+            </div>
+
+            <!-- 36-Class Grid -->
+            <div class="classes-grid" id="reassignClassesGrid">
+                <!-- Checkboxes populated dynamically -->
+            </div>
+        </div>
+
+        <!-- Workload Summary Box -->
+        <div class="workload-summary-box">
+            <div>
+                <strong id="reassignSummaryText">0 classes selected</strong>
+                <div style="font-size:11px; color:var(--slate-500); margin-top:2px;">Previous allocations for this teacher will be replaced and timetable regenerated with 0 clashes.</div>
+            </div>
+            <div id="reassignWorkloadBadge" style="font-weight:700; font-size:12px; padding:4px 12px; border-radius:9999px; background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;">
+                0 / 35 Periods
+            </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top:18px;">
+            <button type="button" class="btn-outline" onclick="closeReassignModal()">Cancel</button>
+            <button type="button" class="btn-success" onclick="saveTeacherReassignment()" id="btnSaveReassign" style="padding:9px 18px; font-size:13.5px;">
+                💾 Save & Regenerate Timetable
+            </button>
         </div>
     </div>
 </div>
@@ -1287,24 +1474,65 @@
     async function refreshTeachersTab() {
         var teachers = await window.DB.getTeachers();
         var allocs = await window.DB.getAllocations();
+        var subjects = await window.DB.getSubjects();
+
         document.getElementById("countTeachers").innerText = teachers.length;
 
+        // Populate new teacher subject select
+        var newSubSelect = document.getElementById("newTeacherSubjectSelect");
+        if (newSubSelect) {
+            newSubSelect.innerHTML = '<option value="">-- Select Subject --</option>' +
+                subjects.map(function(s) { return '<option value="' + s.name + '">' + s.name + '</option>'; }).join("");
+        }
+
         var loadMap = {};
+        var classMap = {};
         allocs.forEach(function(a) {
             loadMap[a.teacher_name] = (loadMap[a.teacher_name] || 0) + a.periods_per_week;
+            if (!classMap[a.teacher_name]) classMap[a.teacher_name] = [];
+            if (!classMap[a.teacher_name].includes(a.class_name)) classMap[a.teacher_name].push(a.class_name);
         });
+
+        // Subject color mapping
+        var colorMap = {};
+        subjects.forEach(function(s) { colorMap[s.name] = s.color_accent || "#2563eb"; });
 
         var tbody = document.getElementById("teachersTableBody");
         tbody.innerHTML = "";
 
         teachers.forEach(function(t) {
             var assigned = loadMap[t.name] || 0;
+            var assignedClasses = classMap[t.name] || [];
+
+            // Respective Subject Badges
+            var tSubjects = (t.subjects && t.subjects.length > 0) ? t.subjects : (t.department ? [t.department] : []);
+            var subBadges = tSubjects.map(function(s) {
+                var bg = colorMap[s] || "#2563eb";
+                return '<span class="subject-badge" style="background:' + bg + ';">' + s + '</span>';
+            }).join("");
+
+            // Class Badges
+            var classBadges = assignedClasses.slice(0, 6).map(function(c) {
+                return '<span class="class-badge">' + c + '</span>';
+            }).join("");
+            if (assignedClasses.length > 6) {
+                classBadges += ' <small style="color:var(--slate-500); font-weight:700;">+' + (assignedClasses.length - 6) + ' more</small>';
+            }
+            if (assignedClasses.length === 0) {
+                classBadges = '<span style="color:var(--slate-400); font-style:italic; font-size:11px;">None</span>';
+            }
+
+            var maxP = t.max_periods_weekly || 35;
+            var isOverloaded = assigned > maxP;
+
             var tr = document.createElement("tr");
             tr.innerHTML = '<td><strong>' + t.name + '</strong></td>' +
-                           '<td>' + (t.department || "General") + '</td>' +
-                           '<td>' + (t.max_periods_weekly || 35) + '</td>' +
-                           '<td><span style="font-weight:700; color:' + (assigned > 35 ? 'var(--danger)' : 'var(--primary)') + ';">' + assigned + '</span></td>' +
-                           '<td style="text-align:right;">' +
+                           '<td>' + (subBadges || '<span style="color:var(--slate-400); font-size:11px;">General</span>') + '</td>' +
+                           '<td>' + classBadges + '</td>' +
+                           '<td>' + maxP + '</td>' +
+                           '<td><span style="font-weight:700; color:' + (isOverloaded ? 'var(--danger)' : 'var(--primary)') + ';">' + assigned + '</span></td>' +
+                           '<td style="text-align:right; white-space:nowrap;">' +
+                           '<button onclick="openReassignModal(\'' + t.id + '\')" class="btn-outline" style="padding:4px 9px; font-size:11px; margin-right:5px; font-weight:700; color:var(--primary); border-color:var(--primary-light);">✏️ Reassign</button>' +
                            '<button onclick="handleDeleteTeacher(\'' + t.id + '\')" class="btn-danger" style="padding:4px 8px; font-size:11px;">Delete</button>' +
                            '</td>';
             tbody.appendChild(tr);
@@ -1314,11 +1542,18 @@
     async function handleAddTeacher(e) {
         e.preventDefault();
         var name = document.getElementById("newTeacherName").value.trim();
+        var sub = document.getElementById("newTeacherSubjectSelect").value;
         var dept = document.getElementById("newTeacherDept").value.trim();
-        var maxP = document.getElementById("newTeacherMax").value;
+        var maxP = parseInt(document.getElementById("newTeacherMax").value) || 35;
         if (!name) return;
 
-        await window.DB.addTeacher({ name: name, department: dept, max_periods_weekly: maxP });
+        var subjects = sub ? [sub] : [];
+        await window.DB.addTeacher({
+            name: name,
+            department: dept || sub || "General",
+            subjects: subjects,
+            max_periods_weekly: maxP
+        });
         document.getElementById("addTeacherForm").reset();
         await refreshTeachersTab();
         alert("Teacher '" + name + "' added successfully to database!");
@@ -1337,6 +1572,154 @@
         rows.forEach(function(r) {
             r.style.display = r.innerText.toLowerCase().includes(q) ? "" : "none";
         });
+    }
+
+    // =========================================================================
+    // TEACHER CLASS & SUBJECT REASSIGNMENT CENTER
+    // =========================================================================
+    var currentReassignTeacher = null;
+
+    async function openReassignModal(teacherId) {
+        var teachers = await window.DB.getTeachers();
+        var teacher = teachers.find(function(t) { return t.id === teacherId; });
+        if (!teacher) return;
+        currentReassignTeacher = teacher;
+
+        document.getElementById("reassignTeacherId").value = teacher.id;
+        document.getElementById("reassignTeacherBadge").innerText = "Teacher: " + teacher.name;
+
+        // Load subjects
+        var subjects = await window.DB.getSubjects();
+        var subSelect = document.getElementById("reassignSubjectSelect");
+        subSelect.innerHTML = subjects.map(function(s) {
+            return '<option value="' + s.name + '">' + s.name + '</option>';
+        }).join("");
+
+        // Select current teacher subject
+        var currentSub = (teacher.subjects && teacher.subjects.length > 0) ? teacher.subjects[0] : (teacher.department || "");
+        var foundSub = subjects.find(function(s) {
+            return s.name.toLowerCase() === currentSub.toLowerCase() || currentSub.toLowerCase().includes(s.name.toLowerCase());
+        });
+        if (foundSub) {
+            subSelect.value = foundSub.name;
+        }
+
+        // Fetch currently assigned allocations for this teacher
+        var allAllocs = await window.DB.getAllocations();
+        var teacherAllocs = allAllocs.filter(function(a) { return a.teacher_name === teacher.name; });
+        var currentlyAssignedClasses = new Set(teacherAllocs.map(function(a) { return a.class_name; }));
+
+        // Periods per week per class
+        var existingPeriods = (teacherAllocs.length > 0 && teacherAllocs[0].periods_per_week) ? teacherAllocs[0].periods_per_week : 5;
+        document.getElementById("reassignPeriodsInput").value = existingPeriods;
+
+        // Populate class checkboxes
+        var classes = await window.DB.getClasses();
+        classes.sort(function(a, b) {
+            var ga = parseInt(a.grade) || parseInt(a.name) || 1;
+            var gb = parseInt(b.grade) || parseInt(b.name) || 1;
+            if (ga !== gb) return ga - gb;
+            return a.name.localeCompare(b.name);
+        });
+
+        var grid = document.getElementById("reassignClassesGrid");
+        grid.innerHTML = "";
+
+        classes.forEach(function(c) {
+            var isChecked = currentlyAssignedClasses.has(c.name);
+            var gradeVal = c.grade || parseInt(c.name) || 1;
+            var label = document.createElement("label");
+            label.className = "class-checkbox-label";
+            label.innerHTML = '<input type="checkbox" value="' + c.name + '" data-grade="' + gradeVal + '" ' + (isChecked ? 'checked' : '') + ' onchange="updateReassignSummary()"> <span>' + c.name + '</span>';
+            grid.appendChild(label);
+        });
+
+        updateReassignSummary();
+        document.getElementById("reassignModal").style.display = "flex";
+    }
+
+    function closeReassignModal() {
+        document.getElementById("reassignModal").style.display = "none";
+        currentReassignTeacher = null;
+    }
+
+    function updateReassignSummary() {
+        var checkedBoxes = document.querySelectorAll("#reassignClassesGrid input[type='checkbox']:checked");
+        var classCount = checkedBoxes.length;
+        var periodsPerClass = parseInt(document.getElementById("reassignPeriodsInput").value) || 0;
+        var totalPeriods = classCount * periodsPerClass;
+
+        var maxP = currentReassignTeacher ? (currentReassignTeacher.max_periods_weekly || 35) : 35;
+        var summaryText = document.getElementById("reassignSummaryText");
+        summaryText.innerText = classCount + " classes selected × " + periodsPerClass + " periods/wk = " + totalPeriods + " total periods";
+
+        var badge = document.getElementById("reassignWorkloadBadge");
+        badge.innerText = totalPeriods + " / " + maxP + " Periods";
+        if (totalPeriods > maxP) {
+            badge.style.background = "#fee2e2";
+            badge.style.color = "#991b1b";
+            badge.style.borderColor = "#fecaca";
+        } else {
+            badge.style.background = "#dcfce7";
+            badge.style.color = "#15803d";
+            badge.style.borderColor = "#bbf7d0";
+        }
+    }
+
+    function toggleAllReassignClasses(checked) {
+        var boxes = document.querySelectorAll("#reassignClassesGrid input[type='checkbox']");
+        boxes.forEach(function(b) { b.checked = checked; });
+        updateReassignSummary();
+    }
+
+    function toggleGradeClasses(gradeNum) {
+        var boxes = document.querySelectorAll("#reassignClassesGrid input[type='checkbox']");
+        var gradeBoxes = Array.from(boxes).filter(function(b) {
+            return parseInt(b.getAttribute("data-grade")) === gradeNum || b.value.startsWith(gradeNum + " ");
+        });
+        var allChecked = gradeBoxes.every(function(b) { return b.checked; });
+        gradeBoxes.forEach(function(b) { b.checked = !allChecked; });
+        updateReassignSummary();
+    }
+
+    async function saveTeacherReassignment() {
+        if (!currentReassignTeacher) return;
+        var teacherId = document.getElementById("reassignTeacherId").value;
+        var subjectName = document.getElementById("reassignSubjectSelect").value;
+        var periodsPerWeek = parseInt(document.getElementById("reassignPeriodsInput").value) || 5;
+
+        var checkedBoxes = document.querySelectorAll("#reassignClassesGrid input[type='checkbox']:checked");
+        var classNames = Array.from(checkedBoxes).map(function(b) { return b.value; });
+
+        if (classNames.length === 0) {
+            if (!confirm("No classes selected. This will remove all teaching allocations for " + currentReassignTeacher.name + ". Continue?")) {
+                return;
+            }
+        }
+
+        var btn = document.getElementById("btnSaveReassign");
+        btn.disabled = true;
+        btn.innerText = "Saving & Solving (0 Clashes)...";
+
+        try {
+            await window.DB.reassignTeacherClassesAndSubjects(teacherId, {
+                subjectName: subjectName,
+                periodsPerWeek: periodsPerWeek,
+                classNames: classNames
+            });
+
+            alert("✅ Successfully updated " + currentReassignTeacher.name + "!\nSubject set to: " + subjectName + "\nAssigned to: " + classNames.length + " classes.\n\nThe timetable solver is now strictly adhering to these assignments with 0 clashes.");
+            closeReassignModal();
+
+            await refreshTeachersTab();
+            await refreshAllocationsTab();
+            await generateAutomatedTimetable();
+        } catch (err) {
+            alert("Error saving reassignment: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "💾 Save & Regenerate Timetable";
+        }
     }
 
     // Refresh Subjects Tab
@@ -1430,20 +1813,18 @@
     // Refresh Allocations Tab
     async function refreshAllocationsTab() {
         var allocs = await window.DB.getAllocations();
-        var teachers = await window.DB.getTeachers();
         var subjects = await window.DB.getSubjects();
         var classes = await window.DB.getClasses();
 
         document.getElementById("countAllocs").innerText = allocs.length;
 
-        // Populate dropdowns in Add Allocation Form
-        var tSelect = document.getElementById("allocTeacher");
         var sSelect = document.getElementById("allocSubject");
         var cSelect = document.getElementById("allocClass");
 
-        tSelect.innerHTML = teachers.map(function(t) { return '<option value="' + t.id + '">' + t.name + '</option>'; }).join("");
         sSelect.innerHTML = subjects.map(function(s) { return '<option value="' + s.id + '">' + s.name + '</option>'; }).join("");
         cSelect.innerHTML = classes.map(function(c) { return '<option value="' + c.id + '">' + c.name + '</option>'; }).join("");
+
+        await onAllocSubjectChange();
 
         var tbody = document.getElementById("allocationsTableBody");
         tbody.innerHTML = "";
@@ -1459,6 +1840,27 @@
                            '</td>';
             tbody.appendChild(tr);
         });
+    }
+
+    async function onAllocSubjectChange() {
+        var subSelect = document.getElementById("allocSubject");
+        var filterBySub = document.getElementById("allocFilterBySub") ? document.getElementById("allocFilterBySub").checked : true;
+        var tSelect = document.getElementById("allocTeacher");
+
+        var teachers = await window.DB.getTeachers();
+
+        if (filterBySub && subSelect && subSelect.value) {
+            var subjects = await window.DB.getSubjects();
+            var chosenSub = subjects.find(function(s) { return s.id === subSelect.value; });
+            if (chosenSub) {
+                var subTeachers = await window.DB.getTeachersForSubject(chosenSub.name);
+                if (subTeachers && subTeachers.length > 0) {
+                    teachers = subTeachers;
+                }
+            }
+        }
+
+        tSelect.innerHTML = teachers.map(function(t) { return '<option value="' + t.id + '">' + t.name + '</option>'; }).join("");
     }
 
     async function handleAddAllocation(e) {
@@ -1557,7 +1959,7 @@
     }
 
     // =========================================================================
-    // 5. MODAL EDITING
+    // 5. MODAL EDITING & STRICT SUBJECT-TEACHER BINDING
     // =========================================================================
     var currentSlot = null;
 
@@ -1571,18 +1973,72 @@
         subSelect.innerHTML = subjects.map(function(s) { return '<option value="' + s.name + '">' + s.name + '</option>'; }).join("");
         if (data) subSelect.value = data.subject;
 
+        if (document.getElementById("modalShowAllTeachers")) {
+            document.getElementById("modalShowAllTeachers").checked = false;
+        }
+
         await updateModalTeachers();
         if (data) document.getElementById("modalTeacher").value = data.teacher;
 
+        checkTeacherSubjectWarning();
         checkTeacherSlotConflict();
-        document.getElementById("modalTeacher").onchange = checkTeacherSlotConflict;
+
+        document.getElementById("modalTeacher").onchange = function() {
+            checkTeacherSubjectWarning();
+            checkTeacherSlotConflict();
+        };
         document.getElementById("editModal").style.display = "flex";
     }
 
     async function updateModalTeachers() {
-        var teachers = await window.DB.getTeachers();
+        var selectedSubject = document.getElementById("modalSubject").value;
+        var showAll = document.getElementById("modalShowAllTeachers") ? document.getElementById("modalShowAllTeachers").checked : false;
+
         var teacherSelect = document.getElementById("modalTeacher");
-        teacherSelect.innerHTML = teachers.map(function(t) { return '<option value="' + t.name + '">' + t.name + '</option>'; }).join("");
+        var currentSelected = teacherSelect.value;
+
+        var allTeachers = await window.DB.getTeachers();
+
+        var filteredTeachers = allTeachers;
+        if (!showAll && selectedSubject) {
+            var subTeachers = await window.DB.getTeachersForSubject(selectedSubject);
+            if (subTeachers && subTeachers.length > 0) {
+                filteredTeachers = subTeachers;
+            }
+        }
+
+        teacherSelect.innerHTML = filteredTeachers.map(function(t) {
+            return '<option value="' + t.name + '">' + t.name + '</option>';
+        }).join("");
+
+        // If currentSelected is in filteredTeachers, keep it selected
+        var hasCurrent = filteredTeachers.some(function(t) { return t.name === currentSelected; });
+        if (hasCurrent) {
+            teacherSelect.value = currentSelected;
+        }
+
+        checkTeacherSubjectWarning();
+        checkTeacherSlotConflict();
+    }
+
+    async function checkTeacherSubjectWarning() {
+        var teacherName = document.getElementById("modalTeacher").value;
+        var subjectName = document.getElementById("modalSubject").value;
+        var warn = document.getElementById("modalSubjectWarning");
+        if (!warn) return;
+
+        if (!teacherName || !subjectName) {
+            warn.style.display = "none";
+            return;
+        }
+
+        var subjects = await window.DB.getSubjectsForTeacher(teacherName);
+        if (subjects && subjects.length > 0 && !subjects.includes(subjectName)) {
+            warn.innerText = "ℹ️ Note: " + teacherName + " primarily teaches " + subjects.join(", ") + " (not " + subjectName + ").";
+            warn.style.display = "block";
+        } else {
+            warn.style.display = "none";
+        }
     }
 
     function checkTeacherSlotConflict() {
@@ -1631,13 +2087,41 @@
 
     function closeModal() { document.getElementById("editModal").style.display = "none"; }
 
-    function openReplaceModal() {
+    async function openReplaceModal() {
         var oldSelect = document.getElementById("bulkOldTeacher");
-        var newSelect = document.getElementById("bulkNewTeacher");
         var opts = ALL_TEACHERS.map(function(t) { return '<option value="' + t + '">' + t + '</option>'; }).join("");
         oldSelect.innerHTML = opts;
-        newSelect.innerHTML = opts;
+
+        if (document.getElementById("bulkShowAllTeachers")) {
+            document.getElementById("bulkShowAllTeachers").checked = false;
+        }
+
+        await updateBulkNewTeacherOptions();
         document.getElementById("bulkModal").style.display = "flex";
+    }
+
+    async function updateBulkNewTeacherOptions() {
+        var oldT = document.getElementById("bulkOldTeacher").value;
+        var showAll = document.getElementById("bulkShowAllTeachers") ? document.getElementById("bulkShowAllTeachers").checked : false;
+        var newSelect = document.getElementById("bulkNewTeacher");
+
+        var candidates = ALL_TEACHERS.slice();
+
+        if (!showAll && oldT) {
+            var subjects = await window.DB.getSubjectsForTeacher(oldT);
+            if (subjects && subjects.length > 0) {
+                var subjectTeachers = new Set();
+                for (var i = 0; i < subjects.length; i++) {
+                    var sTeachers = await window.DB.getTeachersForSubject(subjects[i]);
+                    sTeachers.forEach(function(t) { subjectTeachers.add(t.name); });
+                }
+                if (subjectTeachers.size > 0) {
+                    candidates = Array.from(subjectTeachers).sort();
+                }
+            }
+        }
+
+        newSelect.innerHTML = candidates.map(function(t) { return '<option value="' + t + '">' + t + '</option>'; }).join("");
     }
 
     function closeBulkModal() { document.getElementById("bulkModal").style.display = "none"; }
@@ -1693,6 +2177,13 @@
         document.getElementById("countSubjects").innerText = subjects.length;
         document.getElementById("countClasses").innerText = classes.length;
         document.getElementById("countAllocs").innerText = allocs.length;
+
+        // Initialize new teacher subject select options
+        var newSubSelect = document.getElementById("newTeacherSubjectSelect");
+        if (newSubSelect) {
+            newSubSelect.innerHTML = '<option value="">-- Select Subject --</option>' +
+                subjects.map(function(s) { return '<option value="' + s.name + '">' + s.name + '</option>'; }).join("");
+        }
 
         renderHeader();
         await generateAutomatedTimetable();
