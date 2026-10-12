@@ -1,5 +1,5 @@
 // Service Worker for Smart School Timetable PWA
-const CACHE_NAME = 'smart-school-timetable-v1';
+const CACHE_NAME = 'smart-school-timetable-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
