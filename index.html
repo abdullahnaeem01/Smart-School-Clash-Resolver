@@ -834,11 +834,15 @@
             <small>Connected to PostgreSQL Supabase Database | 100% Conflict-Free Engine</small>
         </div>
         <div class="header-actions">
-            <!-- Database Connection Status Badge -->
-            <div id="dbBadge" class="db-status-badge db-offline" onclick="openDbSettingsModal()" title="Click to configure Supabase credentials">
-                <span id="dbDot">🟡</span> <span id="dbText">Offline / Local Mode</span>
+            <!-- Read-only Database Sync Indicator (No Settings/Clicks) -->
+            <div id="dbBadge" class="db-status-badge db-online" style="cursor:default;" title="Connected to Central PostgreSQL Cloud Database">
+                <span id="dbDot">🟢</span> <span id="dbText">Cloud Database Synced</span>
             </div>
 
+            <button onclick="exportDataJson()" class="btn-outline" title="Download offline JSON database backup">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Backup (JSON)
+            </button>
             <button onclick="window.print()" class="btn-outline">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                 Print / PDF
@@ -858,7 +862,6 @@
         <button class="nav-tab" onclick="switchTab('tab-classes')">🏫 Manage Classes (<span id="countClasses">0</span>)</button>
         <button class="nav-tab" onclick="switchTab('tab-allocations')">📋 Teaching Allocations (<span id="countAllocs">0</span>)</button>
         <button class="nav-tab" onclick="switchTab('tab-substitutions')">🟢 Free Teachers & Substitutions (<span id="countSubstitutions">0</span>)</button>
-        <button class="nav-tab" onclick="switchTab('tab-database')">⚙️ Supabase Database</button>
     </div>
 
     <!-- TAB 1: TIMETABLE & CLASH SOLVER -->
@@ -1247,42 +1250,6 @@
                     </thead>
                     <tbody id="activeSubstitutionsTableBody"></tbody>
                 </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- TAB 6: SUPABASE DATABASE SETTINGS -->
-    <div id="tab-database" class="tab-content">
-        <div class="card" style="max-width:750px; margin:0 auto;">
-            <div class="card-header">
-                <h2>Supabase Cloud Database Settings</h2>
-            </div>
-            <p style="font-size:13.5px; color:var(--slate-600); line-height:1.6;">
-                Connect this application directly to your Supabase PostgreSQL cloud database. If you have not created your tables yet, run the included SQL script in your Supabase SQL editor.
-            </p>
-
-            <div class="form-group">
-                <label>Supabase Project URL:</label>
-                <input type="text" id="sbUrlInput" placeholder="https://your-project.supabase.co">
-            </div>
-            <div class="form-group">
-                <label>Supabase 'anon' Public API Key:</label>
-                <input type="password" id="sbKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
-            </div>
-
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button class="btn-success" onclick="saveDbCredentials()">Save & Connect to Supabase</button>
-                <button class="btn-outline" onclick="disconnectSupabase()">Use Local Storage Mode</button>
-            </div>
-
-            <hr style="margin:25px 0; border:0; border-top:1px solid var(--slate-200);">
-
-            <h3 style="margin:0 0 10px 0; font-size:15px; color:var(--primary);">Database Tools & Backups</h3>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <button class="btn-success" onclick="handleSyncSubjectsToCloud()" id="btnSyncCloud">🔄 Push Teacher Specializations to Supabase Cloud</button>
-                <button class="btn-outline" onclick="exportDataJson()">📥 Download Database Backup (JSON)</button>
-                <a href="supabase_schema.sql" download class="btn-outline" style="text-decoration:none; padding:8px 14px; border-radius:6px; font-size:13px; font-weight:600; color:var(--slate-700); border:1px solid var(--slate-300);">📄 View supabase_schema.sql</a>
-                <button class="btn-danger" onclick="resetToSchoolDefaults()" style="margin-left:auto;">Reset to Default School Data</button>
             </div>
         </div>
     </div>
@@ -2584,47 +2551,11 @@
         var dot = document.getElementById("dbDot");
         var text = document.getElementById("dbText");
 
-        if (window.DB.isConnected()) {
+        if (badge) {
             badge.className = "db-status-badge db-online";
-            dot.innerText = "🟢";
-            text.innerText = "Connected to Supabase PostgreSQL";
-        } else {
-            badge.className = "db-status-badge db-offline";
-            dot.innerText = "🟡";
-            text.innerText = "Local Storage Mode";
+            if (dot) dot.innerText = "🟢";
+            if (text) text.innerText = (window.DB && window.DB.isConnected()) ? "Cloud Database Synced" : "Connecting to Cloud...";
         }
-    }
-
-    function openDbSettingsModal() {
-        switchTab("tab-database");
-    }
-
-    async function saveDbCredentials() {
-        var url = document.getElementById("sbUrlInput").value.trim();
-        var key = document.getElementById("sbKeyInput").value.trim();
-
-        if (!url || !key) {
-            alert("Please provide both Supabase URL and public anon key.");
-            return;
-        }
-
-        var res = await window.DB.setCredentials(url, key);
-        updateDbStatusBadge();
-
-        if (res.connected) {
-            alert("Connected to Supabase PostgreSQL cloud database successfully!");
-            generateAutomatedTimetable();
-        } else {
-            alert("Could not connect with provided credentials. Please ensure tables are created with supabase_schema.sql.");
-        }
-    }
-
-    function disconnectSupabase() {
-        window.DB.clearCredentials();
-        document.getElementById("sbUrlInput").value = "";
-        document.getElementById("sbKeyInput").value = "";
-        updateDbStatusBadge();
-        alert("Switched to Local Storage Mode.");
     }
 
     async function handleSyncSubjectsToCloud() {
@@ -3198,10 +3129,6 @@
     // 7. INITIALIZATION ON WINDOW LOAD
     // =========================================================================
     window.onload = async function() {
-        // Load credentials from local storage into inputs if present
-        document.getElementById("sbUrlInput").value = localStorage.getItem("SB_URL") || "";
-        document.getElementById("sbKeyInput").value = localStorage.getItem("SB_KEY") || "";
-
         await window.DB.init();
         updateDbStatusBadge();
 

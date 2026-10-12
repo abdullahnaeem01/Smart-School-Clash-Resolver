@@ -190,8 +190,10 @@
         // Init connection to Supabase
         init: async function() {
             initLocalStorage();
-            var url = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url) || localStorage.getItem("SB_URL");
-            var key = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.anonKey) || localStorage.getItem("SB_KEY");
+            var defaultUrl = "https://aoxloxnkctbccyqsdghk.supabase.co";
+            var defaultKey = "sb_publishable_WfV3i9xNoFmsiLUiJtzoRA_tWUcBtIW";
+            var url = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url) || defaultUrl;
+            var key = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.anonKey) || defaultKey;
 
             if (url && key && window.supabase && window.supabase.createClient) {
                 try {
