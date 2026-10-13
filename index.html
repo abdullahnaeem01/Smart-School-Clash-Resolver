@@ -1534,18 +1534,41 @@
     }
     function getGradeBand(className) {
         var g = getGrade(className);
-        if (g >= 8 && g <= 9) return "8-9";
-        if (g >= 6 && g <= 7) return "6-7";
-        return "1-5"; // covers 1-5 and also 10 (fallback)
+        if (g >= 10) return "10";      // Grade 10 — its own band
+        if (g >= 8)  return "8-9";     // Grade 8 & 9
+        if (g >= 6)  return "6-7";     // Grade 6 & 7
+        return "1-5";                  // Grade 1–5
     }
 
     // Subject period caps per grade band per week
+    // NOTE: Science is ONLY for grades 1-7.
+    //       Physics, Chemistry, Biology are SEPARATE subjects for grades 8-9 and 10.
     var GRADE_SUBJECT_CAPS = {
-        "1-5": { "English": 6, "Urdu": 6, "Maths": 5, "Science": 4, "S.St": 4, "ICT": 3, "Islamiat": 3, "P.E": 1, "Nazra": 3 },
-        "6-7": { "English": 6, "Urdu": 6, "Maths": 5, "Science": 4, "S.St": 4, "ICT": 3, "Islamiat": 3, "P.E": 1, "T.Q": 3 },
-        "8-9": { "English": 5, "Urdu": 5, "Maths": 5, "Physics": 4, "Chemistry": 5, "Biology": 4, "ICT": 4, "Islamiat": 3, "T.Q": 3, "P.E": 1 }
+        "1-5": {
+            "English": 6, "Urdu": 6, "Maths": 5,
+            "Science": 4, "S.St": 4, "ICT": 3,
+            "Islamiat": 3, "Nazra": 3, "P.E": 1
+        },
+        "6-7": {
+            "English": 6, "Urdu": 6, "Maths": 5,
+            "Science": 4, "S.St": 4, "ICT": 3,
+            "Islamiat": 3, "T.Q": 3, "P.E": 1
+        },
+        "8-9": {
+            // No Science — Physics, Chemistry, Biology are separate
+            "English": 5, "Urdu": 5, "Maths": 5,
+            "Physics": 4, "Chemistry": 5, "Biology": 4,
+            "Islamiat": 3, "T.Q": 3, "P.E": 1
+        },
+        "10": {
+            // Grade 10 — Pak Study replaces Islamiat/T.Q
+            "English": 5, "Urdu": 5, "Maths": 5,
+            "Physics": 4, "Chemistry": 5, "Biology": 4,
+            "T.Q": 3, "Pak. Study": 3, "P.E": 1
+        }
     };
-    // Special overrides for Grade 1 only
+
+    // Special overrides for Grade 1 only: P.E gets 2 periods, ICT gets 2 periods
     var GRADE1_CAPS = { "P.E": 2, "ICT": 2 };
 
     function getSubjectCapForClass(className, subject) {
@@ -1555,6 +1578,10 @@
         var cap = caps[subject];
         // Grade 1 special overrides
         if (g === 1 && GRADE1_CAPS[subject] !== undefined) cap = GRADE1_CAPS[subject];
+        // Hard block: Science must NOT appear in grade 8+ timetables
+        if (g >= 8 && subject === "Science") return 0;
+        // Hard block: Physics/Chemistry/Biology must NOT appear in grade 1-7 timetables
+        if (g <= 7 && (subject === "Physics" || subject === "Chemistry" || subject === "Biology")) return 0;
         return cap !== undefined ? cap : 999; // 999 = no cap
     }
 
