@@ -898,8 +898,8 @@
             <div class="control-group" style="margin-left: 10px;">
                 <label for="periodMode">Daily Structure:</label>
                 <select id="periodMode" onchange="switchPeriodMode()">
-                    <option value="8" selected>8 Periods / Day (08:00 - 02:05) [Recommended]</option>
-                    <option value="7">7 Periods / Day (08:00 - 01:25) [Standard]</option>
+                    <option value="7" selected>7 Periods / Day (08:00 - 01:25) [Standard]</option>
+                    <option value="8">8 Periods / Day (08:00 - 02:05)</option>
                 </select>
             </div>
 
@@ -1523,7 +1523,51 @@
     ];
 
     var DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-    var CURRENT_PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
+    var CURRENT_PERIODS = [1, 2, 3, 4, 5, 6, 7]; // Default: 7 periods
+
+    // =========================================================================
+    // GRADE-SPECIFIC SUBJECT PERIOD CAPS PER WEEK
+    // =========================================================================
+    // Grade band helper: extract numeric grade from class name e.g. "7 Blue" -> 7
+    function getGrade(className) {
+        return parseInt(className) || 1;
+    }
+    function getGradeBand(className) {
+        var g = getGrade(className);
+        if (g >= 8 && g <= 9) return "8-9";
+        if (g >= 6 && g <= 7) return "6-7";
+        return "1-5"; // covers 1-5 and also 10 (fallback)
+    }
+
+    // Subject period caps per grade band per week
+    var GRADE_SUBJECT_CAPS = {
+        "1-5": { "English": 6, "Urdu": 6, "Maths": 5, "Science": 4, "S.St": 4, "ICT": 3, "Islamiat": 3, "P.E": 1, "Nazra": 3 },
+        "6-7": { "English": 6, "Urdu": 6, "Maths": 5, "Science": 4, "S.St": 4, "ICT": 3, "Islamiat": 3, "P.E": 1, "T.Q": 3 },
+        "8-9": { "English": 5, "Urdu": 5, "Maths": 5, "Physics": 4, "Chemistry": 5, "Biology": 4, "ICT": 4, "Islamiat": 3, "T.Q": 3, "P.E": 1 }
+    };
+    // Special overrides for Grade 1 only
+    var GRADE1_CAPS = { "P.E": 2, "ICT": 2 };
+
+    function getSubjectCapForClass(className, subject) {
+        var g = getGrade(className);
+        var band = getGradeBand(className);
+        var caps = GRADE_SUBJECT_CAPS[band] || {};
+        var cap = caps[subject];
+        // Grade 1 special overrides
+        if (g === 1 && GRADE1_CAPS[subject] !== undefined) cap = GRADE1_CAPS[subject];
+        return cap !== undefined ? cap : 999; // 999 = no cap
+    }
+
+    // Gender helpers for P.E. scheduling
+    // Pink, Red = Girls sections; White, Green, Blue = Boys sections
+    function isSectionGirls(className) {
+        var lower = className.toLowerCase();
+        return lower.indexOf('pink') >= 0 || lower.indexOf('red') >= 0;
+    }
+    function isSectionBoys(className) {
+        var lower = className.toLowerCase();
+        return lower.indexOf('white') >= 0 || lower.indexOf('green') >= 0 || lower.indexOf('blue') >= 0;
+    }
 
     var PERIOD_TIMES_8 = {
         1: "08:00 - 08:45", 2: "08:45 - 09:30", 3: "09:30 - 10:15",
@@ -1569,7 +1613,7 @@
 
     async function generateAutomatedTimetable() {
         var regenBtn = document.getElementById("regenBtn");
-        regenBtn.innerText = "Solving (100% Full Schedule)...";
+        regenBtn.innerText = "Solving (Smart Schedule)...";
         regenBtn.disabled = true;
 
         var dbAllocs = await window.DB.getAllocations();
@@ -1585,10 +1629,14 @@
 
         initSchedule();
 
-        var is7Periods = (CURRENT_PERIODS.length === 7);
-        var totalSlotsPerClass = DAYS.length * CURRENT_PERIODS.length; // 40 or 35 slots
+        var lastPeriod = CURRENT_PERIODS[CURRENT_PERIODS.length - 1]; // e.g. 7 or 8
+        var totalSlotsPerClass = DAYS.length * CURRENT_PERIODS.length;
         var classDemands = {};
         ALL_CLASSES.forEach(function(c) { classDemands[c] = []; });
+
+        // Track per-class subject counts to enforce grade caps
+        var classSubjectCount = {};
+        ALL_CLASSES.forEach(function(c) { classSubjectCount[c] = {}; });
 
         // Map teacher limits
         var teacherMaxDaily = {};
@@ -1599,35 +1647,41 @@
         var teacherLoads = {};
         ALL_TEACHERS.forEach(function(t) { teacherLoads[t] = 0; });
 
+        // Build demands respecting grade-band subject caps
         dbAllocs.forEach(function(alloc) {
-            var pCount = alloc.periods_per_week;
-            if (is7Periods) {
-                if ((alloc.class_name === "8 Blue" || alloc.class_name === "8 Pink") && alloc.subject_name === "English") pCount = 5;
-                if ((alloc.class_name === "8 Blue" || alloc.class_name === "8 Pink") && alloc.subject_name === "ICT") pCount = 1;
-                if ((alloc.class_name === "9 Blue" || alloc.class_name === "9 Pink") && alloc.subject_name === "ICT") pCount = 1;
-            }
+            if (!classDemands[alloc.class_name]) return;
+            var cap = getSubjectCapForClass(alloc.class_name, alloc.subject_name);
+            var pCount = Math.min(alloc.periods_per_week, cap);
+            var currentCount = classSubjectCount[alloc.class_name][alloc.subject_name] || 0;
+            var canAdd = Math.max(0, pCount - currentCount);
 
-            for (var i = 0; i < pCount; i++) {
-                if (classDemands[alloc.class_name]) {
-                    classDemands[alloc.class_name].push({
-                        className: alloc.class_name,
-                        subject: alloc.subject_name,
-                        teacher: alloc.teacher_name
-                    });
-                    teacherLoads[alloc.teacher_name] = (teacherLoads[alloc.teacher_name] || 0) + 1;
-                }
+            for (var i = 0; i < canAdd; i++) {
+                classDemands[alloc.class_name].push({
+                    className: alloc.class_name,
+                    subject: alloc.subject_name,
+                    teacher: alloc.teacher_name
+                });
+                teacherLoads[alloc.teacher_name] = (teacherLoads[alloc.teacher_name] || 0) + 1;
+                classSubjectCount[alloc.class_name][alloc.subject_name] = currentCount + i + 1;
             }
         });
 
-        // 100% Full Class Utilization: Auto-fill remaining class gaps to guarantee 0 wasted class periods
+        // Auto-fill remaining class gaps
         ALL_CLASSES.forEach(function(c) {
             var needed = totalSlotsPerClass - classDemands[c].length;
             if (needed <= 0) return;
 
             var teachersInClass = {};
             classDemands[c].forEach(function(d) {
-                teachersInClass[d.teacher] = { teacher: d.teacher, subject: d.subject };
+                if (d.subject !== "Maths" && d.subject !== "P.E") // don't pad with Maths/PE
+                    teachersInClass[d.teacher] = { teacher: d.teacher, subject: d.subject };
             });
+            // fallback to all teachers
+            if (Object.keys(teachersInClass).length === 0) {
+                classDemands[c].forEach(function(d) {
+                    teachersInClass[d.teacher] = { teacher: d.teacher, subject: d.subject };
+                });
+            }
 
             var sortedCandidates = Object.values(teachersInClass).sort(function(a, b) {
                 return (teacherLoads[a.teacher] || 0) - (teacherLoads[b.teacher] || 0);
@@ -1640,27 +1694,29 @@
                 var maxW = tObj ? (tObj.max_periods_weekly || 35) : 35;
 
                 if ((teacherLoads[cand.teacher] || 0) < maxW) {
-                    classDemands[c].push({
-                        className: c,
-                        subject: cand.subject,
-                        teacher: cand.teacher
-                    });
+                    classDemands[c].push({ className: c, subject: cand.subject, teacher: cand.teacher });
                     teacherLoads[cand.teacher] = (teacherLoads[cand.teacher] || 0) + 1;
                     needed--;
                 }
                 idx++;
                 if (idx > sortedCandidates.length * 6) {
                     var anyCand = sortedCandidates[0];
-                    classDemands[c].push({
-                        className: c,
-                        subject: anyCand.subject,
-                        teacher: anyCand.teacher
-                    });
+                    classDemands[c].push({ className: c, subject: anyCand.subject, teacher: anyCand.teacher });
                     teacherLoads[anyCand.teacher] = (teacherLoads[anyCand.teacher] || 0) + 1;
                     needed--;
                 }
             }
         });
+
+        // ---------------------------------------------------------------
+        // SMART PLACEMENT ENGINE
+        // Constraints:
+        // 1. No teacher double-booked (same day+period)
+        // 2. No teacher > max_periods_daily periods in one day
+        // 3. Maths NOT in last period of the day
+        // 4. No consecutive periods for same teacher in same class on same day
+        // 5. P.E.: boys and girls (grade > 3) must NOT share same time slot
+        // ---------------------------------------------------------------
 
         var allSlots = [];
         DAYS.forEach(function(day) {
@@ -1668,6 +1724,10 @@
                 allSlots.push({ day: day, period: p, key: day + "_" + p });
             });
         });
+
+        // Separate last-period slots
+        var lastPeriodSlots = {};
+        DAYS.forEach(function(day) { lastPeriodSlots[day + "_" + lastPeriod] = true; });
 
         var teacherSlotCount = {};
         var teacherDayCount = {};
@@ -1677,22 +1737,104 @@
             DAYS.forEach(function(d) { teacherDayCount[t][d] = 0; });
         });
 
-        // Step 1: Initial random placement per class
+        // Helper: is a slot the last period of the day?
+        function isLastPeriodSlot(day, period) {
+            return period === lastPeriod;
+        }
+
+        // Helper: count how many consecutive pairs teacher T has in class C on day D after placing at period P
+        function countConsecutivePairs(cls, day, teacher, excludePeriod) {
+            var pairs = 0;
+            for (var pi = 0; pi < CURRENT_PERIODS.length - 1; pi++) {
+                var p1 = CURRENT_PERIODS[pi], p2 = CURRENT_PERIODS[pi + 1];
+                var c1 = schedule[cls][day][p1], c2 = schedule[cls][day][p2];
+                if (c1 && c2 && c1.teacher === teacher && c2.teacher === teacher) pairs++;
+            }
+            return pairs;
+        }
+
+        // Helper: get PE gender for a class (grade > 3 only)
+        function getPEGender(className) {
+            var g = getGrade(className);
+            if (g <= 3) return null; // no separation below grade 4
+            if (isSectionGirls(className)) return "girls";
+            if (isSectionBoys(className)) return "boys";
+            return null;
+        }
+
+        // Track which slots have boys/girls PE already placed
+        var peSlotGender = {}; // key -> "boys" | "girls" | "mixed"
+
+        // Step 1: Smart initial placement per class
         ALL_CLASSES.forEach(function(c) {
-            var demands = classDemands[c].slice().sort(function() { return Math.random() - 0.5; });
-            var slots = allSlots.slice().sort(function() { return Math.random() - 0.5; });
+            // Sort demands: put Maths first (so they get early slots), PE last
+            var demands = classDemands[c].slice().sort(function(a, b) {
+                var order = { "Maths": 0, "English": 1, "Urdu": 1, "Physics": 1, "Chemistry": 1 };
+                var peOrder = { "P.E": 99 };
+                var ao = order[a.subject] !== undefined ? order[a.subject] : (peOrder[a.subject] !== undefined ? peOrder[a.subject] : 5);
+                var bo = order[b.subject] !== undefined ? order[b.subject] : (peOrder[b.subject] !== undefined ? peOrder[b.subject] : 5);
+                return ao - bo + (Math.random() - 0.5) * 0.5;
+            });
 
-            for (var i = 0; i < demands.length; i++) {
-                if (i >= slots.length) break;
-                var slot = slots[i];
-                var d = demands[i];
+            // Shuffle slots but keep non-last slots prioritised for Maths
+            var nonLastSlots = allSlots.filter(function(s) { return s.period !== lastPeriod; }).sort(function() { return Math.random() - 0.5; });
+            var lastSlots    = allSlots.filter(function(s) { return s.period === lastPeriod; }).sort(function() { return Math.random() - 0.5; });
+            var orderedSlots = nonLastSlots.concat(lastSlots);
 
-                schedule[c][slot.day][slot.period] = { subject: d.subject, teacher: d.teacher };
-                teacherSlotCount[d.teacher][slot.key] = (teacherSlotCount[d.teacher][slot.key] || 0) + 1;
-                teacherDayCount[d.teacher][slot.day]++;
+            var usedSlotIdx = 0;
+            for (var di = 0; di < demands.length; di++) {
+                var d = demands[di];
+                var placed = false;
+
+                // Choose slot pool: Maths cannot go last period
+                var slotPool = (d.subject === "Maths") ? nonLastSlots : orderedSlots;
+
+                for (var si = 0; si < slotPool.length; si++) {
+                    var slot = slotPool[si];
+                    if (schedule[c][slot.day][slot.period] !== null) continue; // already filled for this class
+
+                    // Constraint 3: Maths not in last period
+                    if (d.subject === "Maths" && isLastPeriodSlot(slot.day, slot.period)) continue;
+
+                    // Constraint 5: P.E gender separation for grade > 3
+                    if (d.subject === "P.E") {
+                        var gender = getPEGender(c);
+                        if (gender !== null) {
+                            var existing = peSlotGender[slot.key];
+                            if (existing && existing !== gender) continue; // opposite gender already there
+                        }
+                    }
+
+                    // Place it
+                    schedule[c][slot.day][slot.period] = { subject: d.subject, teacher: d.teacher };
+                    teacherSlotCount[d.teacher][slot.key] = (teacherSlotCount[d.teacher][slot.key] || 0) + 1;
+                    teacherDayCount[d.teacher][slot.day]++;
+                    if (d.subject === "P.E") {
+                        var gender2 = getPEGender(c);
+                        if (gender2) peSlotGender[slot.key] = gender2;
+                    }
+                    placed = true;
+                    break;
+                }
+
+                if (!placed) {
+                    // Fallback: use any available slot
+                    for (var fsi = 0; fsi < orderedSlots.length; fsi++) {
+                        var fslot = orderedSlots[fsi];
+                        if (schedule[c][fslot.day][fslot.period] !== null) continue;
+                        schedule[c][fslot.day][fslot.period] = { subject: d.subject, teacher: d.teacher };
+                        teacherSlotCount[d.teacher][fslot.key] = (teacherSlotCount[d.teacher][fslot.key] || 0) + 1;
+                        teacherDayCount[d.teacher][fslot.day]++;
+                        placed = true;
+                        break;
+                    }
+                }
             }
         });
 
+        // ---------------------------------------------------------------
+        // Step 2: Iterative clash resolver (same as before + new constraints)
+        // ---------------------------------------------------------------
         function countTeacherClashes() {
             var clashes = 0;
             ALL_TEACHERS.forEach(function(t) {
@@ -1715,10 +1857,29 @@
             return exceeded;
         }
 
+        // Count soft constraint violations (for scoring during swap)
+        function softPenalty(cls, day, period, subject, teacher) {
+            var pen = 0;
+            // Maths in last period
+            if (subject === "Maths" && period === lastPeriod) pen += 30;
+            // Consecutive periods: check if placing teacher here creates consecutive pair in this class
+            var prevPeriod = CURRENT_PERIODS[CURRENT_PERIODS.indexOf(period) - 1];
+            var nextPeriod = CURRENT_PERIODS[CURRENT_PERIODS.indexOf(period) + 1];
+            if (prevPeriod !== undefined) {
+                var prevCell = schedule[cls][day][prevPeriod];
+                if (prevCell && prevCell.teacher === teacher) pen += 15;
+            }
+            if (nextPeriod !== undefined) {
+                var nextCell = schedule[cls][day][nextPeriod];
+                if (nextCell && nextCell.teacher === teacher) pen += 15;
+            }
+            return pen;
+        }
+
         var currentClashes = countTeacherClashes();
         var currentDailyExceeded = countDailyExceeded();
         var iter = 0;
-        var maxIter = 25000;
+        var maxIter = 30000;
 
         while ((currentClashes > 0 || currentDailyExceeded > 0) && iter < maxIter) {
             iter++;
@@ -1786,28 +1947,38 @@
                 var resident = schedule[chosenClass][target.day][target.period];
                 if (resident && resident.teacher === conflictTeacher) continue;
 
+                // Hard: Maths cannot go to last period
+                if (movingCell.subject === "Maths" && isLastPeriodSlot(target.day, target.period)) continue;
+
+                // Hard: P.E gender – moving cell must not go to a slot already taken by opposite gender
+                if (movingCell.subject === "P.E") {
+                    var mGender = getPEGender(chosenClass);
+                    if (mGender !== null) {
+                        var existingG = peSlotGender[target.key];
+                        if (existingG && existingG !== mGender) continue;
+                    }
+                }
+
                 var delta = 0;
 
-                // Slot clash impact
+                // Hard clash score
                 var srcCount = teacherSlotCount[conflictTeacher][conflictDay + "_" + conflictPeriod] || 0;
                 if (srcCount > 1) delta -= 20;
                 var dstCount = teacherSlotCount[conflictTeacher][target.key] || 0;
                 if (dstCount >= 1) delta += 20;
 
-                // Daily load impact for moving teacher (enforce <= 6 periods / day)
+                // Daily load
                 var maxD_conf = teacherMaxDaily[conflictTeacher] || 6;
                 if (target.day !== conflictDay) {
                     if (teacherDayCount[conflictTeacher][conflictDay] > maxD_conf) delta -= 15;
                     if (teacherDayCount[conflictTeacher][target.day] >= maxD_conf) delta += 15;
                 }
 
-                // Resident teacher impact
                 if (resident) {
                     var resDst = teacherSlotCount[resident.teacher][target.key] || 0;
                     if (resDst > 1) delta -= 20;
                     var resSrc = teacherSlotCount[resident.teacher][conflictDay + "_" + conflictPeriod] || 0;
                     if (resSrc >= 1) delta += 20;
-
                     var maxD_res = teacherMaxDaily[resident.teacher] || 6;
                     if (target.day !== conflictDay) {
                         if (teacherDayCount[resident.teacher][target.day] > maxD_res) delta -= 15;
@@ -1815,7 +1986,16 @@
                     }
                 }
 
-                // Pedagogical soft constraint: avoid same subject > 2 times on the same day for a class
+                // Soft: Maths in last period penalty (src relief vs dst penalty)
+                if (movingCell.subject === "Maths") {
+                    if (conflictPeriod === lastPeriod) delta -= 10; // good: moving out of last
+                }
+
+                // Soft: consecutive period penalty (adding/removing)
+                delta += softPenalty(chosenClass, target.day, target.period, movingCell.subject, conflictTeacher);
+                delta -= softPenalty(chosenClass, conflictDay, conflictPeriod, movingCell.subject, conflictTeacher);
+
+                // Avoid same subject > 2 times on same day for a class
                 if (target.day !== conflictDay) {
                     var subToday = 0;
                     CURRENT_PERIODS.forEach(function(p) {
@@ -1835,6 +2015,24 @@
             if (bestTargetSlot && (bestDelta < 0 || (bestDelta === 0 && Math.random() < 0.2) || Math.random() < 0.04)) {
                 var residentCell = schedule[chosenClass][bestTargetSlot.day][bestTargetSlot.period];
 
+                // Update PE gender tracking
+                if (movingCell.subject === "P.E") {
+                    var oldGender = getPEGender(chosenClass);
+                    if (oldGender) {
+                        // Remove from old slot if this was the only PE class there
+                        var oldKey = conflictDay + "_" + conflictPeriod;
+                        var stillHasPE = false;
+                        ALL_CLASSES.forEach(function(oc) {
+                            if (oc !== chosenClass) {
+                                var oc_cell = schedule[oc][conflictDay][conflictPeriod];
+                                if (oc_cell && oc_cell.subject === "P.E" && getPEGender(oc) === oldGender) stillHasPE = true;
+                            }
+                        });
+                        if (!stillHasPE) delete peSlotGender[oldKey];
+                        peSlotGender[bestTargetSlot.key] = oldGender;
+                    }
+                }
+
                 teacherSlotCount[conflictTeacher][conflictDay + "_" + conflictPeriod]--;
                 teacherSlotCount[conflictTeacher][bestTargetSlot.key] = (teacherSlotCount[conflictTeacher][bestTargetSlot.key] || 0) + 1;
 
@@ -1846,12 +2044,10 @@
                 if (residentCell) {
                     teacherSlotCount[residentCell.teacher][bestTargetSlot.key]--;
                     teacherSlotCount[residentCell.teacher][conflictDay + "_" + conflictPeriod] = (teacherSlotCount[residentCell.teacher][conflictDay + "_" + conflictPeriod] || 0) + 1;
-
                     if (bestTargetSlot.day !== conflictDay) {
                         teacherDayCount[residentCell.teacher][bestTargetSlot.day]--;
                         teacherDayCount[residentCell.teacher][conflictDay]++;
                     }
-
                     schedule[chosenClass][conflictDay][conflictPeriod] = residentCell;
                 } else {
                     schedule[chosenClass][conflictDay][conflictPeriod] = null;
@@ -1863,6 +2059,84 @@
             }
         }
 
+        // ---------------------------------------------------------------
+        // Step 3: Post-processing soft constraint fix pass
+        // Fix Maths in last period and consecutive teacher periods
+        // ---------------------------------------------------------------
+        var postIter = 0;
+        var maxPostIter = 5000;
+        var needsPostFix = true;
+
+        while (needsPostFix && postIter < maxPostIter) {
+            postIter++;
+            needsPostFix = false;
+
+            ALL_CLASSES.forEach(function(c) {
+                DAYS.forEach(function(day) {
+                    // Fix 1: Maths in last period → swap with a non-Maths cell on same day
+                    var lastCell = schedule[c][day][lastPeriod];
+                    if (lastCell && lastCell.subject === "Maths") {
+                        // Find best swap partner: a non-Maths, non-last period slot
+                        for (var pi = 0; pi < CURRENT_PERIODS.length - 1; pi++) {
+                            var swapP = CURRENT_PERIODS[pi];
+                            var swapCell = schedule[c][day][swapP];
+                            if (!swapCell || swapCell.subject === "Maths") continue;
+
+                            // Check teacher clash: last period teacher must be free at swapP globally
+                            var lastKey = day + "_" + lastPeriod;
+                            var swapKey = day + "_" + swapP;
+                            var lCount = teacherSlotCount[lastCell.teacher][swapKey] || 0;
+                            var sCount = teacherSlotCount[swapCell.teacher][lastKey] || 0;
+                            // Allow swap only if it doesn't cause new clashes
+                            if (lCount === 0 && sCount === 0) {
+                                // Do the swap
+                                teacherSlotCount[lastCell.teacher][lastKey]--;
+                                teacherSlotCount[lastCell.teacher][swapKey] = (teacherSlotCount[lastCell.teacher][swapKey] || 0) + 1;
+                                teacherSlotCount[swapCell.teacher][swapKey]--;
+                                teacherSlotCount[swapCell.teacher][lastKey] = (teacherSlotCount[swapCell.teacher][lastKey] || 0) + 1;
+                                schedule[c][day][lastPeriod] = swapCell;
+                                schedule[c][day][swapP] = lastCell;
+                                needsPostFix = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Fix 2: No consecutive periods for same teacher in same class
+                    for (var pi2 = 0; pi2 < CURRENT_PERIODS.length - 1; pi2++) {
+                        var p1 = CURRENT_PERIODS[pi2], p2 = CURRENT_PERIODS[pi2 + 1];
+                        var c1 = schedule[c][day][p1], c2 = schedule[c][day][p2];
+                        if (!c1 || !c2 || c1.teacher !== c2.teacher) continue;
+                        // Found consecutive pair – try to swap c2 with another period
+                        for (var pi3 = 0; pi3 < CURRENT_PERIODS.length; pi3++) {
+                            var swapP2 = CURRENT_PERIODS[pi3];
+                            if (swapP2 === p1 || swapP2 === p2) continue;
+                            var swapC = schedule[c][day][swapP2];
+                            if (!swapC || swapC.teacher === c1.teacher) continue;
+                            // Maths hard constraint
+                            if (c2.subject === "Maths" && swapP2 === lastPeriod) continue;
+                            if (swapC.subject === "Maths" && p2 === lastPeriod) continue;
+
+                            var key2 = day + "_" + p2;
+                            var keySwap = day + "_" + swapP2;
+                            var t2free = (teacherSlotCount[c2.teacher][keySwap] || 0) === 0;
+                            var tSwapFree = (teacherSlotCount[swapC.teacher][key2] || 0) === 0;
+                            if (t2free && tSwapFree) {
+                                teacherSlotCount[c2.teacher][key2]--;
+                                teacherSlotCount[c2.teacher][keySwap] = (teacherSlotCount[c2.teacher][keySwap] || 0) + 1;
+                                teacherSlotCount[swapC.teacher][keySwap]--;
+                                teacherSlotCount[swapC.teacher][key2] = (teacherSlotCount[swapC.teacher][key2] || 0) + 1;
+                                schedule[c][day][p2] = swapC;
+                                schedule[c][day][swapP2] = c2;
+                                needsPostFix = true;
+                                break;
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
         // Refresh active substitutions from database
         try {
             ACTIVE_SUBSTITUTIONS = await window.DB.getSubstitutions();
@@ -1872,7 +2146,7 @@
             console.warn("Could not refresh substitutions:", e);
         }
 
-        regenBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Regenerate Timetable (0 Clashes)';
+        regenBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Regenerate Timetable (Smart)';
         regenBtn.disabled = false;
 
         renderHeader();
@@ -2108,7 +2382,7 @@
 
     function switchPeriodMode() {
         var val = document.getElementById("periodMode").value;
-        CURRENT_PERIODS = (val === "7") ? [1, 2, 3, 4, 5, 6, 7] : [1, 2, 3, 4, 5, 6, 7, 8];
+        CURRENT_PERIODS = (val === "8") ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3, 4, 5, 6, 7];
         generateAutomatedTimetable();
     }
 
