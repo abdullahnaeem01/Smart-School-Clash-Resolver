@@ -88,7 +88,8 @@
             { id: "s-sst", name: "S.St", code: "SST", color_accent: "#06b6d4" },
             { id: "s-pakstudy", name: "Pak. Study", code: "PST", color_accent: "#0891b2" },
             { id: "s-ict", name: "ICT", code: "ICT", color_accent: "#6366f1" },
-            { id: "s-nazra", name: "Nazra", code: "NZR", color_accent: "#eab308" }
+            { id: "s-nazra", name: "Nazra", code: "NZR", color_accent: "#eab308" },
+            { id: "s-pe", name: "P.E", code: "PE", color_accent: "#16a34a" }
         ],
 
         classes: [
@@ -106,28 +107,77 @@
             var grade = parseInt(c) || 1;
             var sec = c.split(" ").slice(1).join(" ") || "A";
             return { id: "c-" + c.toLowerCase().replace(/[^a-z0-9]/g, "-"), name: c, grade: grade, section: sec };
-        })
+        }),
+
+        defaultCurriculum: [
+            // Grade 1 (35)
+            { grade: 1, subject_name: "English", periods_per_week: 6, max_per_day: 2 },
+            { grade: 1, subject_name: "Urdu", periods_per_week: 6, max_per_day: 2 },
+            { grade: 1, subject_name: "Maths", periods_per_week: 5, max_per_day: 1 },
+            { grade: 1, subject_name: "Science", periods_per_week: 4, max_per_day: 1 },
+            { grade: 1, subject_name: "S.St", periods_per_week: 4, max_per_day: 1 },
+            { grade: 1, subject_name: "ICT", periods_per_week: 2, max_per_day: 1 },
+            { grade: 1, subject_name: "Islamiat", periods_per_week: 3, max_per_day: 1 },
+            { grade: 1, subject_name: "Nazra", periods_per_week: 3, max_per_day: 1 },
+            { grade: 1, subject_name: "P.E", periods_per_week: 2, max_per_day: 1 },
+
+            // Grades 2-5 (35 each)
+            ...[2, 3, 4, 5].flatMap(g => [
+                { grade: g, subject_name: "English", periods_per_week: 6, max_per_day: 2 },
+                { grade: g, subject_name: "Urdu", periods_per_week: 6, max_per_day: 2 },
+                { grade: g, subject_name: "Maths", periods_per_week: 5, max_per_day: 1 },
+                { grade: g, subject_name: "Science", periods_per_week: 4, max_per_day: 1 },
+                { grade: g, subject_name: "S.St", periods_per_week: 4, max_per_day: 1 },
+                { grade: g, subject_name: "ICT", periods_per_week: 3, max_per_day: 1 },
+                { grade: g, subject_name: "Islamiat", periods_per_week: 3, max_per_day: 1 },
+                { grade: g, subject_name: "Nazra", periods_per_week: 3, max_per_day: 1 },
+                { grade: g, subject_name: "P.E", periods_per_week: 1, max_per_day: 1 }
+            ]),
+
+            // Grades 6-7 (35 each)
+            ...[6, 7].flatMap(g => [
+                { grade: g, subject_name: "English", periods_per_week: 6, max_per_day: 2 },
+                { grade: g, subject_name: "Urdu", periods_per_week: 6, max_per_day: 2 },
+                { grade: g, subject_name: "Maths", periods_per_week: 5, max_per_day: 1 },
+                { grade: g, subject_name: "Science", periods_per_week: 4, max_per_day: 1 },
+                { grade: g, subject_name: "S.St", periods_per_week: 4, max_per_day: 1 },
+                { grade: g, subject_name: "ICT", periods_per_week: 3, max_per_day: 1 },
+                { grade: g, subject_name: "Islamiat", periods_per_week: 3, max_per_day: 1 },
+                { grade: g, subject_name: "T.Q", periods_per_week: 3, max_per_day: 1 },
+                { grade: g, subject_name: "P.E", periods_per_week: 1, max_per_day: 1 }
+            ]),
+
+            // Grades 8-9 (35 each)
+            ...[8, 9].flatMap(g => [
+                { grade: g, subject_name: "English", periods_per_week: 5, max_per_day: 1 },
+                { grade: g, subject_name: "Urdu", periods_per_week: 5, max_per_day: 1 },
+                { grade: g, subject_name: "Maths", periods_per_week: 5, max_per_day: 1 },
+                { grade: g, subject_name: "Physics", periods_per_week: 4, max_per_day: 1 },
+                { grade: g, subject_name: "Chemistry", periods_per_week: 5, max_per_day: 1 },
+                { grade: g, subject_name: "Biology", periods_per_week: 4, max_per_day: 1 },
+                { grade: g, subject_name: "Islamiat", periods_per_week: 3, max_per_day: 1 },
+                { grade: g, subject_name: "T.Q", periods_per_week: 3, max_per_day: 1 },
+                { grade: g, subject_name: "P.E", periods_per_week: 1, max_per_day: 1 }
+            ]),
+
+            // Grade 10 (35)
+            { grade: 10, subject_name: "English", periods_per_week: 5, max_per_day: 1 },
+            { grade: 10, subject_name: "Urdu", periods_per_week: 5, max_per_day: 1 },
+            { grade: 10, subject_name: "Maths", periods_per_week: 5, max_per_day: 1 },
+            { grade: 10, subject_name: "Physics", periods_per_week: 4, max_per_day: 1 },
+            { grade: 10, subject_name: "Chemistry", periods_per_week: 5, max_per_day: 1 },
+            { grade: 10, subject_name: "Biology", periods_per_week: 4, max_per_day: 1 },
+            { grade: 10, subject_name: "T.Q", periods_per_week: 3, max_per_day: 1 },
+            { grade: 10, subject_name: "Pak. Study", periods_per_week: 3, max_per_day: 1 },
+            { grade: 10, subject_name: "P.E", periods_per_week: 1, max_per_day: 1 }
+        ]
     };
-
-    // Helper: Build ID maps for rapid lookups
-    function getEntityMaps(data) {
-        var tByName = {}, tById = {};
-        var sByName = {}, sById = {};
-        var cByName = {}, cById = {};
-
-        data.teachers.forEach(function(t) { tByName[t.name] = t; tById[t.id] = t; });
-        data.subjects.forEach(function(s) { sByName[s.name] = s; sById[s.id] = s; });
-        data.classes.forEach(function(c) { cByName[c.name] = c; cById[c.id] = c; });
-
-        return { tByName: tByName, tById: tById, sByName: sByName, sById: sById, cByName: cByName, cById: cById };
-    }
 
     // Initialize LocalStorage Data if not present
     function initLocalStorage() {
         if (!localStorage.getItem("SCH_TEACHERS")) {
             localStorage.setItem("SCH_TEACHERS", JSON.stringify(DEFAULT_DATA.teachers));
         } else {
-            // Ensure existing cached teachers have subjects array populated
             var cachedTeachers = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
             var updated = false;
             var defMap = {};
@@ -141,6 +191,10 @@
                     t.max_periods_daily = 6;
                     updated = true;
                 }
+                if (!t.max_periods_weekly) {
+                    t.max_periods_weekly = 35;
+                    updated = true;
+                }
             });
             if (updated) localStorage.setItem("SCH_TEACHERS", JSON.stringify(cachedTeachers));
         }
@@ -149,72 +203,65 @@
         }
         if (!localStorage.getItem("SCH_SUBJECTS")) {
             localStorage.setItem("SCH_SUBJECTS", JSON.stringify(DEFAULT_DATA.subjects));
+        } else {
+            // Ensure P.E exists in cached subjects
+            var cachedSubs = JSON.parse(localStorage.getItem("SCH_SUBJECTS") || "[]");
+            if (!cachedSubs.some(function(s) { return s.name === "P.E"; })) {
+                cachedSubs.push({ id: "s-pe", name: "P.E", code: "PE", color_accent: "#16a34a" });
+                localStorage.setItem("SCH_SUBJECTS", JSON.stringify(cachedSubs));
+            }
         }
         if (!localStorage.getItem("SCH_CLASSES")) {
             localStorage.setItem("SCH_CLASSES", JSON.stringify(DEFAULT_DATA.classes));
         }
-        if (!localStorage.getItem("SCH_ALLOCATIONS")) {
-            // Build default allocations from ALLOCATIONS array in index.html
-            var rawAllocs = window.RAW_DEFAULT_ALLOCATIONS || [];
-            var tMap = {}, sMap = {}, cMap = {};
-            DEFAULT_DATA.teachers.forEach(function(t) { tMap[t.name] = t.id; });
-            DEFAULT_DATA.subjects.forEach(function(s) { sMap[s.name] = s.id; });
-            DEFAULT_DATA.classes.forEach(function(c) { cMap[c.name] = c.id; });
-
-            var built = [];
-            var allocId = 1;
-            rawAllocs.forEach(function(a) {
-                var tid = tMap[a.teacher];
-                var sid = sMap[a.subject];
-                if (tid && sid) {
-                    a.classes.forEach(function(clsName) {
-                        var cid = cMap[clsName];
-                        if (cid) {
-                            built.push({
-                                id: "alloc-" + (allocId++),
-                                teacher_id: tid,
-                                subject_id: sid,
-                                class_id: cid,
-                                periods_per_week: a.periods
-                            });
-                        }
-                    });
-                }
+        if (!localStorage.getItem("SCH_SETTINGS")) {
+            localStorage.setItem("SCH_SETTINGS", JSON.stringify({
+                school_name: "Smart School",
+                periods_per_day: "7",
+                break_after_period: "3",
+                working_days: '["Monday","Tuesday","Wednesday","Thursday","Friday"]'
+            }));
+        }
+        if (!localStorage.getItem("SCH_CURRICULUM")) {
+            var sMap = {};
+            DEFAULT_DATA.subjects.forEach(function(s) { sMap[s.name] = s; });
+            var initCur = DEFAULT_DATA.defaultCurriculum.map(function(c, i) {
+                var s = sMap[c.subject_name] || { id: "s-" + i, color_accent: "#3b82f6" };
+                return {
+                    id: "cur-" + (i + 1),
+                    grade: c.grade,
+                    subject_id: s.id,
+                    subject_name: c.subject_name,
+                    subject_color: s.color_accent,
+                    periods_per_week: c.periods_per_week,
+                    max_per_day: c.max_per_day
+                };
             });
-            localStorage.setItem("SCH_ALLOCATIONS", JSON.stringify(built));
+            localStorage.setItem("SCH_CURRICULUM", JSON.stringify(initCur));
         }
     }
 
     // Public Database Service Interface
     window.DB = {
+        client: null,
+
         // Init connection to Supabase
         init: async function() {
             initLocalStorage();
             var defaultUrl = "https://aoxloxnkctbccyqsdghk.supabase.co";
             var defaultKey = "sb_publishable_WfV3i9xNoFmsiLUiJtzoRA_tWUcBtIW";
-            var url = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url) || defaultUrl;
-            var key = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.anonKey) || defaultKey;
+            var url = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url) || localStorage.getItem("SB_URL") || defaultUrl;
+            var key = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.anonKey) || localStorage.getItem("SB_KEY") || defaultKey;
 
             if (url && key && window.supabase && window.supabase.createClient) {
                 try {
                     supabaseClient = window.supabase.createClient(url, key);
+                    this.client = supabaseClient;
                     // Test ping
                     var test = await supabaseClient.from("teachers").select("count", { count: "exact", head: true });
                     if (!test.error) {
                         isConnected = true;
                         console.log("Connected to Supabase PostgreSQL Database successfully!");
-
-                        // Auto-check: if teachers are still marked "General", auto-sync their subject specializations
-                        try {
-                            var generalCheck = await supabaseClient.from("teachers").select("id").eq("department", "General").limit(1);
-                            if (!generalCheck.error && generalCheck.data && generalCheck.data.length > 0) {
-                                console.log("Detected unassigned 'General' teachers in Supabase. Auto-syncing subject specializations to cloud...");
-                                this.syncTeacherSubjectsToSupabase();
-                            }
-                        } catch (syncErr) {
-                            console.warn("Background subject sync error:", syncErr);
-                        }
-
                         return { connected: true, client: supabaseClient };
                     } else {
                         console.warn("Supabase credentials entered, but test query returned:", test.error.message);
@@ -225,6 +272,7 @@
             }
 
             isConnected = false;
+            this.client = supabaseClient;
             return { connected: false, fallback: true };
         },
 
@@ -242,6 +290,7 @@
             localStorage.removeItem("SB_URL");
             localStorage.removeItem("SB_KEY");
             supabaseClient = null;
+            this.client = null;
             isConnected = false;
         },
 
@@ -250,10 +299,13 @@
         // ==========================
         getTeachers: async function() {
             var list = [];
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 var res = await supabaseClient.from("teachers").select("*").order("name");
-                if (!res.error && res.data) list = res.data;
-            } else {
+                if (!res.error && res.data && res.data.length > 0) {
+                    list = res.data;
+                }
+            }
+            if (!list || list.length === 0) {
                 list = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
             }
 
@@ -262,6 +314,7 @@
 
             list.forEach(function(t) {
                 t.max_periods_daily = parseInt(t.max_periods_daily) || 6;
+                t.max_periods_weekly = parseInt(t.max_periods_weekly) || 35;
                 if (!t.subjects || t.subjects.length === 0) {
                     if (defMap[t.name]) {
                         t.subjects = defMap[t.name].slice();
@@ -278,7 +331,7 @@
         addTeacher: async function(teacher) {
             var subjects = Array.isArray(teacher.subjects) ? teacher.subjects : (teacher.subjects ? [teacher.subjects] : (teacher.department ? [teacher.department] : []));
             var newT = {
-                id: teacher.id || "t-" + Date.now(),
+                id: teacher.id || ("t-" + Date.now()),
                 name: teacher.name,
                 department: teacher.department || (subjects.length > 0 ? subjects.join(", ") : "General"),
                 subjects: subjects,
@@ -286,7 +339,7 @@
                 max_periods_daily: parseInt(teacher.max_periods_daily) || 6
             };
 
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 var sbPayload = {
                     name: newT.name,
                     department: newT.department,
@@ -296,7 +349,6 @@
                 var res = await supabaseClient.from("teachers").insert([sbPayload]).select().single();
                 if (!res.error && res.data) {
                     newT.id = res.data.id;
-                    return newT;
                 }
             }
 
@@ -307,7 +359,7 @@
         },
 
         updateTeacher: async function(id, updates) {
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 var sbUpdates = Object.assign({}, updates);
                 delete sbUpdates.subjects;
                 var res = await supabaseClient.from("teachers").update(sbUpdates).eq("id", id).select().single();
@@ -326,7 +378,7 @@
         },
 
         deleteTeacher: async function(id) {
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 await supabaseClient.from("teachers").delete().eq("id", id);
             }
             var list = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]").filter(function(t) { return t.id !== id; });
@@ -342,22 +394,22 @@
         // SUBJECTS CRUD
         // ==========================
         getSubjects: async function() {
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 var res = await supabaseClient.from("subjects").select("*").order("name");
-                if (!res.error && res.data) return res.data;
+                if (!res.error && res.data && res.data.length > 0) return res.data;
             }
             return JSON.parse(localStorage.getItem("SCH_SUBJECTS") || "[]");
         },
 
         addSubject: async function(subject) {
             var newS = {
-                id: subject.id || "s-" + Date.now(),
+                id: subject.id || ("s-" + Date.now()),
                 name: subject.name,
                 code: subject.code || subject.name.slice(0, 4).toUpperCase(),
                 color_accent: subject.color_accent || "#3b82f6"
             };
 
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 var res = await supabaseClient.from("subjects").insert([newS]).select().single();
                 if (!res.error && res.data) return res.data;
             }
@@ -369,7 +421,7 @@
         },
 
         updateSubject: async function(id, updates) {
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 var res = await supabaseClient.from("subjects").update(updates).eq("id", id).select().single();
                 if (!res.error && res.data) return res.data;
             }
@@ -386,7 +438,7 @@
         },
 
         deleteSubject: async function(id) {
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 await supabaseClient.from("subjects").delete().eq("id", id);
             }
             var list = JSON.parse(localStorage.getItem("SCH_SUBJECTS") || "[]").filter(function(s) { return s.id !== id; });
@@ -398,22 +450,22 @@
         // CLASSES CRUD
         // ==========================
         getClasses: async function() {
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 var res = await supabaseClient.from("classes").select("*").order("grade");
-                if (!res.error && res.data) return res.data;
+                if (!res.error && res.data && res.data.length > 0) return res.data;
             }
             return JSON.parse(localStorage.getItem("SCH_CLASSES") || "[]");
         },
 
         addClass: async function(cls) {
             var newC = {
-                id: cls.id || "c-" + Date.now(),
+                id: cls.id || ("c-" + Date.now()),
                 name: cls.name,
                 grade: parseInt(cls.grade) || 1,
                 section: cls.section || "A"
             };
 
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 var res = await supabaseClient.from("classes").insert([newC]).select().single();
                 if (!res.error && res.data) return res.data;
             }
@@ -425,7 +477,7 @@
         },
 
         deleteClass: async function(id) {
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 await supabaseClient.from("classes").delete().eq("id", id);
             }
             var list = JSON.parse(localStorage.getItem("SCH_CLASSES") || "[]").filter(function(c) { return c.id !== id; });
@@ -442,23 +494,35 @@
             var classes = await this.getClasses();
 
             var tMap = {}, sMap = {}, cMap = {};
-            teachers.forEach(function(t) { tMap[t.id] = t; });
-            subjects.forEach(function(s) { sMap[s.id] = s; });
-            classes.forEach(function(c) { cMap[c.id] = c; });
+            teachers.forEach(function(t) { tMap[t.id] = t; tMap[t.name] = t; });
+            subjects.forEach(function(s) { sMap[s.id] = s; sMap[s.name] = s; });
+            classes.forEach(function(c) { cMap[c.id] = c; cMap[c.name] = c; });
 
-            var rawAllocs = [];
-            if (isConnected) {
-                var res = await supabaseClient.from("allocations").select("*");
-                if (!res.error && res.data) rawAllocs = res.data;
-            } else {
-                rawAllocs = JSON.parse(localStorage.getItem("SCH_ALLOCATIONS") || "[]");
+            if (isConnected && supabaseClient) {
+                var res = await supabaseClient
+                    .from("allocations")
+                    .select("*, teachers(name), subjects(name), classes(name, grade, section)");
+                if (!res.error && res.data && res.data.length > 0) {
+                    return res.data.map(function(r) {
+                        return {
+                            id: r.id,
+                            teacher_id: r.teacher_id,
+                            teacher_name: r.teachers?.name || (tMap[r.teacher_id] ? tMap[r.teacher_id].name : "Unknown"),
+                            subject_id: r.subject_id,
+                            subject_name: r.subjects?.name || (sMap[r.subject_id] ? sMap[r.subject_id].name : "Unknown"),
+                            class_id: r.class_id,
+                            class_name: r.classes?.name || (cMap[r.class_id] ? cMap[r.class_id].name : "Unknown"),
+                            periods_per_week: parseInt(r.periods_per_week) || 1
+                        };
+                    });
+                }
             }
 
-            // Hydrate with names for solver & display
+            var rawAllocs = JSON.parse(localStorage.getItem("SCH_ALLOCATIONS") || "[]");
             return rawAllocs.map(function(a) {
-                var t = tMap[a.teacher_id] || { name: "Unknown" };
-                var s = sMap[a.subject_id] || { name: "Unknown" };
-                var c = cMap[a.class_id] || { name: "Unknown" };
+                var t = tMap[a.teacher_id] || tMap[a.teacher_name] || { name: a.teacher_name || "Unknown" };
+                var s = sMap[a.subject_id] || sMap[a.subject_name] || { name: a.subject_name || "Unknown" };
+                var c = cMap[a.class_id] || cMap[a.class_name] || { name: a.class_name || "Unknown" };
                 return {
                     id: a.id,
                     teacher_id: a.teacher_id,
@@ -467,28 +531,34 @@
                     subject_name: s.name,
                     class_id: a.class_id,
                     class_name: c.name,
-                    periods_per_week: a.periods_per_week
+                    periods_per_week: parseInt(a.periods_per_week) || 1
                 };
             });
         },
 
         addAllocation: async function(teacher_id, subject_id, class_id, periods) {
+            var periodsInt = parseInt(periods) || 1;
             var newAlloc = {
                 id: "alloc-" + Date.now(),
                 teacher_id: teacher_id,
                 subject_id: subject_id,
                 class_id: class_id,
-                periods_per_week: parseInt(periods) || 1
+                periods_per_week: periodsInt
             };
 
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 var res = await supabaseClient.from("allocations").insert([{
                     teacher_id: teacher_id,
                     subject_id: subject_id,
                     class_id: class_id,
-                    periods_per_week: parseInt(periods) || 1
-                }]).select().single();
-                if (!res.error && res.data) return res.data;
+                    periods_per_week: periodsInt
+                }]).select("*, teachers(name), subjects(name), classes(name)").single();
+                if (!res.error && res.data) {
+                    newAlloc.id = res.data.id;
+                    newAlloc.teacher_name = res.data.teachers?.name;
+                    newAlloc.subject_name = res.data.subjects?.name;
+                    newAlloc.class_name = res.data.classes?.name;
+                }
             }
 
             var list = JSON.parse(localStorage.getItem("SCH_ALLOCATIONS") || "[]");
@@ -498,7 +568,7 @@
         },
 
         deleteAllocation: async function(id) {
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 await supabaseClient.from("allocations").delete().eq("id", id);
             }
             var list = JSON.parse(localStorage.getItem("SCH_ALLOCATIONS") || "[]").filter(function(a) { return a.id !== id; });
@@ -507,7 +577,249 @@
         },
 
         // ==========================
-        // TEACHER-SUBJECT MAPPING & BATCH REASSIGNMENT
+        // CURRICULUM CRUD
+        // ==========================
+        getCurriculum: async function() {
+            var client = this.client || supabaseClient;
+            if (isConnected && client) {
+                try {
+                    const { data, error } = await client
+                        .from('curriculum')
+                        .select('*, subjects(name, color_accent)')
+                        .order('grade');
+                    if (!error && data && data.length > 0) {
+                        return data.map(r => ({
+                            ...r,
+                            subject_name: r.subjects?.name,
+                            subject_color: r.subjects?.color_accent
+                        }));
+                    }
+                } catch (e) {
+                    console.warn("Supabase getCurriculum fallback:", e);
+                }
+            }
+
+            // Fallback from localStorage
+            var cached = JSON.parse(localStorage.getItem("SCH_CURRICULUM") || "[]");
+            if (cached.length > 0) return cached;
+
+            var subjects = await this.getSubjects();
+            var sMap = {};
+            subjects.forEach(s => { sMap[s.name] = s; });
+
+            var built = DEFAULT_DATA.defaultCurriculum.map((c, i) => {
+                var s = sMap[c.subject_name] || { id: "s-" + i, color_accent: "#3b82f6" };
+                return {
+                    id: "cur-" + (i + 1),
+                    grade: c.grade,
+                    subject_id: s.id,
+                    subject_name: c.subject_name,
+                    subject_color: s.color_accent,
+                    periods_per_week: c.periods_per_week,
+                    max_per_day: c.max_per_day
+                };
+            });
+            localStorage.setItem("SCH_CURRICULUM", JSON.stringify(built));
+            return built;
+        },
+
+        upsertCurriculum: async function(grade, subjectId, periodsPerWeek, maxPerDay) {
+            var gradeInt = parseInt(grade);
+            var ppwInt = parseInt(periodsPerWeek) || 1;
+            var mpdInt = parseInt(maxPerDay) || 1;
+
+            var client = this.client || supabaseClient;
+            if (isConnected && client) {
+                const { error } = await client.from('curriculum').upsert({
+                    grade: gradeInt,
+                    subject_id: subjectId,
+                    periods_per_week: ppwInt,
+                    max_per_day: mpdInt
+                }, { onConflict: 'grade,subject_id' });
+                if (error) console.error("Supabase upsertCurriculum error:", error);
+            }
+
+            // Sync with local cache
+            var list = JSON.parse(localStorage.getItem("SCH_CURRICULUM") || "[]");
+            var subjects = await this.getSubjects();
+            var subj = subjects.find(s => s.id === subjectId) || { name: "Unknown", color_accent: "#3b82f6" };
+            var idx = list.findIndex(c => c.grade === gradeInt && c.subject_id === subjectId);
+            var entry = {
+                id: (idx >= 0 && list[idx].id) ? list[idx].id : ("cur-" + Date.now()),
+                grade: gradeInt,
+                subject_id: subjectId,
+                subject_name: subj.name,
+                subject_color: subj.color_accent,
+                periods_per_week: ppwInt,
+                max_per_day: mpdInt
+            };
+            if (idx >= 0) list[idx] = entry; else list.push(entry);
+            localStorage.setItem("SCH_CURRICULUM", JSON.stringify(list));
+        },
+
+        deleteCurriculum: async function(grade, subjectId) {
+            var gradeInt = parseInt(grade);
+            var client = this.client || supabaseClient;
+            if (isConnected && client) {
+                const { error } = await client.from('curriculum')
+                    .delete().eq('grade', gradeInt).eq('subject_id', subjectId);
+                if (error) console.error("Supabase deleteCurriculum error:", error);
+            }
+            var list = JSON.parse(localStorage.getItem("SCH_CURRICULUM") || "[]");
+            list = list.filter(c => !(c.grade === gradeInt && c.subject_id === subjectId));
+            localStorage.setItem("SCH_CURRICULUM", JSON.stringify(list));
+        },
+
+        // ==========================
+        // TEACHER SUBJECTS MAPPING
+        // ==========================
+        getTeacherSubjects: async function() {
+            var client = this.client || supabaseClient;
+            if (isConnected && client) {
+                try {
+                    const { data, error } = await client
+                        .from('teacher_subjects')
+                        .select('*, teachers(name), subjects(name)');
+                    if (!error && data && data.length > 0) {
+                        return data.map(r => ({ ...r, teacher_name: r.teachers?.name, subject_name: r.subjects?.name }));
+                    }
+                } catch (e) {
+                    console.warn("Supabase getTeacherSubjects fallback:", e);
+                }
+            }
+
+            var teachers = await this.getTeachers();
+            var subjects = await this.getSubjects();
+            var sByName = {};
+            subjects.forEach(s => { sByName[s.name] = s; });
+
+            var res = [];
+            teachers.forEach(t => {
+                var subs = (t.subjects && t.subjects.length > 0) ? t.subjects : (t.department ? t.department.split(",").map(x => x.trim()) : []);
+                subs.forEach(sName => {
+                    var s = sByName[sName];
+                    if (s) {
+                        res.push({
+                            teacher_id: t.id,
+                            teacher_name: t.name,
+                            subject_id: s.id,
+                            subject_name: s.name
+                        });
+                    }
+                });
+            });
+            return res;
+        },
+
+        setTeacherSubjects: async function(teacherId, subjectIds) {
+            var client = this.client || supabaseClient;
+            if (isConnected && client) {
+                try {
+                    await client.from('teacher_subjects').delete().eq('teacher_id', teacherId);
+                    if (subjectIds.length > 0) {
+                        const { error } = await client.from('teacher_subjects').insert(
+                            subjectIds.map(sid => ({ teacher_id: teacherId, subject_id: sid }))
+                        );
+                        if (error) console.error("Supabase setTeacherSubjects error:", error);
+                    }
+                } catch (e) {
+                    console.error("setTeacherSubjects exception:", e);
+                }
+            }
+
+            // Sync with local teachers list
+            var subjects = await this.getSubjects();
+            var sById = {};
+            subjects.forEach(s => { sById[s.id] = s.name; });
+            var subjectNames = subjectIds.map(sid => sById[sid]).filter(Boolean);
+            await this.updateTeacher(teacherId, {
+                subjects: subjectNames,
+                department: subjectNames.join(", ") || "General"
+            });
+        },
+
+        // ==========================
+        // SCHOOL SETTINGS CRUD
+        // ==========================
+        getSettings: async function() {
+            var client = this.client || supabaseClient;
+            if (isConnected && client) {
+                try {
+                    const { data, error } = await client.from('school_settings').select('*');
+                    if (!error && data && data.length > 0) {
+                        const result = {};
+                        data.forEach(row => { result[row.key] = row.value; });
+                        return result;
+                    }
+                } catch (e) {
+                    console.warn("Supabase getSettings fallback:", e);
+                }
+            }
+            return JSON.parse(localStorage.getItem('SCH_SETTINGS') || '{}');
+        },
+
+        saveSetting: async function(key, value) {
+            var client = this.client || supabaseClient;
+            if (isConnected && client) {
+                try {
+                    const { error } = await client.from('school_settings')
+                        .upsert({ key, value: String(value) }, { onConflict: 'key' });
+                    if (error) console.warn('Supabase saveSetting error:', error);
+                } catch (e) {
+                    console.warn('saveSetting error:', e);
+                }
+            }
+            const settings = JSON.parse(localStorage.getItem('SCH_SETTINGS') || '{}');
+            settings[key] = String(value);
+            localStorage.setItem('SCH_SETTINGS', JSON.stringify(settings));
+        },
+
+        // ==========================
+        // CHANGE AUDIT LOG
+        // ==========================
+        addChangeLog: async function(entityType, entityId, description, oldValue, newValue) {
+            var client = this.client || supabaseClient;
+            if (isConnected && client) {
+                try {
+                    await client.from('change_log').insert({
+                        entity_type: entityType,
+                        entity_id: String(entityId),
+                        description: description,
+                        old_value: oldValue,
+                        new_value: newValue
+                    });
+                } catch (e) {
+                    console.warn("Supabase addChangeLog error:", e);
+                }
+            }
+            var logs = JSON.parse(localStorage.getItem('SCH_CHANGE_LOG') || '[]');
+            logs.unshift({
+                entity_type: entityType,
+                entity_id: String(entityId),
+                description: description,
+                old_value: oldValue,
+                new_value: newValue,
+                changed_at: new Date().toISOString()
+            });
+            if (logs.length > 200) logs.length = 200;
+            localStorage.setItem('SCH_CHANGE_LOG', JSON.stringify(logs));
+        },
+
+        getChangeLog: async function(limit = 50) {
+            var client = this.client || supabaseClient;
+            if (isConnected && client) {
+                try {
+                    const { data } = await client.from('change_log')
+                        .select('*').order('changed_at', { ascending: false }).limit(limit);
+                    if (data && data.length > 0) return data;
+                } catch (e) {}
+            }
+            const logs = JSON.parse(localStorage.getItem('SCH_CHANGE_LOG') || '[]');
+            return logs.slice(0, limit);
+        },
+
+        // ==========================
+        // TEACHER-SUBJECT MAPPING & REASSIGNMENT
         // ==========================
         getTeacherSubjectsMap: async function() {
             var teachers = await this.getTeachers();
@@ -564,10 +876,6 @@
         },
 
         reassignTeacherClassesAndSubjects: async function(teacherId, payload) {
-            // Supports high-level payload:
-            // { subjectName: "Maths", periodsPerWeek: 5, classNames: ["10 Blue", "9 Blue"] }
-            // Or low-level payload:
-            // { newSubjects: ["Maths"], department: "Maths", allocations: [...] }
             var teachers = await this.getTeachers();
             var allSubjects = await this.getSubjects();
             var allClasses = await this.getClasses();
@@ -598,12 +906,11 @@
                 payload.allocations = allocList;
             }
 
-            if (isConnected) {
-                // 1. Delete all existing allocations for this teacher in Supabase
-                var del = await supabaseClient.from("allocations").delete().eq("teacher_id", teacherId);
-                if (del.error) console.error("Supabase delete allocations error:", del.error);
+            if (isConnected && supabaseClient) {
+                // Delete existing allocations for this teacher in Supabase
+                await supabaseClient.from("allocations").delete().eq("teacher_id", teacherId);
 
-                // 2. Insert new allocations
+                // Insert new allocations
                 if (payload.allocations && payload.allocations.length > 0) {
                     var rows = payload.allocations.map(function(a) {
                         return {
@@ -613,18 +920,17 @@
                             periods_per_week: parseInt(a.periods_per_week) || 1
                         };
                     });
-                    var ins = await supabaseClient.from("allocations").insert(rows);
-                    if (ins.error) console.error("Supabase insert allocations error:", ins.error);
+                    await supabaseClient.from("allocations").insert(rows);
                 }
 
-                // 3. Update department / subject specialization
+                // Update teacher department
                 if (payload.department || (payload.newSubjects && payload.newSubjects.length > 0)) {
                     var dept = payload.department || payload.newSubjects.join(", ");
                     await supabaseClient.from("teachers").update({ department: dept }).eq("id", teacherId);
                 }
             }
 
-            // Always update Local Storage as well
+            // Sync Local Storage
             var allAllocs = JSON.parse(localStorage.getItem("SCH_ALLOCATIONS") || "[]");
             allAllocs = allAllocs.filter(function(a) { return a.teacher_id !== teacherId; });
 
@@ -657,39 +963,24 @@
             return { success: true };
         },
 
-        // Sync All Teacher Specializations directly to Supabase Cloud Database
-        syncTeacherSubjectsToSupabase: async function() {
-            if (!isConnected) {
-                return { success: false, message: "Not connected to Supabase" };
-            }
-            var defMap = {};
-            DEFAULT_DATA.teachers.forEach(function(t) {
-                defMap[t.name] = t.department || (t.subjects ? t.subjects.join(", ") : "General");
-            });
-
-            var count = 0;
-            for (var name in defMap) {
-                var dept = defMap[name];
-                var res = await supabaseClient.from("teachers").update({ department: dept }).eq("name", name);
-                if (!res.error) count++;
-            }
-            console.log("Successfully synced " + count + " teacher specializations to Supabase cloud tables!");
-            return { success: true, updatedCount: count };
-        },
-
         // Export All Database Records as JSON
         exportAllData: async function() {
             var teachers = await this.getTeachers();
             var subjects = await this.getSubjects();
             var classes = await this.getClasses();
             var allocations = await this.getAllocations();
+            var curriculum = await this.getCurriculum();
+            var settings = await this.getSettings();
 
             return {
                 timestamp: new Date().toISOString(),
                 source: isConnected ? "Supabase Cloud" : "Local Storage",
+                school_name: settings.school_name || "Smart School",
+                settings: settings,
                 teachers: teachers,
                 subjects: subjects,
                 classes: classes,
+                curriculum: curriculum,
                 allocations: allocations
             };
         },
@@ -699,7 +990,7 @@
         // ==========================
         getSubstitutions: async function(filterDay) {
             var list = [];
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 var query = supabaseClient.from("substitutions").select("*").order("created_at", { ascending: false });
                 if (filterDay) query = query.eq("day", filterDay);
                 var res = await query;
@@ -715,7 +1006,7 @@
 
         saveSubstitution: async function(sub) {
             var newSub = {
-                id: sub.id || "sub-" + Date.now(),
+                id: sub.id || ("sub-" + Date.now()),
                 day: sub.day,
                 period: parseInt(sub.period),
                 class_id: sub.class_id || sub.className || "",
@@ -726,10 +1017,9 @@
                 created_at: sub.created_at || new Date().toISOString()
             };
 
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 var res = await supabaseClient.from("substitutions").upsert([newSub]).select().single();
                 if (!res.error && res.data) return res.data;
-                if (res.error) console.error("Supabase saveSubstitution error:", res.error);
             }
 
             var list = JSON.parse(localStorage.getItem("SCH_SUBSTITUTIONS") || "[]");
@@ -746,7 +1036,7 @@
         },
 
         deleteSubstitution: async function(id) {
-            if (isConnected) {
+            if (isConnected && supabaseClient) {
                 await supabaseClient.from("substitutions").delete().eq("id", id);
             }
             var list = JSON.parse(localStorage.getItem("SCH_SUBSTITUTIONS") || "[]").filter(function(s) {
@@ -757,7 +1047,7 @@
         },
 
         // Helper: Find Free Teachers for any slot with intelligent ranking
-        getFreeTeachersForSlot: function(day, period, schedule, teachersList) {
+        getFreeTeachersForSlot: function(day, period, schedule, teachersList, periodsList) {
             var busyTeachers = new Set();
             var dayLoads = {};
             var weekLoads = {};
@@ -810,7 +1100,7 @@
             });
 
             // Rank free teachers:
-            // 1. Teachers who can take more today (todayCnt < maxD) come first
+            // 1. Teachers who can take more today (todayCnt < maxD)
             // 2. Fewest periods today
             // 3. Fewest periods this week
             freeTeachers.sort(function(a, b) {
@@ -839,6 +1129,8 @@
             localStorage.removeItem("SCH_SUBJECTS");
             localStorage.removeItem("SCH_CLASSES");
             localStorage.removeItem("SCH_ALLOCATIONS");
+            localStorage.removeItem("SCH_CURRICULUM");
+            localStorage.removeItem("SCH_SETTINGS");
             localStorage.removeItem("SCH_SUBSTITUTIONS");
             initLocalStorage();
         }
