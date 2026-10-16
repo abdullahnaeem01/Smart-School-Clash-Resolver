@@ -465,6 +465,34 @@
         ["Sidra", "Physics", "8 Pink", 4]
     ];
 
+    // Retry network-level failures ("Failed to fetch") a couple of times before giving up
+    function retryFetch(input, init) {
+        var attempt = 0;
+        function go() {
+            return fetch(input, init).catch(function(err) {
+                attempt++;
+                if (attempt > 2 || (init && init.signal && init.signal.aborted)) throw err;
+                return new Promise(function(r) { setTimeout(r, 700 * attempt); }).then(go);
+            });
+        }
+        return go();
+    }
+    function isNetworkError(e) {
+        var m = String((e && e.message) || e || "");
+        return /failed to fetch|networkerror|load failed|network request failed|fetch failed|timed out/i.test(m);
+    }
+    // Accept sloppy input: trailing slash, "/rest/v1", spaces, missing https:// ... -> https://<ref>.supabase.co
+    function cleanUrl(u) {
+        u = String(u || "").trim().replace(/^["']|["']$/g, "");
+        if (!u) return "";
+        if (/^[a-z0-9]{15,25}$/i.test(u)) u = u + ".supabase.co";      // only the project ref was pasted
+        if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+        try { return new URL(u).origin; } catch (e) { return u.replace(/\/+$/, ""); }
+    }
+    function cleanKey(k) { return String(k || "").replace(/\s+/g, "").replace(/^["']|["']$/g, ""); }
+    var reconnectTimer = null;
+    var lastToastAt = 0;
+
     // Initialize LocalStorage Data if not present
     function initLocalStorage() {
         if (!localStorage.getItem("SCH_TEACHERS")) {
@@ -559,61 +587,207 @@
         init: async function() {
             initLocalStorage();
             var self = this;
-            var defaultUrl = "https://aoxloxnkctbccyqsdghk.supabase.co";
-            var defaultKey = "sb_publishable_WfV3i9xNoFmsiLUiJtzoRA_tWUcBtIW";
-            // Credentials saved by the user in the Settings tab win over the built-in config
-            var url = localStorage.getItem("SB_URL") || (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url) || defaultUrl;
-            var key = localStorage.getItem("SB_KEY") || (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.anonKey) || defaultKey;
+            var built = window.SUPABASE_CONFIG || {};
+            var builtUrl = cleanUrl(built.url || "https://aoxloxnkctbccyqsdghk.supabase.co");
+            var builtKey = cleanKey(built.anonKey || "sb_publishable_WfV3i9xNoFmsiLUiJtzoRA_tWUcBtIW");
+            var savedUrl = cleanUrl(localStorage.getItem("SB_URL") || "");
+            var savedKey = cleanKey(localStorage.getItem("SB_KEY") || "");
             this.lastError = null;
 
             if (!(window.supabase && window.supabase.createClient)) {
                 this.lastError = "Supabase library failed to load (check internet connection).";
-                console.warn(this.lastError);
                 isConnected = false; this.client = null; supabaseClient = null;
                 return { connected: false, fallback: true, error: this.lastError };
             }
 
-            try {
-                supabaseClient = window.supabase.createClient(url, key, {
-                    auth: { persistSession: false, autoRefreshToken: false }
-                });
-                this.client = supabaseClient;
+            // try the saved credentials first, then the built-in ones (self-heal a wrongly pasted URL/key)
+            var candidates = [];
+            if (savedUrl && savedKey) candidates.push({ url: savedUrl, key: savedKey, saved: true });
+            candidates.push({ url: builtUrl, key: builtKey, saved: false });
 
-                // Test ping: a real column + HEAD request (the old "count" column does not exist -> always failed)
-                var ping = supabaseClient.from("teachers").select("id", { count: "exact", head: true });
-                var timeout = new Promise(function(_, rej) { setTimeout(function() { rej(new Error("Connection timed out")); }, 8000); });
-                var test = await Promise.race([ping, timeout]);
-
-                if (!test.error) {
-                    isConnected = true;
-                    console.log("Connected to Supabase PostgreSQL Database successfully!");
-                    return { connected: true, client: supabaseClient };
+            var lastErr = null;
+            for (var i = 0; i < candidates.length; i++) {
+                var c = candidates[i];
+                try {
+                    var client = window.supabase.createClient(c.url, c.key, {
+                        auth: { persistSession: false, autoRefreshToken: false },
+                        global: { fetch: retryFetch }
+                    });
+                    // real GET request (a HEAD request can report success even when the URL is wrong)
+                    var ping = client.from("teachers").select("id").limit(1);
+                    var timeout = new Promise(function(_, rej) { setTimeout(function() { rej(new Error("Connection timed out")); }, 9000); });
+                    var test = await Promise.race([ping, timeout]);
+                    if (!test.error) {
+                        supabaseClient = client; this.client = client; isConnected = true;
+                        this.activeUrl = c.url;
+                        if (c.saved) { localStorage.setItem("SB_URL", c.url); localStorage.setItem("SB_KEY", c.key); }
+                        else { localStorage.removeItem("SB_URL"); localStorage.removeItem("SB_KEY"); }  // drop the broken override
+                        console.log("Connected to Supabase:", c.url);
+                        try { await this._syncOnConnect(); } catch (e) { console.warn("sync on connect:", e); }
+                        return { connected: true, client: client };
+                    }
+                    lastErr = test.error.message || String(test.error);
+                } catch (e) {
+                    lastErr = (e && e.message) || String(e);
+                    if (isNetworkError(e)) break;     // no internet: trying another URL will not help
                 }
-                this.lastError = test.error.message || String(test.error);
-                console.warn("Supabase test query returned:", this.lastError);
-            } catch (e) {
-                this.lastError = (e && e.message) || String(e);
-                console.warn("Supabase connection failed, falling back to Local Storage:", e);
             }
 
-            isConnected = false;
+            this.lastError = isNetworkError(lastErr) ? "Cannot reach Supabase (internet/VPN/firewall, or the project is paused)." : lastErr;
+            console.warn("Supabase unavailable, using Local Storage:", this.lastError);
+            isConnected = false; this.client = null; supabaseClient = null;
+            if (isNetworkError(lastErr)) this._startAutoReconnect();
             return { connected: false, fallback: true, error: this.lastError };
+        },
+
+        // After connecting: upload offline changes, or seed an EMPTY cloud database from the defaults
+        _syncOnConnect: async function() {
+            var cnt = await supabaseClient.from("teachers").select("id", { count: "exact", head: true });
+            var empty = !cnt.error && (cnt.count === 0);
+            if (empty || localStorage.getItem("SCH_PENDING_SYNC")) await this.pushLocalChanges();
+        },
+
+        // Returns one row per table: reachable? how many rows? the exact error
+        diagnose: async function() {
+            var out = [];
+            if (!(window.supabase && window.supabase.createClient)) return [{ name: "Supabase library", ok: false, msg: "Not loaded (no internet or blocked CDN)" }];
+            var url = this.activeUrl || cleanUrl((window.SUPABASE_CONFIG || {}).url);
+            out.push({ name: "Project URL in use", ok: /^https:\/\/[a-z0-9]+\.supabase\.co$/i.test(url), msg: url });
+            if (!(isConnected && supabaseClient)) {
+                var r = await this.reconnect();
+                out.push({ name: "Connection", ok: isConnected, msg: isConnected ? "Connected" : (this.lastError || "Failed") });
+                if (!isConnected) return out;
+            } else out.push({ name: "Connection", ok: true, msg: "Connected" });
+            var tables = ["teachers", "subjects", "classes", "allocations", "teacher_subjects", "curriculum", "school_settings", "timetable_slots", "substitutions"];
+            for (var i = 0; i < tables.length; i++) {
+                var res = await supabaseClient.from(tables[i]).select("id", { count: "exact" }).limit(1);
+                out.push({ name: "Table " + tables[i], ok: !res.error, msg: res.error ? res.error.message : ((res.count || 0) + " rows") });
+            }
+            // write test (insert + delete a temporary teacher)
+            var w = await supabaseClient.from("teachers").insert([{ name: "__connection_test__", department: "test" }]).select().single();
+            if (w.error) out.push({ name: "Write test", ok: false, msg: w.error.message });
+            else { await supabaseClient.from("teachers").delete().eq("id", w.data.id); out.push({ name: "Write test", ok: true, msg: "Can save to the database" }); }
+            return out;
+        },
+
+        // Forget a wrongly typed URL/key and go back to supabase-config.js
+        resetConnectionSettings: async function() {
+            localStorage.removeItem("SB_URL"); localStorage.removeItem("SB_KEY");
+            return await this.reconnect();
+        },
+
+        // Live sync: call back whenever ANY device changes the database
+        subscribeChanges: function(callback) {
+            if (!(isConnected && supabaseClient && supabaseClient.channel)) return false;
+            try {
+                if (this._channel) { supabaseClient.removeChannel(this._channel); }
+                this._channel = supabaseClient.channel("school-live")
+                    .on("postgres_changes", { event: "*", schema: "public" }, function() { callback(); })
+                    .subscribe();
+                return true;
+            } catch (e) { console.warn("realtime unavailable:", e); return false; }
         },
 
         // Try again (used by the "Reconnect" button and when the browser comes back online)
         reconnect: async function() {
             var r = await this.init();
+            if (isConnected && localStorage.getItem("SCH_PENDING_SYNC")) {
+                try { await this.pushLocalChanges(); } catch (e) { console.warn("push failed", e); }
+            }
             if (typeof this.onStatusChange === "function") this.onStatusChange(isConnected, this.lastError);
             return r;
         },
 
         // Report cloud write failures instead of hiding them
+        _retryFetch: retryFetch,
         _fail: function(where, error) {
-            var msg = where + ": " + ((error && error.message) || error);
-            console.error("Supabase " + msg);
-            this.lastError = msg;
-            if (typeof this.onSyncError === "function") this.onSyncError(msg);
+            var raw = (error && error.message) || String(error);
+            console.error("Supabase " + where + ": " + raw);
+            if (isNetworkError(error)) {
+                // The cloud cannot be reached: switch to offline mode ONCE, remember there is unsynced data
+                var wasOnline = isConnected;
+                isConnected = false;
+                this.lastError = "Cannot reach Supabase (internet/VPN/firewall, or the project is paused).";
+                try { localStorage.setItem("SCH_PENDING_SYNC", "1"); } catch (e) {}
+                if (wasOnline) {
+                    if (typeof this.onStatusChange === "function") this.onStatusChange(false, this.lastError);
+                    this._startAutoReconnect();
+                }
+                if (Date.now() - lastToastAt > 15000 && typeof this.onSyncError === "function") {
+                    lastToastAt = Date.now();
+                    this.onSyncError("No connection to Supabase. Saved on this device — it will upload automatically when the connection is back.");
+                }
+                return;
+            }
+            this.lastError = where + ": " + raw;
+            if (typeof this.onSyncError === "function") this.onSyncError(this.lastError);
         },
+
+        // Keep trying in the background; when the cloud is back, upload offline changes
+        _startAutoReconnect: function() {
+            if (reconnectTimer) return;
+            var self = this;
+            reconnectTimer = setInterval(async function() {
+                var r = await self.init();
+                if (r && r.connected) {
+                    clearInterval(reconnectTimer); reconnectTimer = null;
+                    try { await self.pushLocalChanges(); } catch (e) { console.warn("push failed", e); }
+                    if (typeof self.onStatusChange === "function") self.onStatusChange(true, null);
+                }
+            }, 30000);
+        },
+
+        // Upload anything that was created while offline (teachers, subjects, classes, assignments)
+        pushLocalChanges: async function() {
+            if (!(isConnected && supabaseClient)) return { pushed: 0 };
+            var pushed = 0, self = this;
+            var read = function(k) { try { return JSON.parse(localStorage.getItem(k) || "[]"); } catch (e) { return []; } };
+            var lT = read("SCH_TEACHERS"), lS = read("SCH_SUBJECTS"), lC = read("SCH_CLASSES"), lA = read("SCH_ALLOCATIONS");
+            var m = await this._idMaps();
+            var i, r;
+            for (i = 0; i < lT.length; i++) {
+                if (m.t[lT[i].name]) continue;
+                r = await supabaseClient.from("teachers").insert([{ name: lT[i].name, department: lT[i].department || "General",
+                    max_periods_weekly: lT[i].max_periods_weekly || 35, max_periods_daily: lT[i].max_periods_daily || 6 }]);
+                if (r.error) { this._fail("sync teacher " + lT[i].name, r.error); return { pushed: pushed, error: r.error }; } pushed++;
+            }
+            for (i = 0; i < lS.length; i++) {
+                if (m.s[lS[i].name]) continue;
+                r = await supabaseClient.from("subjects").insert([{ name: lS[i].name, code: lS[i].code, color_accent: lS[i].color_accent }]);
+                if (r.error) { this._fail("sync subject " + lS[i].name, r.error); return { pushed: pushed, error: r.error }; } pushed++;
+            }
+            for (i = 0; i < lC.length; i++) {
+                if (m.c[lC[i].name]) continue;
+                r = await supabaseClient.from("classes").insert([{ name: lC[i].name, grade: lC[i].grade, section: lC[i].section }]);
+                if (r.error) { this._fail("sync class " + lC[i].name, r.error); return { pushed: pushed, error: r.error }; } pushed++;
+            }
+            m = await this._idMaps();
+            // teacher <-> subject qualifications of teachers that were just created
+            var ts = await supabaseClient.from("teacher_subjects").select("teacher_id, subject_id");
+            var haveTS = {}; ((ts.data) || []).forEach(function(x) { haveTS[x.teacher_id + "|" + x.subject_id] = 1; });
+            var tsRows = [];
+            lT.forEach(function(t) { (t.subjects || []).forEach(function(sn) {
+                if (m.t[t.name] && m.s[sn] && !haveTS[m.t[t.name] + "|" + m.s[sn]]) tsRows.push({ teacher_id: m.t[t.name], subject_id: m.s[sn] });
+            }); });
+            if (tsRows.length) { r = await supabaseClient.from("teacher_subjects").insert(tsRows); if (!r.error) pushed += tsRows.length; }
+            // allocations
+            var tN = {}, sN = {}, cN = {};
+            lT.forEach(function(x) { tN[x.id] = x.name; }); lS.forEach(function(x) { sN[x.id] = x.name; }); lC.forEach(function(x) { cN[x.id] = x.name; });
+            var ca = await supabaseClient.from("allocations").select("teacher_id, subject_id, class_id");
+            var haveA = {}; ((ca.data) || []).forEach(function(x) { haveA[x.teacher_id + "|" + x.subject_id + "|" + x.class_id] = 1; });
+            var aRows = [];
+            lA.forEach(function(a) {
+                var t = m.t[tN[a.teacher_id] || a.teacher_name], s = m.s[sN[a.subject_id] || a.subject_name], c = m.c[cN[a.class_id] || a.class_name];
+                if (t && s && c && !haveA[t + "|" + s + "|" + c]) aRows.push({ teacher_id: t, subject_id: s, class_id: c, periods_per_week: a.periods_per_week });
+            });
+            for (i = 0; i < aRows.length; i += 200) {
+                r = await supabaseClient.from("allocations").insert(aRows.slice(i, i + 200));
+                if (r.error) { this._fail("sync allocations", r.error); return { pushed: pushed, error: r.error }; } pushed += Math.min(200, aRows.length - i);
+            }
+            try { localStorage.removeItem("SCH_PENDING_SYNC"); } catch (e) {}
+            return { pushed: pushed };
+        },
+
         onSyncError: null,
 
         // Name <-> UUID helpers (the app works with names, the cloud with UUIDs)
@@ -636,8 +810,8 @@
         },
 
         setCredentials: async function(url, key) {
-            localStorage.setItem("SB_URL", String(url).trim());
-            localStorage.setItem("SB_KEY", String(key).trim());
+            localStorage.setItem("SB_URL", cleanUrl(url));
+            localStorage.setItem("SB_KEY", cleanKey(key));
             return await this.reconnect();
         },
 
@@ -653,16 +827,15 @@
         // TEACHERS CRUD
         // ==========================
         getTeachers: async function() {
-            var list = [];
+            var list = [], cloudOk = false;
             if (isConnected && supabaseClient) {
                 var res = await supabaseClient.from("teachers").select("*").order("name");
-                if (!res.error && res.data && res.data.length > 0) {
-                    list = res.data;
-                }
+                if (res.error) this._fail("getTeachers", res.error);
+                else { list = res.data || []; cloudOk = true; }
             }
-            if (!list || list.length === 0) {
+            if (!cloudOk) {
                 list = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
-            } else {
+            } else if (list.length > 0) {
                 try {
                     var ts = await supabaseClient.from("teacher_subjects").select("teacher_id, subjects(name)");
                     if (!ts.error && ts.data && ts.data.length > 0) {
@@ -689,6 +862,7 @@
                     }
                 }
             });
+            if (cloudOk) { try { localStorage.setItem("SCH_TEACHERS", JSON.stringify(list)); } catch (e) {} }
             return list;
         },
 
@@ -760,7 +934,8 @@
         getSubjects: async function() {
             if (isConnected && supabaseClient) {
                 var res = await supabaseClient.from("subjects").select("*").order("name");
-                if (!res.error && res.data && res.data.length > 0) return res.data;
+                if (res.error) this._fail("getSubjects", res.error);
+                else { try { localStorage.setItem("SCH_SUBJECTS", JSON.stringify(res.data || [])); } catch (e) {} return res.data || []; }
             }
             return JSON.parse(localStorage.getItem("SCH_SUBJECTS") || "[]");
         },
@@ -818,7 +993,8 @@
         getClasses: async function() {
             if (isConnected && supabaseClient) {
                 var res = await supabaseClient.from("classes").select("*").order("grade");
-                if (!res.error && res.data && res.data.length > 0) return res.data;
+                if (res.error) this._fail("getClasses", res.error);
+                else { try { localStorage.setItem("SCH_CLASSES", JSON.stringify(res.data || [])); } catch (e) {} return res.data || []; }
             }
             return JSON.parse(localStorage.getItem("SCH_CLASSES") || "[]");
         },
@@ -870,8 +1046,9 @@
                 var res = await supabaseClient
                     .from("allocations")
                     .select("*, teachers(name), subjects(name), classes(name, grade, section)");
-                if (!res.error && res.data && res.data.length > 0) {
-                    return res.data.map(function(r) {
+                if (res.error) this._fail("getAllocations", res.error);
+                if (!res.error && res.data) {
+                    var mappedA = res.data.map(function(r) {
                         return {
                             id: r.id,
                             teacher_id: r.teacher_id,
@@ -883,6 +1060,8 @@
                             periods_per_week: parseInt(r.periods_per_week) || 1
                         };
                     });
+                    try { localStorage.setItem("SCH_ALLOCATIONS", JSON.stringify(mappedA)); } catch (e) {}
+                    return mappedA;
                 }
             }
 
@@ -973,6 +1152,7 @@
                         .from('curriculum')
                         .select('*, subjects(name, color_accent)')
                         .order('grade');
+                    if (error) this._fail("getCurriculum", error);
                     if (!error && data && data.length > 0) {
                         return data.map(r => ({
                             ...r,
@@ -1066,6 +1246,7 @@
                     const { data, error } = await client
                         .from('teacher_subjects')
                         .select('*, teachers(name), subjects(name)');
+                    if (error) this._fail("getTeacherSubjects", error);
                     if (!error && data && data.length > 0) {
                         return data.map(r => ({ ...r, teacher_name: r.teachers?.name, subject_name: r.subjects?.name }));
                     }
@@ -1132,6 +1313,7 @@
             if (isConnected && client) {
                 try {
                     const { data, error } = await client.from('school_settings').select('*');
+                    if (error) this._fail("getSettings", error);
                     if (!error && data && data.length > 0) {
                         const result = {};
                         data.forEach(row => { result[row.key] = row.value; });

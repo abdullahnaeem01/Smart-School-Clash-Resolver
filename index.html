@@ -1,0 +1,3374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1e3a8a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Smart School Timetable Management System with Zero-Clash CP Solver, Curriculum Manager, and Smart Substitutions.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon-192.svg">
+  <title>Smart School Timetable System</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- Supabase JS Client v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-dark: #172554;
+      --primary-light: #3b82f6;
+      --primary-bg: #eff6ff;
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --warning: #d97706;
+      --warning-bg: #fffbeb;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #f8fafc;
+      color: var(--slate-800);
+      line-height: 1.5;
+      padding: 16px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: white;
+      padding: 18px 24px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--slate-200);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary-dark);
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header small {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--slate-500);
+      display: inline-block;
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Nav Tabs */
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      background: white;
+      padding: 6px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--slate-200);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 16px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .nav-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .nav-tab {
+      background: transparent;
+      border: none;
+      padding: 10px 18px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--slate-600);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .nav-tab:hover {
+      background: var(--slate-100);
+      color: var(--slate-900);
+    }
+
+    .nav-tab.active {
+      background: var(--primary);
+      color: white;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .nav-tab .tab-badge {
+      background: rgba(255, 255, 255, 0.25);
+      color: inherit;
+      padding: 1px 7px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .nav-tab:not(.active) .tab-badge {
+      background: var(--slate-200);
+      color: var(--slate-700);
+    }
+
+    /* Tab Content */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards */
+    .card {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    /* Buttons */
+    button, .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      line-height: 1.2;
+    }
+
+    button:disabled, .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary-dark);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-light);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+      border-color: #047857;
+    }
+
+    .btn-success:hover {
+      background: #047857;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+      border-color: #b91c1c;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+
+    .btn-outline {
+      background: white;
+      color: var(--slate-700);
+      border-color: var(--slate-300);
+    }
+
+    .btn-outline:hover {
+      background: var(--slate-100);
+      border-color: var(--slate-400);
+    }
+
+    /* Controls Row */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: white;
+      padding: 12px 18px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--slate-200);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 14px;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-group label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--slate-700);
+      white-space: nowrap;
+    }
+
+    /* Forms */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--slate-700);
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--slate-300);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--slate-800);
+      background: white;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    /* Tables */
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: white;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--slate-200);
+      box-shadow: var(--shadow-sm);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--primary);
+      color: white;
+      padding: 12px 14px;
+      font-weight: 700;
+      font-size: 12.5px;
+      border-bottom: 1px solid var(--primary-dark);
+      white-space: nowrap;
+    }
+
+    th small {
+      display: block;
+      font-weight: 400;
+      font-size: 11px;
+      color: #bfdbfe;
+      margin-top: 2px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--slate-200);
+      vertical-align: middle;
+    }
+
+    tr:hover td {
+      background: var(--slate-50);
+    }
+
+    /* Timetable Grid specific */
+    #mainTimetable th, #mainTimetable td {
+      text-align: center;
+      padding: 8px 6px;
+    }
+
+    #mainTimetable td.day-col {
+      background: var(--slate-100);
+      font-weight: 800;
+      color: var(--primary-dark);
+      text-align: center;
+      width: 110px;
+      min-width: 110px;
+      border-right: 2px solid var(--slate-200);
+    }
+
+    .period-cell {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: 6px;
+      padding: 8px 6px;
+      min-height: 64px;
+      min-width: 115px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .period-cell:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+      border-color: var(--primary-light);
+    }
+
+    .period-cell .cell-subject {
+      font-weight: 800;
+      font-size: 12.5px;
+      color: var(--slate-900);
+      line-height: 1.2;
+    }
+
+    .period-cell .cell-teacher {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--slate-600);
+      max-width: 110px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .period-cell.clash {
+      border: 2px solid var(--danger) !important;
+      background: var(--danger-bg) !important;
+    }
+
+    .period-cell.maths-last {
+      border: 2px solid var(--warning) !important;
+      background: var(--warning-bg) !important;
+    }
+
+    .period-cell.substituted {
+      border: 2px solid var(--success) !important;
+      background: var(--success-bg) !important;
+    }
+
+    .period-free {
+      border: 1px dashed var(--slate-300);
+      background: #fafafa;
+      border-radius: 6px;
+      padding: 8px 6px;
+      min-height: 64px;
+      min-width: 115px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--slate-400);
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .period-free:hover {
+      border-color: var(--primary-light);
+      background: var(--primary-bg);
+      color: var(--primary);
+    }
+
+    .break-cell {
+      background: #1e3a8a !important;
+      color: white !important;
+      font-weight: 800;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      writing-mode: vertical-lr;
+      text-orientation: mixed;
+      width: 32px;
+      min-width: 32px;
+      text-align: center;
+      vertical-align: middle;
+      border: 1px solid #172554;
+      user-select: none;
+    }
+
+    /* Badges & Tags */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 12.5px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+
+    .status-badge.ok {
+      background: var(--success-bg);
+      color: var(--success);
+      border-color: #a7f3d0;
+    }
+
+    .status-badge.warn {
+      background: var(--warning-bg);
+      color: var(--warning);
+      border-color: #fde68a;
+    }
+
+    .status-badge.error {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border-color: #fecaca;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--slate-100);
+      color: var(--slate-700);
+      border: 1px solid var(--slate-300);
+    }
+
+    .tag-primary {
+      background: var(--primary-bg);
+      color: var(--primary);
+      border-color: #bfdbfe;
+    }
+
+    .tag-success {
+      background: var(--success-bg);
+      color: var(--success);
+      border-color: #a7f3d0;
+    }
+
+    /* Alerts */
+    .alert-error, .alert-warning, .alert-success {
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      margin-bottom: 14px;
+      border: 1px solid transparent;
+    }
+
+    .alert-error {
+      background: var(--danger-bg);
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+
+    .alert-error ul {
+      margin: 8px 0 0 20px;
+    }
+
+    .alert-warning {
+      background: var(--warning-bg);
+      color: #92400e;
+      border-color: #fde68a;
+    }
+
+    .alert-success {
+      background: var(--success-bg);
+      color: #065f46;
+      border-color: #a7f3d0;
+    }
+
+    /* Workload Progress Bar */
+    .workload-bar-wrap {
+      width: 100%;
+      background: var(--slate-200);
+      height: 8px;
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .workload-bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.3s ease;
+    }
+
+    /* Modals */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      width: 480px;
+      max-width: 100%;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--slate-200);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-lg {
+      width: 760px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    /* Toast Notification */
+    #toastContainer {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      padding: 12px 18px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+      font-weight: 600;
+      color: white;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: slideInRight 0.25s ease-out;
+    }
+
+    .toast-success { background: #059669; }
+    .toast-error { background: #dc2626; }
+    .toast-info { background: #1e3a8a; }
+
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Print media styling */
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+      .header, .nav-tabs, .controls-row, #statusBar, .modal, #toastContainer, button {
+        display: none !important;
+      }
+      .tab-content {
+        display: none !important;
+      }
+      #tab-timetable {
+        display: block !important;
+      }
+      .table-responsive {
+        border: none;
+        box-shadow: none;
+      }
+      table {
+        border-collapse: collapse;
+      }
+      th, td {
+        border: 1px solid #333 !important;
+        font-size: 11px !important;
+      }
+      .period-cell {
+        border: none !important;
+        box-shadow: none !important;
+        min-height: auto;
+      }
+    }
+
+    /* Mobile Responsive (< 768px) */
+    @media (max-width: 768px) {
+      body {
+        padding: 8px;
+      }
+      .header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .header-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .controls-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .control-group {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .control-group select {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>🏫 Smart School Timetable</h1>
+      <small id="dbStatus">Connecting...</small>
+    </div>
+    <div class="header-actions">
+      <span id="timetableStatusBadge" class="status-badge warn">⬜ Not Generated</span>
+      <button id="btnGenerate" class="btn-primary" onclick="runGeneration()">⚡ Generate Timetable</button>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tabBtn-timetable" onclick="switchTab('timetable')">📅 Timetable</button>
+    <button class="nav-tab" id="tabBtn-curriculum" onclick="switchTab('curriculum')">📚 Curriculum</button>
+    <button class="nav-tab" id="tabBtn-teachers" onclick="switchTab('teachers')">👩‍🏫 Teachers</button>
+    <button class="nav-tab" id="tabBtn-allocations" onclick="switchTab('allocations')">📋 Allocations</button>
+    <button class="nav-tab" id="tabBtn-substitutions" onclick="switchTab('substitutions')">
+      🔄 Substitutions <span class="tab-badge" id="countSubstitutionsBadge">0</span>
+    </button>
+    <button class="nav-tab" id="tabBtn-settings" onclick="switchTab('settings')">⚙️ Settings</button>
+  </div>
+
+  <!-- TAB 1: TIMETABLE -->
+  <div id="tab-timetable" class="tab-content active">
+    <!-- Pre-check panel (hidden by default) -->
+    <div id="preCheckPanel" class="alert-error" style="display:none;">
+      <strong>⛔ Cannot Generate — Fix These Issues First:</strong>
+      <ul id="preCheckList" style="margin-top:6px; padding-left:20px;"></ul>
+    </div>
+    
+    <!-- Controls row -->
+    <div class="controls-row">
+      <div class="control-group">
+        <label>View Mode:</label>
+        <select id="viewMode" onchange="switchViewMode()">
+          <option value="CLASS">By Class</option>
+          <option value="TEACHER">By Teacher</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label id="targetSelectorLabel">Select Class:</label>
+        <select id="targetSelector" onchange="renderTimetable()"></select>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <button onclick="printTimetable()" class="btn-outline">🖨️ Print</button>
+        <button onclick="exportCSV()" class="btn-outline">📊 Export CSV</button>
+        <button onclick="clearTimetable()" class="btn-danger">🗑️ Clear</button>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div id="statusBar" class="card" style="margin-bottom:12px; padding:12px 16px;"></div>
+
+    <!-- Timetable grid -->
+    <div class="table-responsive">
+      <table id="mainTimetable">
+        <thead id="timetableHeader"></thead>
+        <tbody id="timetableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 2: CURRICULUM -->
+  <div id="tab-curriculum" class="tab-content">
+    <div style="display:flex; gap:16px; flex-wrap:wrap;">
+      <!-- Grade selector -->
+      <div class="card" style="width:160px; padding:16px; flex-shrink:0;">
+        <h3 style="margin:0 0 12px; font-size:16px; color:var(--primary);">Select Grade</h3>
+        <div id="gradeSelector" style="display:flex; flex-direction:column; gap:6px;">
+          <!-- Grade buttons 1-10 rendered by JS -->
+        </div>
+      </div>
+      
+      <!-- Curriculum editor -->
+      <div class="card" style="flex:1; padding:20px; min-width:300px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+          <div>
+            <h3 id="curriculumTitle" style="margin:0; font-size:18px; color:var(--slate-800);">Grade 1 Curriculum</h3>
+            <small style="color:var(--slate-500);">Configure weekly subject quotas and daily distribution caps.</small>
+          </div>
+          <div id="slotCounter" class="tag tag-primary" style="font-size:13px; padding:4px 12px;">0 / 35 slots</div>
+        </div>
+        
+        <div class="table-responsive" style="margin-bottom:12px;">
+          <table id="curriculumTable">
+            <thead>
+              <tr>
+                <th style="min-width:180px;">Subject</th>
+                <th>Periods / Week</th>
+                <th>Max / Day</th>
+                <th style="width:70px; text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="curriculumBody"></tbody>
+          </table>
+        </div>
+        
+        <div style="margin-top:14px; display:flex; gap:8px; justify-content:space-between; align-items:center;">
+          <button onclick="addCurriculumRow()" class="btn-outline">+ Add Subject</button>
+          <button onclick="saveCurriculum()" class="btn-primary">💾 Save Curriculum</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: TEACHERS -->
+  <div id="tab-teachers" class="tab-content">
+    <div class="card" style="margin-bottom:14px; padding:14px 18px;">
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <input type="text" id="teacherSearch" placeholder="🔍 Search teachers by name or subject..." oninput="filterTeachers()" style="flex:1; min-width:220px;">
+        <button onclick="openAddTeacherModal()" class="btn-primary">+ Add Teacher</button>
+      </div>
+    </div>
+    <div id="teachersList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:14px;">
+      <!-- Teacher cards rendered here -->
+    </div>
+  </div>
+
+  <!-- TAB 4: ALLOCATIONS -->
+  <div id="tab-allocations" class="tab-content">
+    <div class="controls-row" style="margin-bottom:16px;">
+      <div class="control-group">
+        <label>View By:</label>
+        <select id="allocViewMode" onchange="switchAllocView()">
+          <option value="section">By Section</option>
+          <option value="teacher">By Teacher</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label id="allocSelectorLabel">Section:</label>
+        <select id="allocSelector" onchange="renderAllocations()"></select>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;">
+        <button onclick="openPlanner()" class="btn-primary">🎯 Assign / Edit Teacher</button>
+        <button onclick="openAddAllocModal()" class="btn-outline">+ Single Assignment</button>
+        <button onclick="openBulkImport()" class="btn-outline">📥 Import CSV</button>
+      </div>
+    </div>
+    
+    <!-- Missing assignments alert -->
+    <div id="missingAlert" class="alert-warning" style="display:none; margin-bottom:12px;"></div>
+    
+    <div id="allocationsTable" class="table-responsive"></div>
+  </div>
+
+  <!-- TAB 5: SUBSTITUTIONS -->
+  <div id="tab-substitutions" class="tab-content">
+    <div id="substitutionsContent">
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h2 style="margin:0; font-size:18px; color:var(--primary); font-weight:800; display:flex; align-items:center; gap:8px;">
+              <span>🟢 Free Teachers Finder & Smart Substitution Manager</span>
+            </h2>
+            <small style="color:var(--slate-500);">Live teacher availability matrix across the school with clash prevention.</small>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn-success" onclick="openAbsenceReportModal()">🚨 Report Teacher Absence</button>
+            <button class="btn-outline" onclick="renderFreeTeachersView()">🔄 Refresh</button>
+          </div>
+        </div>
+        
+        <!-- Slot Selector Controls -->
+        <div style="display:flex; align-items:center; gap:14px; margin-top:14px; padding-top:14px; border-top:1px solid var(--slate-200); flex-wrap:wrap;">
+          <div class="control-group">
+            <label>Day:</label>
+            <select id="subFilterDay" onchange="renderFreeTeachersView()">
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Period:</label>
+            <select id="subFilterPeriod" onchange="renderFreeTeachersView()"></select>
+          </div>
+          <div class="control-group">
+            <label>View:</label>
+            <select id="subViewType" onchange="toggleSubViewStyle()">
+              <option value="CARDS">Ranked Free Teachers</option>
+              <option value="MATRIX">Full-Day Matrix</option>
+              <option value="ACTIVE_SUBS">Active Substitutions Log</option>
+            </select>
+          </div>
+          <div id="freeStatBadge" class="status-badge ok" style="margin-left:auto;">
+            -- Free Teachers
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 1: Ranked Free Teachers Cards -->
+      <div id="subViewCards" class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+          <h3 style="margin:0; font-size:16px; color:var(--slate-800);">Free Teachers Available in <span id="lblCurrentSlot">Monday - Period 1</span></h3>
+          <input type="text" id="filterFreeTeacherSearch" oninput="filterFreeCards()" placeholder="Search available teachers..." style="width:240px; padding:6px 12px; font-size:12px;">
+        </div>
+        <div id="freeTeachersGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px;"></div>
+      </div>
+
+      <!-- Section 2: Full Day Matrix -->
+      <div id="subViewMatrix" class="card" style="display:none;">
+        <h3 style="margin:0 0 12px; font-size:16px; color:var(--slate-800);">Full-Day Teacher Availability Matrix (<span id="lblMatrixDay">Monday</span>)</h3>
+        <div class="table-responsive" style="max-height:550px;">
+          <table id="matrixTable">
+            <thead id="matrixHeader"></thead>
+            <tbody id="matrixBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 3: Active Substitutions Log -->
+      <div id="subViewActive" class="card" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="margin:0; font-size:16px; color:var(--slate-800);">Active Substitutions for <span id="lblActiveSubDay">Monday</span></h3>
+          <button class="btn-success" onclick="openAbsenceReportModal()">+ New Substitution</button>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Day & Period</th>
+                <th>Class</th>
+                <th>Subject</th>
+                <th>Original Teacher</th>
+                <th>Covering Teacher</th>
+                <th>Note</th>
+                <th style="text-align:right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="activeSubstitutionsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 6: SETTINGS -->
+  <div id="tab-settings" class="tab-content">
+    <div class="card" style="max-width:650px; padding:24px;">
+      <h2 style="margin:0 0 20px; font-size:19px; color:var(--primary-dark);">⚙️ School Settings</h2>
+      
+      <div class="form-group">
+        <label>School Name</label>
+        <input type="text" id="settingSchoolName" placeholder="School Name">
+      </div>
+      
+      <div class="form-group">
+        <label>Periods Per Day</label>
+        <select id="settingPeriods">
+          <option value="7">7 Periods</option>
+          <option value="8">8 Periods</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>Break After Period</label>
+        <input type="number" id="settingBreak" min="1" max="7" placeholder="e.g. 3">
+      </div>
+      
+      <div class="form-group">
+        <label>Working Days</label>
+        <div id="workingDaysCheckboxes" style="display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Period Times</label>
+        <div class="table-responsive">
+          <table id="periodTimesTable" style="width:100%;">
+            <thead><tr><th>Period</th><th>Start</th><th>End</th></tr></thead>
+            <tbody id="periodTimesBody"></tbody>
+          </table>
+        </div>
+      </div>
+      
+      <button onclick="saveSettings()" class="btn-primary" style="margin-top:12px;">💾 Save Settings</button>
+    </div>
+    
+    <div class="card" style="max-width:650px; padding:24px; margin-top:16px;">
+      <h3 style="margin-bottom:8px;">Database</h3>
+      <p id="dbConnStatus" style="color:var(--success); font-weight:600; margin-bottom:12px;">✅ Connected to Supabase Cloud</p>
+      <button onclick="reconnectDb()" class="btn-outline" style="margin-right:8px;">🔄 Reconnect to Supabase</button>
+      <button onclick="runDiagnostics()" class="btn-outline" style="margin-right:8px;">🩺 Check Connection</button>
+      <button onclick="resetDbSettings()" class="btn-outline" style="margin-right:8px;">♻️ Reset Connection Settings</button>
+      <div id="dbDiagnostics" style="margin-top:12px; font-size:12.5px;"></div>
+      <button onclick="downloadBackup()" class="btn-outline">💾 Download JSON Backup</button>
+    </div>
+    
+    <div class="card" style="max-width:650px; padding:24px; margin-top:16px; border:1px solid var(--danger);">
+      <h3 style="color:var(--danger); margin-bottom:6px;">⚠️ Danger Zone</h3>
+      <p style="font-size:13px; color:var(--slate-600); margin-bottom:12px;">This only clears the generated timetable slots. Your curriculum and teacher allocations will remain completely safe.</p>
+      <button onclick="clearTimetableSlots()" class="btn-danger">Clear All Timetable Slots</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+
+<!-- Edit Cell Modal -->
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <h3 style="margin:0 0 16px; color:var(--primary); font-size:17px;">Edit Period Slot</h3>
+    <div class="form-group">
+      <label>Class & Slot</label>
+      <input type="text" id="editSlotDesc" readonly style="background:var(--slate-100); font-weight:600;">
+    </div>
+    <div class="form-group">
+      <label>Subject</label>
+      <select id="editSubject"></select>
+    </div>
+    <div class="form-group">
+      <label>Teacher</label>
+      <select id="editTeacher"></select>
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeEditModal()" class="btn-outline">Cancel</button>
+      <button onclick="saveEditModal()" class="btn-primary">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Allocation Modal -->
+<div id="addAllocModal" class="modal">
+  <div class="modal-content">
+    <h3 style="margin:0 0 16px; color:var(--primary); font-size:17px;">Add Teaching Assignment</h3>
+    <div class="form-group">
+      <label>Section</label>
+      <select id="newAllocSection"></select>
+    </div>
+    <div class="form-group">
+      <label>Subject</label>
+      <select id="newAllocSubject" onchange="onAllocSubjectChange()"></select>
+    </div>
+    <div class="form-group">
+      <label>Teacher</label>
+      <select id="newAllocTeacher"></select>
+    </div>
+    <div class="form-group">
+      <label>Periods / Week</label>
+      <input type="number" id="newAllocPeriods" min="1" max="10" value="5">
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeAllocModal()" class="btn-outline">Cancel</button>
+      <button onclick="saveAllocation()" class="btn-primary">Save Assignment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Flexible Assignment Planner -->
+<div id="plannerModal" class="modal">
+  <div class="modal-content" style="max-width:720px; width:96%; max-height:92vh; overflow:auto;">
+    <h3 style="margin:0 0 4px; color:var(--primary); font-size:17px;">🎯 Assign / Edit Teacher: Grades, Sections &amp; Subject</h3>
+    <p style="font-size:12.5px; color:var(--slate-600); margin-bottom:12px;">Any teacher can teach any subject in any class. Example: one teacher can take <strong>Science</strong> in 6–7 and <strong>Physics</strong> in 9–10 — just run this twice.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div class="form-group"><label>Teacher</label><select id="plTeacher" onchange="plPreload()"></select></div>
+      <div class="form-group"><label>Subject</label><select id="plSubject" onchange="plPreload()"></select></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:end;">
+      <div class="form-group"><label>Periods per week (per class)</label><input type="number" id="plPeriods" min="1" max="35" value="4" oninput="PL_TOUCHED = true; plRefresh()"></div>
+      <div class="form-group"><label style="display:flex; gap:6px; align-items:center; font-weight:600;"><input type="checkbox" id="plAuto" checked style="width:auto;" onchange="PL_TOUCHED = true; plRefresh()"> Use curriculum periods for each grade</label></div>
+    </div>
+    <div class="form-group">
+      <label>If the class already has a teacher for this subject</label>
+      <select id="plMode"><option value="replace">Replace that teacher</option><option value="add">Keep them too (share the periods)</option></select>
+    </div>
+    <label style="font-weight:700; font-size:13px;">Grades &amp; Sections</label>
+    <div id="plExistingNote" style="font-size:12px; color:var(--slate-600); margin:2px 0;"></div>
+    <div id="plClasses" style="border:1px solid var(--slate-200); border-radius:8px; padding:10px; margin:6px 0 10px;"></div>
+    <label style="display:flex; gap:6px; align-items:center; font-size:12.5px; font-weight:600; margin-bottom:8px;"><input type="checkbox" id="plRemove" style="width:auto;"> Remove this teacher from classes I untick (for this subject)</label>
+    <div id="plSummary" style="font-size:13px; font-weight:700; margin-bottom:10px;"></div>
+    <div class="modal-actions">
+      <button onclick="closePlanner()" class="btn-outline">Cancel</button>
+      <button onclick="savePlanner()" class="btn-primary">✅ Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit Teacher Modal -->
+<div id="addTeacherModal" class="modal">
+  <div class="modal-content">
+    <h3 id="teacherModalTitle" style="margin:0 0 16px; color:var(--primary); font-size:17px;">Add Teacher</h3>
+    <input type="hidden" id="editTeacherId">
+    <div class="form-group">
+      <label>Teacher Name</label>
+      <input type="text" id="newTeacherName" placeholder="e.g. Fatima Ali">
+    </div>
+    <div class="form-group">
+      <label>Max Periods Per Week</label>
+      <input type="number" id="newTeacherMax" value="35" min="1" max="50">
+    </div>
+    <div class="form-group">
+      <label>Qualified Subjects</label>
+      <div id="teacherSubjectCheckboxes" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:200px; overflow-y:auto; border:1px solid var(--slate-200); padding:10px; border-radius:8px;"></div>
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeTeacherModal()" class="btn-outline">Cancel</button>
+      <button onclick="saveTeacher()" class="btn-primary">Save Teacher</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Import Modal -->
+<div id="bulkImportModal" class="modal">
+  <div class="modal-content modal-lg">
+    <h3 style="margin:0 0 8px; color:var(--primary); font-size:18px;">📥 Bulk Import Allocations (CSV)</h3>
+    <p style="font-size:12.5px; color:var(--slate-600); margin-bottom:12px;">
+      Paste rows in format: <code>teacher_name,subject_name,class_name,periods_per_week</code><br>
+      Example: <code>Rubab,Maths,10 Blue,5</code>
+    </p>
+    <textarea id="csvInput" rows="8" placeholder="teacher_name,subject_name,class_name,periods_per_week" style="font-family:'JetBrains Mono', monospace; font-size:12px;"></textarea>
+    <div style="margin-top:8px; display:flex; gap:8px;">
+      <button onclick="parseBulkCSV()" class="btn-outline">🔍 Preview & Validate</button>
+    </div>
+    <div id="csvPreview" style="margin-top:12px; max-height:220px; overflow-y:auto;"></div>
+    <div class="modal-actions">
+      <button onclick="closeBulkImport()" class="btn-outline">Cancel</button>
+      <button onclick="importBulkCSV()" class="btn-primary" id="btnImportConfirm" disabled>Import All Valid Rows</button>
+    </div>
+  </div>
+</div>
+
+<!-- Absence Report Modal -->
+<div id="absenceModal" class="modal">
+  <div class="modal-content modal-lg">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--slate-200); padding-bottom:10px;">
+      <h3 style="margin:0; color:var(--primary); font-size:18px;">🚨 Report Teacher Absence & Assign Cover</h3>
+      <button onclick="closeAbsenceModal()" class="btn-outline" style="padding:2px 8px;">✕</button>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+      <div class="form-group">
+        <label>Absent Teacher:</label>
+        <select id="absentTeacherSelect" onchange="renderAbsentTeacherSchedule()"></select>
+      </div>
+      <div class="form-group">
+        <label>Day of Absence:</label>
+        <select id="absentDaySelect" onchange="renderAbsentTeacherSchedule()">
+          <option value="Monday">Monday</option>
+          <option value="Tuesday">Tuesday</option>
+          <option value="Wednesday">Wednesday</option>
+          <option value="Thursday">Thursday</option>
+          <option value="Friday">Friday</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card" style="background:var(--slate-50); padding:14px; margin-bottom:14px;">
+      <h4 style="margin:0 0 10px 0; font-size:14px; color:var(--slate-700);">Classes Scheduled for this Teacher Today:</h4>
+      <div id="absentClassesList" style="display:flex; flex-direction:column; gap:10px; max-height:280px; overflow-y:auto;"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeAbsenceModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notifications -->
+<div id="toastContainer"></div>
+
+<!-- Supabase Config & Services -->
+<script>
+window.SUPABASE_CONFIG = {
+    url: 'https://aoxloxnkctbccyqsdghk.supabase.co',
+    anonKey: 'sb_publishable_WfV3i9xNoFmsiLUiJtzoRA_tWUcBtIW'
+};
+</script>
+<script src="supabase-config.js"></script>
+<script src="db-service.js"></script>
+
+<!-- Main Application Script -->
+<script>
+// =============================================================================
+// GLOBAL STATE
+// =============================================================================
+const APP = {
+    teachers: [],
+    subjects: [],
+    classes: [],
+    allocations: [],
+    curriculum: [],
+    teacherSubjects: [],
+    settings: {
+        periods_per_day: 7,
+        break_after_period: 3,
+        working_days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    },
+    schedule: {},
+    timetableStatus: 'empty', // 'empty' | 'outdated' | 'current'
+    DAYS: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    PERIODS: [1, 2, 3, 4, 5, 6, 7],
+    activeGrade: 1,
+    editingCell: null,
+    ACTIVE_SUBSTITUTIONS: []
+};
+
+// =============================================================================
+// DATABASE STATUS
+// =============================================================================
+function updateDbStatus() {
+    const el = document.getElementById('dbStatus');
+    const st = document.getElementById('dbConnStatus');
+    if (window.DB.isConnected()) {
+        if (el) { el.textContent = '✅ Connected to Cloud'; el.style.color = 'var(--success)'; }
+        if (st) { st.textContent = '✅ Connected to Supabase Cloud'; st.style.color = 'var(--success)'; }
+    } else {
+        const why = window.DB.lastError ? ' — ' + window.DB.lastError : '';
+        if (el) { el.textContent = '⚡ Local Storage Mode (click to reconnect)'; el.style.color = 'var(--warning)'; el.style.cursor = 'pointer'; el.onclick = reconnectDb; }
+        if (st) { st.textContent = '⚡ Running in Local Storage Fallback Mode' + why; st.style.color = 'var(--warning)'; }
+    }
+}
+async function reconnectDb() {
+    const el = document.getElementById('dbStatus');
+    if (el) el.textContent = 'Connecting...';
+    await window.DB.reconnect();
+    updateDbStatus();
+    if (window.DB.isConnected()) {
+        showToast('Connected to Supabase. Reloading data...', 'success');
+        setTimeout(() => location.reload(), 600);
+    } else {
+        showToast('Still offline: ' + (window.DB.lastError || 'unknown error'), 'error');
+    }
+}
+
+
+// =============================================================================
+// CONNECTION CHECK + LIVE SYNC BETWEEN DEVICES
+// =============================================================================
+async function runDiagnostics() {
+    const box = document.getElementById('dbDiagnostics');
+    box.innerHTML = '⏳ Checking...';
+    const rows = await window.DB.diagnose();
+    updateDbStatus();
+    box.innerHTML = '<table style="width:100%;">' + rows.map(r =>
+        `<tr><td style="padding:3px 6px; width:34px;">${r.ok ? '✅' : '❌'}</td><td style="padding:3px 6px; font-weight:700;">${r.name}</td><td style="padding:3px 6px; color:${r.ok ? 'var(--slate-600)' : 'var(--danger)'}; word-break:break-all;">${r.msg}</td></tr>`).join('') + '</table>' +
+        (rows.some(r => !r.ok && /does not exist|schema cache|Could not find/i.test(r.msg)) ? '<p style="margin-top:8px; color:var(--danger); font-weight:600;">A table is missing: run supabase_schema_migration.sql in the Supabase SQL Editor.</p>' : '') +
+        (rows.some(r => !r.ok && /row-level security|permission|policy/i.test(r.msg)) ? '<p style="margin-top:8px; color:var(--danger); font-weight:600;">Saving is blocked by security rules: run supabase_realtime_and_policies.sql in the Supabase SQL Editor.</p>' : '');
+}
+async function resetDbSettings() {
+    if (!confirm('Forget the saved Supabase URL/key on THIS device and use the built-in connection?')) return;
+    await window.DB.resetConnectionSettings();
+    updateDbStatus();
+    showToast(window.DB.isConnected() ? 'Connected using the built-in settings.' : 'Still not connected: ' + (window.DB.lastError || ''), window.DB.isConnected() ? 'success' : 'error');
+    if (window.DB.isConnected()) setTimeout(() => location.reload(), 700);
+}
+
+// Re-read everything from the cloud so every device shows the same data
+let _refreshing = false;
+async function refreshFromCloud(force) {
+    if (_refreshing || !window.DB.isConnected()) return;
+    const typing = document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+    const modalOpen = [...document.querySelectorAll('.modal')].some(m => m.style.display === 'flex');
+    if (!force && (typing || modalOpen)) return;          // never disturb someone who is editing
+    _refreshing = true;
+    try {
+        const [teachers, subjects, classes, allocations, curriculum, teacherSubjects] = await Promise.all([
+            window.DB.getTeachers(), window.DB.getSubjects(), window.DB.getClasses(),
+            window.DB.getAllocations(), window.DB.getCurriculum(), window.DB.getTeacherSubjects()
+        ]);
+        APP.teachers = teachers || []; APP.subjects = subjects || [];
+        APP.classes = (classes || []).sort((a, b) => {
+            const ga = parseInt(a.grade) || parseInt(a.name) || 1, gb = parseInt(b.grade) || parseInt(b.name) || 1;
+            return ga !== gb ? ga - gb : a.name.localeCompare(b.name);
+        });
+        APP.allocations = allocations || []; APP.curriculum = curriculum || []; APP.teacherSubjects = teacherSubjects || [];
+        try { APP.ACTIVE_SUBSTITUTIONS = await window.DB.getSubstitutions(); updateSubBadge(); } catch (e) {}
+        const sch = await window.DB.loadTimetable();
+        if (sch && Object.keys(sch).length) { APP.schedule = sch; setTimetableStatus('current'); }
+        const active = (document.querySelector('.tab-content.active') || {}).id;
+        if (active) switchTab(active.replace('tab-', ''));
+        updateTargetDropdown && updateTargetDropdown();
+    } catch (e) { console.warn('refresh failed', e); }
+    _refreshing = false;
+}
+let _refreshTimer = null;
+function scheduleRefresh() { clearTimeout(_refreshTimer); _refreshTimer = setTimeout(() => refreshFromCloud(false), 1200); }
+function startLiveSync() {
+    window.DB.subscribeChanges(scheduleRefresh);                       // instant, when Realtime is enabled
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshFromCloud(false); });
+    window.addEventListener('focus', () => refreshFromCloud(false));
+    setInterval(() => { if (!document.hidden) refreshFromCloud(false); }, 20000);   // safety net
+}
+
+// =============================================================================
+// INITIALIZATION
+// =============================================================================
+async function init() {
+    window.DB.onStatusChange = (connected) => {
+        updateDbStatus();
+        if (connected && window.__wentOffline) {
+            showToast('☁️ Back online — offline changes uploaded. Reloading...', 'success');
+            setTimeout(() => location.reload(), 1200);
+        }
+        if (!connected) window.__wentOffline = true;
+    };
+    window.DB.onSyncError = (msg) => showToast('☁️ Cloud sync problem: ' + msg, 'error');
+    try {
+        await window.DB.init();
+    } catch (e) { console.error(e); }
+    updateDbStatus();
+    // Re-connect automatically when the internet comes back
+    window.addEventListener('online', () => window.DB.reconnect());
+
+    try {
+        const [teachers, subjects, classes, allocations, curriculum, teacherSubjects, settings] = await Promise.all([
+            window.DB.getTeachers(),
+            window.DB.getSubjects(),
+            window.DB.getClasses(),
+            window.DB.getAllocations(),
+            window.DB.getCurriculum ? window.DB.getCurriculum() : Promise.resolve([]),
+            window.DB.getTeacherSubjects ? window.DB.getTeacherSubjects() : Promise.resolve([]),
+            window.DB.getSettings ? window.DB.getSettings() : Promise.resolve({})
+        ]);
+
+        APP.teachers = teachers || [];
+        APP.subjects = subjects || [];
+        APP.classes = (classes || []).sort((a, b) => {
+            const ga = parseInt(a.grade) || parseInt(a.name) || 1;
+            const gb = parseInt(b.grade) || parseInt(b.name) || 1;
+            if (ga !== gb) return ga - gb;
+            return a.name.localeCompare(b.name);
+        });
+        APP.allocations = allocations || [];
+        APP.curriculum = curriculum || [];
+        APP.teacherSubjects = teacherSubjects || [];
+        APP.settings = settings || {};
+
+        if (settings.periods_per_day) {
+            APP.PERIODS = Array.from({ length: parseInt(settings.periods_per_day) }, (_, i) => i + 1);
+        }
+        if (settings.working_days) {
+            try {
+                const parsedDays = typeof settings.working_days === 'string' ? JSON.parse(settings.working_days) : settings.working_days;
+                if (Array.isArray(parsedDays) && parsedDays.length > 0) APP.DAYS = parsedDays;
+            } catch (e) {}
+        }
+
+        try {
+            APP.ACTIVE_SUBSTITUTIONS = await window.DB.getSubstitutions();
+        } catch (e) {
+            APP.ACTIVE_SUBSTITUTIONS = [];
+        }
+        updateSubBadge();
+
+        // Load saved timetable (Supabase first, then this device)
+        try {
+            const savedSchedule = await window.DB.loadTimetable();
+            if (savedSchedule && Object.keys(savedSchedule).length > 0) {
+                APP.schedule = savedSchedule;
+                setTimetableStatus('current');
+            } else {
+                APP.schedule = {};
+                setTimetableStatus('empty');
+            }
+        } catch (e) {
+            APP.schedule = {};
+            setTimetableStatus('empty');
+        }
+
+        updateTargetDropdown();
+        renderHeader();
+        renderTimetable();
+        validateAndShowStatus();
+    } catch (err) {
+        console.error("Initialization error:", err);
+        showToast("Error loading school data: " + err.message, "error");
+    }
+
+    startLiveSync();
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+}
+
+// =============================================================================
+// TAB NAVIGATION
+// =============================================================================
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+
+    const targetTab = document.getElementById('tab-' + tabId);
+    const targetBtn = document.getElementById('tabBtn-' + tabId);
+    if (targetTab) targetTab.classList.add('active');
+    if (targetBtn) targetBtn.classList.add('active');
+
+    if (tabId === 'timetable') {
+        renderTimetable();
+        validateAndShowStatus();
+    } else if (tabId === 'curriculum') {
+        loadCurriculumTab();
+    } else if (tabId === 'teachers') {
+        renderTeachers(APP.teachers);
+    } else if (tabId === 'allocations') {
+        loadAllocationsTab();
+    } else if (tabId === 'substitutions') {
+        renderFreeTeachersView();
+    } else if (tabId === 'settings') {
+        loadSettingsTab();
+    }
+}
+
+// =============================================================================
+// PRE-CHECK VALIDATION
+// =============================================================================
+function preCheck() {
+    const issues = [];
+    const totalSlots = APP.DAYS.length * APP.PERIODS.length; // 35
+
+    // 1. Verify curriculum completeness
+    const gradesWithCurriculum = new Set(APP.curriculum.map(c => c.grade));
+    for (let g = 1; g <= 10; g++) {
+        if (!gradesWithCurriculum.has(g)) {
+            issues.push(`Grade ${g} has no curriculum subjects defined.`);
+        } else {
+            const gradeRows = APP.curriculum.filter(c => c.grade === g);
+            const sumP = gradeRows.reduce((acc, c) => acc + (parseInt(c.periods_per_week) || 0), 0);
+            if (sumP !== totalSlots) {
+                issues.push(`Grade ${g} curriculum has ${sumP} periods/week (must be exactly ${totalSlots}).`);
+            }
+        }
+    }
+
+    // 2. Every class must have exactly one full week of lessons (teacher assignments + P.E)
+    APP.classes.forEach(cls => {
+        const grade = parseInt(cls.grade) || parseInt(cls.name) || 1;
+        const curList = APP.curriculum.filter(c => c.grade === grade);
+        const classAllocs = APP.allocations.filter(a => a.class_name === cls.name);
+
+        // subjects of the curriculum that still have no teacher
+        curList.forEach(cur => {
+            if (cur.subject_name === 'P.E') return;
+            if (!classAllocs.some(a => a.subject_name === cur.subject_name)) {
+                issues.push(`Class "${cls.name}" has no teacher for "${cur.subject_name}" (Allocations tab → Assign Teacher).`);
+            }
+        });
+
+        const assigned = classAllocs.reduce((n, a) => n + (parseInt(a.periods_per_week) || 0), 0);
+        const peRow = curList.find(c => c.subject_name === 'P.E');
+        const hasPeAlloc = classAllocs.some(a => a.subject_name === 'P.E');
+        const pe = (!hasPeAlloc && peRow) ? (parseInt(peRow.periods_per_week) || 0) : 0;
+        const total = assigned + pe;
+        if (total !== totalSlots) {
+            const diff = total - totalSlots;
+            issues.push(`Class "${cls.name}" has ${total} periods/week assigned (incl. ${pe} P.E) but needs exactly ${totalSlots} — ${diff > 0 ? 'remove ' + diff : 'add ' + (-diff)} period(s).`);
+        }
+    });
+
+    // 3. Verify no teacher is allocated over their max limit
+    const teacherWeeklyLoad = {};
+    APP.allocations.forEach(a => {
+        teacherWeeklyLoad[a.teacher_name] = (teacherWeeklyLoad[a.teacher_name] || 0) + (parseInt(a.periods_per_week) || 0);
+    });
+
+    APP.teachers.forEach(t => {
+        const load = teacherWeeklyLoad[t.name] || 0;
+        const max = t.max_periods_weekly || 35;
+        if (load > max) {
+            issues.push(`Teacher "${t.name}" is assigned ${load} periods/week, exceeding their limit of ${max}.`);
+        }
+        const dailyCap = (parseInt(t.max_periods_daily) || 6) * APP.DAYS.length;
+        if (load > dailyCap) {
+            issues.push(`Teacher "${t.name}" has ${load} periods/week but can only teach ${dailyCap} (${parseInt(t.max_periods_daily) || 6} per day × ${APP.DAYS.length} days). Move ${load - dailyCap} period(s) to another teacher.`);
+        }
+    });
+
+    return issues;
+}
+
+// =============================================================================
+// CONSTRAINT PROGRAMMING (CP) SOLVER & GENERATION
+// =============================================================================
+async function runGeneration() {
+    const preCheckList = document.getElementById('preCheckList');
+    const preCheckPanel = document.getElementById('preCheckPanel');
+    const issues = preCheck();
+
+    if (issues.length > 0) {
+        preCheckList.innerHTML = issues.map(iss => `<li>${iss}</li>`).join('');
+        preCheckPanel.style.display = 'block';
+        preCheckPanel.scrollIntoView({ behavior: 'smooth' });
+        showToast("Cannot generate timetable. Resolve pre-check errors first.", "error");
+        return;
+    }
+
+    preCheckPanel.style.display = 'none';
+    const btn = document.getElementById('btnGenerate');
+    btn.disabled = true;
+    btn.textContent = '⚙️ Generating 0 Clashes...';
+
+    // Allow UI thread to repaint
+    setTimeout(async () => {
+        try {
+            const newSchedule = generateTimetable();
+            APP.schedule = newSchedule;
+            setTimetableStatus('current');
+            renderTimetable();
+            validateAndShowStatus();
+            showToast("✅ Timetable generated with 0 clashes!", "success");
+            const saved = await window.DB.saveTimetable(newSchedule);
+            if (saved && saved.cloud) showToast("☁️ Timetable saved to Supabase.", "success");
+            else if (window.DB.isConnected()) showToast("Timetable saved on this device only (cloud save failed).", "warning");
+        } catch (e) {
+            console.error("Solver error:", e);
+            showToast("Solver error: " + e.message, "error");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '⚡ Generate Timetable';
+        }
+    }, 50);
+}
+
+function generateTimetable() {
+    const DAYS = APP.DAYS, PERIODS = APP.PERIODS;
+    const nD = DAYS.length, nP = PERIODS.length, nS = nD * nP;
+    const lastP = nP - 1;
+    const dayOf = s => Math.floor(s / nP);
+    const perOf = s => s % nP;
+
+    const HARD = 100000, SOFT = 1;
+    const classes = APP.classes;
+    const nC = classes.length;
+
+    // ---- teacher index -------------------------------------------------------
+    const tIndex = {}; const tMaxDaily = [];
+    const tId = name => {
+        if (tIndex[name] === undefined) {
+            tIndex[name] = tMaxDaily.length;
+            const t = APP.teachers.find(x => x.name === name);
+            tMaxDaily.push((t && parseInt(t.max_periods_daily)) || 6);
+        }
+        return tIndex[name];
+    };
+    APP.teachers.forEach(t => tId(t.name));
+
+    // ---- build lessons for every class --------------------------------------
+    const isGirls = n => /pink|red/i.test(n);
+    const isBoys  = n => /white|green|blue/i.test(n);
+    const grid = [];   // grid[c][s] = lesson
+    classes.forEach((cls, ci) => {
+        const grade = parseInt(cls.grade) || parseInt(cls.name) || 1;
+        const lessons = [];
+        const curBySubj = {};
+        APP.curriculum.filter(c => c.grade === grade).forEach(c => { curBySubj[c.subject_name] = c; });
+        const gender = (subject) => (subject === 'P.E' && grade > 3) ? (isGirls(cls.name) ? 1 : (isBoys(cls.name) ? 2 : 0)) : 0;
+
+        // Teaching assignments of this class are the source of truth (any teacher / subject / periods)
+        const classAllocs = APP.allocations.filter(a => a.class_name === cls.name);
+        const bySubject = {};
+        classAllocs.forEach(a => { (bySubject[a.subject_name] = bySubject[a.subject_name] || []).push(a); });
+
+        Object.keys(bySubject).forEach(subj => {
+            const total = bySubject[subj].reduce((n, a) => n + (parseInt(a.periods_per_week) || 0), 0);
+            const curMax = (curBySubj[subj] && curBySubj[subj].max_per_day) || 1;
+            const maxPerDay = Math.max(curMax, Math.ceil(total / nD));
+            bySubject[subj].forEach(a => {
+                const n = parseInt(a.periods_per_week) || 0;
+                for (let i = 0; i < n; i++) {
+                    lessons.push({ subject: subj, teacher: a.teacher_name, t: tId(a.teacher_name), maxPerDay, gender: gender(subj) });
+                }
+            });
+        });
+        // P.E from curriculum (no teacher) unless P.E was assigned to a teacher
+        if (!bySubject['P.E'] && curBySubj['P.E']) {
+            for (let i = 0; i < curBySubj['P.E'].periods_per_week; i++) {
+                lessons.push({ subject: 'P.E', teacher: null, t: -1, maxPerDay: curBySubj['P.E'].max_per_day || 1, gender: gender('P.E') });
+            }
+        }
+        // pad (should not happen once pre-check passes) / trim
+        while (lessons.length < nS) lessons.push({ subject: 'Free', teacher: null, t: -1, maxPerDay: nS, gender: 0 });
+        lessons.length = nS;
+        for (let i = nS - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [lessons[i], lessons[j]] = [lessons[j], lessons[i]]; }
+        grid.push(lessons);
+    });
+
+    // ---- state counters ------------------------------------------------------
+    const nT = () => tMaxDaily.length;
+    let tSlot, tDay, cds, peG, peB;
+    function resetCounters() {
+        tSlot = Array.from({ length: nT() }, () => new Int16Array(nS));
+        tDay  = Array.from({ length: nT() }, () => new Int16Array(nD));
+        cds   = Array.from({ length: nC }, () => Array.from({ length: nD }, () => ({})));
+        peG = new Int16Array(nS); peB = new Int16Array(nS);
+        for (let c = 0; c < nC; c++) for (let s = 0; s < nS; s++) addL(c, s, grid[c][s], 1);
+    }
+    function addL(c, s, L, k) {
+        if (L.t >= 0) { tSlot[L.t][s] += k; tDay[L.t][dayOf(s)] += k; }
+        cds[c][dayOf(s)][L.subject] = (cds[c][dayOf(s)][L.subject] || 0) + k;
+        if (L.gender === 1) peG[s] += k; else if (L.gender === 2) peB[s] += k;
+    }
+
+    // ---- cost pieces ---------------------------------------------------------
+    function pairPen(c, a) { // pair (a, a+1) inside the same day with same teacher
+        if (a < 0 || a + 1 >= nS || dayOf(a) !== dayOf(a + 1)) return 0;
+        const x = grid[c][a], y = grid[c][a + 1];
+        return (x.t >= 0 && x.t === y.t) ? SOFT * 3 : 0;
+    }
+    function cellLocal(c, s) {  // penalties that depend only on this one cell
+        const L = grid[c][s]; let p = 0;
+        if (L.subject === 'Maths' && perOf(s) === lastP) p += HARD;
+        return p;
+    }
+    function evalMove(c, s1, s2) {
+        const L1 = grid[c][s1], L2 = grid[c][s2];
+        let p = 0;
+        const d1 = dayOf(s1), d2 = dayOf(s2);
+        // teacher clashes + daily load
+        const seenTS = new Set();
+        for (const [L, ss] of [[L1, [s1, s2]], [L2, [s1, s2]]]) {
+            if (L.t < 0) continue;
+            for (const s of ss) {
+                const key = L.t * 1000 + s;
+                if (seenTS.has(key)) continue; seenTS.add(key);
+                if (tSlot[L.t][s] > 1) p += HARD * (tSlot[L.t][s] - 1);
+            }
+            for (const d of [d1, d2]) {
+                const key = -(L.t * 10 + d) - 1;
+                if (seenTS.has(key)) continue; seenTS.add(key);
+                if (tDay[L.t][d] > tMaxDaily[L.t]) p += HARD * (tDay[L.t][d] - tMaxDaily[L.t]);
+            }
+        }
+        // subject-per-day for this class
+        const seenSD = new Set();
+        for (const L of [L1, L2]) for (const d of [d1, d2]) {
+            const key = L.subject + '|' + d;
+            if (seenSD.has(key)) continue; seenSD.add(key);
+            const over = (cds[c][d][L.subject] || 0) - L.maxPerDay;
+            if (over > 0) p += HARD * over;
+        }
+        // P.E gender mix
+        for (const s of [s1, s2]) if (peG[s] > 0 && peB[s] > 0) p += HARD * Math.min(peG[s], peB[s]);
+        // maths in last period
+        p += cellLocal(c, s1) + cellLocal(c, s2);
+        // adjacency
+        const pairs = new Set([s1 - 1, s1, s2 - 1, s2]);
+        pairs.forEach(a => { p += pairPen(c, a); });
+        return p;
+    }
+    function swap(c, s1, s2) {
+        const L1 = grid[c][s1], L2 = grid[c][s2];
+        addL(c, s1, L1, -1); addL(c, s2, L2, -1);
+        grid[c][s1] = L2; grid[c][s2] = L1;
+        addL(c, s1, L2, 1); addL(c, s2, L1, 1);
+    }
+    function tryMove(c, s1, s2) {
+        const before = evalMove(c, s1, s2);
+        swap(c, s1, s2);
+        const after = evalMove(c, s1, s2);
+        return { delta: after - before };
+    }
+    function fullCost() {
+        let h = 0, sft = 0;
+        for (let t = 0; t < nT(); t++) {
+            for (let s = 0; s < nS; s++) if (tSlot[t][s] > 1) h += tSlot[t][s] - 1;
+            for (let d = 0; d < nD; d++) if (tDay[t][d] > tMaxDaily[t]) h += tDay[t][d] - tMaxDaily[t];
+        }
+        for (let c = 0; c < nC; c++) {
+            for (let d = 0; d < nD; d++) {
+                const m = {};
+                for (let p = 0; p < nP; p++) { const L = grid[c][d * nP + p]; m[L.subject] = (m[L.subject] || 0) + 1; }
+                for (let p = 0; p < nP; p++) { const L = grid[c][d * nP + p]; if (m[L.subject] > L.maxPerDay) { h += (m[L.subject] - L.maxPerDay) / m[L.subject]; } }
+            }
+            for (let s = 0; s < nS; s++) { if (cellLocal(c, s) > 0) h++; sft += pairPen(c, s) / 3; }
+        }
+        for (let s = 0; s < nS; s++) if (peG[s] > 0 && peB[s] > 0) h += Math.min(peG[s], peB[s]);
+        return { hard: Math.round(h), soft: Math.round(sft) };
+    }
+    function cellBad(c, s) {
+        const L = grid[c][s];
+        if (L.t >= 0 && (tSlot[L.t][s] > 1 || tDay[L.t][dayOf(s)] > tMaxDaily[L.t])) return true;
+        if ((cds[c][dayOf(s)][L.subject] || 0) > L.maxPerDay) return true;
+        if (L.subject === 'Maths' && perOf(s) === lastP) return true;
+        if (L.gender && peG[s] > 0 && peB[s] > 0) return true;
+        if (pairPen(c, s) > 0 || pairPen(c, s - 1) > 0) return true;
+        return false;
+    }
+
+    // ---- search: min-conflicts (best swap for a conflicted cell) + noise + restarts ----
+    const t0 = Date.now();
+    const TIME_LIMIT = 15000;
+    const shuffleAll = () => grid.forEach(row => { for (let i = nS - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [row[i], row[j]] = [row[j], row[i]]; } });
+    let best = null, bestHard = Infinity, attempt = 0;
+    while (Date.now() - t0 < TIME_LIMIT) {
+        if (attempt > 0) shuffleAll();
+        attempt++;
+        resetCounters();
+        const NOISE = 0.12;
+        const MAX_ITER = 40000;
+        for (let iter = 0; iter < MAX_ITER; iter++) {
+            if (iter % 400 === 0) {
+                const fc = fullCost();
+                if (fc.hard === 0 && (fc.soft === 0 || iter > 4000)) break;
+            }
+            // pick a conflicted cell
+            let c = -1, s1 = -1;
+            for (let k = 0; k < 60; k++) {
+                const cc = Math.floor(Math.random() * nC), ss = Math.floor(Math.random() * nS);
+                if (cellBad(cc, ss)) { c = cc; s1 = ss; break; }
+            }
+            if (c < 0) {
+                const bad = [];
+                for (let cc = 0; cc < nC; cc++) for (let ss = 0; ss < nS; ss++) if (cellBad(cc, ss)) bad.push([cc, ss]);
+                if (bad.length === 0) break;
+                [c, s1] = bad[Math.floor(Math.random() * bad.length)];
+            }
+            // try swapping with EVERY other slot of this class, keep the best
+            let bestS2 = -1, bestD = Infinity, ties = 0;
+            const A = grid[c][s1];
+            for (let s2 = 0; s2 < nS; s2++) {
+                if (s2 === s1) continue;
+                const B = grid[c][s2];
+                if (A.subject === B.subject && A.t === B.t) continue;
+                const d = tryMove(c, s1, s2).delta;
+                swap(c, s1, s2);                      // undo
+                if (d < bestD) { bestD = d; bestS2 = s2; ties = 1; }
+                else if (d === bestD && Math.random() < 1 / (++ties)) bestS2 = s2;
+            }
+            if (bestS2 < 0) continue;
+            if (bestD <= 0) swap(c, s1, bestS2);
+            else if (Math.random() < NOISE) {         // escape local minimum with a random move
+                let r; do { r = Math.floor(Math.random() * nS); } while (r === s1);
+                swap(c, s1, r);
+            }
+        }
+        const fc = fullCost();
+        if (fc.hard < bestHard) { bestHard = fc.hard; best = grid.map(row => row.slice()); }
+        if (fc.hard === 0) break;
+    }
+
+    if (bestHard > 0) {
+        throw new Error('Solver could not resolve all clashes (' + bestHard + ' left). Check teacher allocations — some teacher may be over-loaded.');
+    }
+
+    // ---- build schedule object ----------------------------------------------
+    const schedule = {};
+    classes.forEach((cls, ci) => {
+        schedule[cls.name] = {};
+        DAYS.forEach((day, d) => {
+            schedule[cls.name][day] = {};
+            PERIODS.forEach((p, pi) => {
+                const L = best[ci][d * nP + pi];
+                schedule[cls.name][day][p] = L.subject === 'Free' ? null : { subject: L.subject, teacher: L.teacher };
+            });
+        });
+    });
+    return schedule;
+}
+
+function countClashes(schedule, teacherSlotCount) {
+    let c = 0;
+    for (const t in teacherSlotCount) {
+        for (const k in teacherSlotCount[t]) {
+            if (teacherSlotCount[t][k] > 1) c += (teacherSlotCount[t][k] - 1);
+        }
+    }
+    return c;
+}
+
+// =============================================================================
+// TIMETABLE RENDERING
+// =============================================================================
+function renderHeader() {
+    const thead = document.getElementById('timetableHeader');
+    if (!thead) return;
+
+    const breakAfter = parseInt(APP.settings.break_after_period) || 3;
+    let periodTimes = [];
+    try {
+        if (APP.settings.period_times) {
+            periodTimes = typeof APP.settings.period_times === 'string' ? JSON.parse(APP.settings.period_times) : APP.settings.period_times;
+        }
+    } catch (e) {}
+
+    let html = '<tr><th style="width:110px;">Day</th>';
+    APP.PERIODS.forEach(p => {
+        const timeObj = periodTimes.find(t => parseInt(t.period) === p);
+        const timeStr = timeObj ? `<small>${timeObj.start} - ${timeObj.end}</small>` : '';
+        html += `<th>Period ${p}${timeStr}</th>`;
+
+        if (p === breakAfter) {
+            html += '<th class="break-cell" style="width:34px; writing-mode:horizontal-tb;">BRK</th>';
+        }
+    });
+    html += '</tr>';
+    thead.innerHTML = html;
+}
+
+function switchViewMode() {
+    updateTargetDropdown();
+    renderTimetable();
+}
+
+function updateTargetDropdown() {
+    const mode = document.getElementById('viewMode').value;
+    const selector = document.getElementById('targetSelector');
+    const label = document.getElementById('targetSelectorLabel');
+
+    selector.innerHTML = '';
+    if (mode === 'CLASS') {
+        label.textContent = 'Select Class:';
+        APP.classes.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.name;
+            opt.textContent = c.name;
+            selector.appendChild(opt);
+        });
+    } else {
+        label.textContent = 'Select Teacher:';
+        APP.teachers.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.name;
+            opt.textContent = t.name + ' (' + (t.department || 'General') + ')';
+            selector.appendChild(opt);
+        });
+    }
+}
+
+function renderTimetable() {
+    const tbody = document.getElementById('timetableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const mode = document.getElementById('viewMode').value;
+    const target = document.getElementById('targetSelector').value;
+    const breakAfter = parseInt(APP.settings.break_after_period) || 3;
+    const lastPeriod = APP.PERIODS[APP.PERIODS.length - 1];
+
+    if (!target) {
+        tbody.innerHTML = '<tr><td colspan="10" style="padding:24px; text-align:center; color:var(--slate-400);">Please select a class or teacher to view timetable.</td></tr>';
+        return;
+    }
+
+    // Color map for subjects
+    const colorMap = {};
+    APP.subjects.forEach(s => { colorMap[s.name] = s.color_accent || '#3b82f6'; });
+
+    // Active double booking map
+    const slotTeacherCounts = {};
+    for (const cl in APP.schedule) {
+        for (const d in APP.schedule[cl]) {
+            for (const p in APP.schedule[cl][d]) {
+                const cell = APP.schedule[cl][d][p];
+                if (cell && cell.teacher) {
+                    const k = d + '_' + p + '_' + cell.teacher;
+                    slotTeacherCounts[k] = (slotTeacherCounts[k] || 0) + 1;
+                }
+            }
+        }
+    }
+
+    if (mode === 'CLASS') {
+        APP.DAYS.forEach(day => {
+            let rowHtml = `<tr><td class="day-col">${day}</td>`;
+            APP.PERIODS.forEach(p => {
+                const cellData = APP.schedule[target] && APP.schedule[target][day] ? APP.schedule[target][day][p] : null;
+
+                // Check active substitution
+                const sub = (APP.ACTIVE_SUBSTITUTIONS || []).find(s => s.day === day && parseInt(s.period) === p && s.class_id === target);
+
+                if (cellData && cellData.subject) {
+                    const isMathsLast = (cellData.subject === 'Maths' && p === lastPeriod);
+                    const isClash = cellData.teacher && slotTeacherCounts[day + '_' + p + '_' + cellData.teacher] > 1;
+                    const subClass = sub ? 'substituted' : '';
+                    const clashClass = isClash ? 'clash' : (isMathsLast ? 'maths-last' : '');
+
+                    const subjColor = colorMap[cellData.subject] || 'var(--primary)';
+                    const displayTeacher = sub ? `${sub.substitute_teacher_id} (Cover)` : (cellData.teacher || 'Unassigned');
+
+                    rowHtml += `<td>
+                        <div class="period-cell ${clashClass} ${subClass}" onclick="openEditModal('${target}','${day}',${p})">
+                            <span class="cell-subject" style="color:${subjColor}">${cellData.subject}</span>
+                            <span class="cell-teacher">${displayTeacher}</span>
+                            ${sub ? '<span class="tag tag-success" style="font-size:9px; padding:1px 5px;">SUB</span>' : ''}
+                        </div>
+                    </td>`;
+                } else {
+                    rowHtml += `<td>
+                        <div class="period-free" onclick="openEditModal('${target}','${day}',${p})">+ Free</div>
+                    </td>`;
+                }
+
+                if (p === breakAfter) {
+                    rowHtml += '<td class="break-cell">BREAK</td>';
+                }
+            });
+            rowHtml += '</tr>';
+            tbody.innerHTML += rowHtml;
+        });
+    } else {
+        // Teacher View
+        APP.DAYS.forEach(day => {
+            let rowHtml = `<tr><td class="day-col">${day}</td>`;
+            APP.PERIODS.forEach(p => {
+                let taughtClass = null;
+                let taughtSubject = null;
+
+                for (const cl in APP.schedule) {
+                    const cell = APP.schedule[cl] && APP.schedule[cl][day] ? APP.schedule[cl][day][p] : null;
+                    if (cell && cell.teacher === target) {
+                        taughtClass = cl;
+                        taughtSubject = cell.subject;
+                        break;
+                    }
+                }
+
+                // Check if teacher is covering as substitute
+                const subCover = (APP.ACTIVE_SUBSTITUTIONS || []).find(s => s.day === day && parseInt(s.period) === p && s.substitute_teacher_id === target);
+                if (subCover) {
+                    taughtClass = subCover.class_id;
+                    taughtSubject = subCover.subject_id + " (Sub)";
+                }
+
+                if (taughtClass) {
+                    const isClash = slotTeacherCounts[day + '_' + p + '_' + target] > 1;
+                    const subjColor = colorMap[taughtSubject.replace(" (Sub)", "")] || 'var(--primary)';
+                    rowHtml += `<td>
+                        <div class="period-cell ${isClash ? 'clash' : ''}">
+                            <span class="cell-subject" style="color:${subjColor}">${taughtClass}</span>
+                            <span class="cell-teacher">${taughtSubject}</span>
+                        </div>
+                    </td>`;
+                } else {
+                    rowHtml += `<td><div class="period-free" style="cursor:default;">Free</div></td>`;
+                }
+
+                if (p === breakAfter) {
+                    rowHtml += '<td class="break-cell">BREAK</td>';
+                }
+            });
+            rowHtml += '</tr>';
+            tbody.innerHTML += rowHtml;
+        });
+    }
+}
+
+function validateAndShowStatus() {
+    let totalScheduled = 0;
+    let clashes = 0;
+    let mathsLastCount = 0;
+    const lastPeriod = APP.PERIODS[APP.PERIODS.length - 1];
+
+    const slotTeacherMap = {};
+    for (const cl in APP.schedule) {
+        for (const d in APP.schedule[cl]) {
+            for (const p in APP.schedule[cl][d]) {
+                const cell = APP.schedule[cl][d][p];
+                if (cell && cell.subject) {
+                    totalScheduled++;
+                    if (cell.subject === 'Maths' && parseInt(p) === lastPeriod) {
+                        mathsLastCount++;
+                    }
+                    if (cell.teacher) {
+                        const key = d + '_' + p + '_' + cell.teacher;
+                        slotTeacherMap[key] = (slotTeacherMap[key] || 0) + 1;
+                    }
+                }
+            }
+        }
+    }
+
+    const clashList = [];
+    for (const k in slotTeacherMap) {
+        if (slotTeacherMap[k] > 1) {
+            clashes += (slotTeacherMap[k] - 1);
+            const [cd, cp, ...ct] = k.split('_');
+            const who = ct.join('_');
+            const where = Object.keys(APP.schedule).filter(c => APP.schedule[c][cd] && APP.schedule[c][cd][cp] && APP.schedule[c][cd][cp].teacher === who);
+            clashList.push(`${who} — ${cd} P${cp}: ${where.join(' & ')}`);
+        }
+    }
+
+    // Overloaded teachers check
+    const teacherLoad = {};
+    APP.allocations.forEach(a => {
+        teacherLoad[a.teacher_name] = (teacherLoad[a.teacher_name] || 0) + (parseInt(a.periods_per_week) || 0);
+    });
+    let overloadedCount = 0;
+    APP.teachers.forEach(t => {
+        if ((teacherLoad[t.name] || 0) > (t.max_periods_weekly || 35)) overloadedCount++;
+    });
+
+    const sb = document.getElementById('statusBar');
+    if (!sb) return;
+
+    sb.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span class="status-badge ${clashes === 0 ? 'ok' : 'error'}">
+                    ${clashes === 0 ? '✅ 0 Teacher Clashes' : `⚠️ ${clashes} Clashes Detected`}
+                </span>
+                <span class="status-badge ${mathsLastCount === 0 ? 'ok' : 'warn'}">
+                    ${mathsLastCount === 0 ? '✅ Maths Balanced (0 in Last Period)' : `⚠️ ${mathsLastCount} Maths in Last Period`}
+                </span>
+                <span class="status-badge ${overloadedCount === 0 ? 'ok' : 'error'}">
+                    ${overloadedCount === 0 ? '✅ Teacher Loads Within Limit' : `⚠️ ${overloadedCount} Teachers Over Max Limit`}
+                </span>
+            </div>
+            <div style="font-size:12.5px; font-weight:700; color:var(--slate-600);">
+                Total Periods Placed: <strong style="color:var(--primary);">${totalScheduled}</strong>
+            </div>
+        </div>
+        ${clashList.length ? `<div class="alert-warning" style="margin-top:10px;"><strong>Clashes to fix (click ⚡ Generate Timetable to rebuild with 0 clashes):</strong><br>${clashList.join('<br>')}</div>` : ''}
+    `;
+}
+
+function setTimetableStatus(status) {
+    APP.timetableStatus = status;
+    const badge = document.getElementById('timetableStatusBadge');
+    if (!badge) return;
+
+    if (status === 'current') {
+        badge.className = 'status-badge ok';
+        badge.textContent = '🟢 Timetable Current';
+    } else if (status === 'outdated') {
+        badge.className = 'status-badge warn';
+        badge.textContent = '🟡 Timetable Outdated (Re-generate)';
+    } else {
+        badge.className = 'status-badge';
+        badge.style.background = 'var(--slate-200)';
+        badge.style.color = 'var(--slate-700)';
+        badge.textContent = '⬜ Not Generated';
+    }
+}
+
+function markTimetableOutdated() {
+    if (APP.timetableStatus === 'current') {
+        setTimetableStatus('outdated');
+    }
+}
+
+// =============================================================================
+// EDIT PERIOD CELL MODAL
+// =============================================================================
+function openEditModal(cls, day, period) {
+    APP.editingCell = { cls, day, period };
+    const desc = `${cls} • ${day} - Period ${period}`;
+    document.getElementById('editSlotDesc').value = desc;
+
+    const subSelect = document.getElementById('editSubject');
+    const teacherSelect = document.getElementById('editTeacher');
+
+    subSelect.innerHTML = '<option value="">-- None / Free --</option>' +
+        APP.subjects.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+
+    teacherSelect.innerHTML = '<option value="">-- No Teacher --</option>' +
+        APP.teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+
+    const currentCell = APP.schedule[cls] && APP.schedule[cls][day] ? APP.schedule[cls][day][period] : null;
+    if (currentCell) {
+        subSelect.value = currentCell.subject || '';
+        teacherSelect.value = currentCell.teacher || '';
+    } else {
+        subSelect.value = '';
+        teacherSelect.value = '';
+    }
+
+    document.getElementById('editModal').style.display = 'flex';
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+    APP.editingCell = null;
+}
+
+function saveEditModal() {
+    if (!APP.editingCell) return;
+    const { cls, day, period } = APP.editingCell;
+    const subj = document.getElementById('editSubject').value;
+    const teacher = document.getElementById('editTeacher').value;
+
+    // Clash guard: is this teacher already teaching another class at the same time?
+    if (subj && teacher) {
+        const other = Object.keys(APP.schedule).find(c => c !== cls && APP.schedule[c] && APP.schedule[c][day] &&
+            APP.schedule[c][day][period] && APP.schedule[c][day][period].teacher === teacher);
+        if (other && !confirm(`⚠️ ${teacher} is already teaching ${other} on ${day} Period ${period}.\n\nSaving will create a CLASH. Save anyway?`)) return;
+    }
+
+    if (!APP.schedule[cls]) APP.schedule[cls] = {};
+    if (!APP.schedule[cls][day]) APP.schedule[cls][day] = {};
+
+    if (subj) {
+        APP.schedule[cls][day][period] = { subject: subj, teacher: teacher || null };
+    } else {
+        APP.schedule[cls][day][period] = null;
+    }
+
+    window.DB.saveTimetable(APP.schedule);
+    markTimetableOutdated();
+    closeEditModal();
+    renderTimetable();
+    validateAndShowStatus();
+    showToast("Period updated successfully!", "success");
+}
+
+function printTimetable() {
+    window.print();
+}
+
+function exportCSV() {
+    const rows = [["Class", "Day", "Period", "Subject", "Teacher"]];
+    for (const cls in APP.schedule) {
+        for (const day in APP.schedule[cls]) {
+            for (const p in APP.schedule[cls][day]) {
+                const cell = APP.schedule[cls][day][p];
+                if (cell && cell.subject) {
+                    rows.push([cls, day, p, cell.subject, cell.teacher || ""]);
+                }
+            }
+        }
+    }
+    const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `smart_school_timetable_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function clearTimetable() {
+    if (confirm("Are you sure you want to clear the entire generated schedule?")) {
+        APP.schedule = {};
+        window.DB.clearTimetableData();
+        setTimetableStatus('empty');
+        renderTimetable();
+        validateAndShowStatus();
+        showToast("Timetable schedule cleared.", "info");
+    }
+}
+
+// =============================================================================
+// CURRICULUM TAB
+// =============================================================================
+function loadCurriculumTab() {
+    const sel = document.getElementById('gradeSelector');
+    sel.innerHTML = '';
+    for (let g = 1; g <= 10; g++) {
+        const btn = document.createElement('button');
+        btn.className = `btn ${g === APP.activeGrade ? 'btn-primary' : 'btn-outline'}`;
+        btn.textContent = `Grade ${g}`;
+        btn.onclick = () => selectGrade(g);
+        sel.appendChild(btn);
+    }
+    selectGrade(APP.activeGrade);
+}
+
+function selectGrade(grade) {
+    APP.activeGrade = grade;
+    document.querySelectorAll('#gradeSelector button').forEach((b, idx) => {
+        if (idx + 1 === grade) {
+            b.className = 'btn btn-primary';
+        } else {
+            b.className = 'btn btn-outline';
+        }
+    });
+
+    document.getElementById('curriculumTitle').textContent = `Grade ${grade} Curriculum`;
+    const rows = APP.curriculum.filter(c => c.grade === grade);
+    renderCurriculumTable(grade, rows);
+    updateSlotCounter();
+}
+
+function renderCurriculumTable(grade, rows) {
+    const tbody = document.getElementById('curriculumBody');
+    tbody.innerHTML = '';
+
+    rows.forEach((r, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <select class="curr-subject" onchange="updateSlotCounter()">
+                    ${APP.subjects.map(s => `<option value="${s.id}" ${s.name === r.subject_name ? 'selected' : ''}>${s.name}</option>`).join('')}
+                </select>
+            </td>
+            <td>
+                <input type="number" class="curr-ppw" min="1" max="10" value="${r.periods_per_week}" oninput="updateSlotCounter()">
+            </td>
+            <td>
+                <input type="number" class="curr-mpd" min="1" max="4" value="${r.max_per_day}">
+            </td>
+            <td style="text-align:right;">
+                <button onclick="deleteCurriculumRow(this)" class="btn-danger" style="padding:4px 8px; font-size:11px;">✕</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function updateSlotCounter() {
+    const ppws = document.querySelectorAll('#curriculumBody .curr-ppw');
+    let total = 0;
+    ppws.forEach(p => { total += (parseInt(p.value) || 0); });
+
+    const totalSlots = APP.DAYS.length * APP.PERIODS.length; // 35
+    const badge = document.getElementById('slotCounter');
+    badge.textContent = `${total} / ${totalSlots} slots`;
+    if (total === totalSlots) {
+        badge.className = 'tag tag-success';
+    } else {
+        badge.className = 'tag';
+        badge.style.background = 'var(--warning-bg)';
+        badge.style.color = 'var(--warning)';
+        badge.style.borderColor = '#fde68a';
+    }
+}
+
+function addCurriculumRow() {
+    const tbody = document.getElementById('curriculumBody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>
+            <select class="curr-subject" onchange="updateSlotCounter()">
+                ${APP.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+            </select>
+        </td>
+        <td>
+            <input type="number" class="curr-ppw" min="1" max="10" value="1" oninput="updateSlotCounter()">
+        </td>
+        <td>
+            <input type="number" class="curr-mpd" min="1" max="4" value="1">
+        </td>
+        <td style="text-align:right;">
+            <button onclick="deleteCurriculumRow(this)" class="btn-danger" style="padding:4px 8px; font-size:11px;">✕</button>
+        </td>
+    `;
+    tbody.appendChild(tr);
+    updateSlotCounter();
+}
+
+function deleteCurriculumRow(btn) {
+    const row = btn.closest('tr');
+    if (row) row.remove();
+    updateSlotCounter();
+}
+
+async function saveCurriculum() {
+    const rows = document.querySelectorAll('#curriculumBody tr');
+    const grade = APP.activeGrade;
+    const saveList = [];
+
+    for (const tr of rows) {
+        const subId = tr.querySelector('.curr-subject').value;
+        const ppw = parseInt(tr.querySelector('.curr-ppw').value) || 1;
+        const mpd = parseInt(tr.querySelector('.curr-mpd').value) || 1;
+        saveList.push({ subId, ppw, mpd });
+    }
+
+    try {
+        for (const item of saveList) {
+            await window.DB.upsertCurriculum(grade, item.subId, item.ppw, item.mpd);
+        }
+        APP.curriculum = await window.DB.getCurriculum();
+        markTimetableOutdated();
+        showToast(`Saved Grade ${grade} curriculum!`, "success");
+    } catch (e) {
+        showToast("Error saving curriculum: " + e.message, "error");
+    }
+}
+
+// =============================================================================
+// TEACHERS TAB
+// =============================================================================
+function renderTeachers(teachersList) {
+    const container = document.getElementById('teachersList');
+    container.innerHTML = '';
+
+    const teacherLoad = {};
+    APP.allocations.forEach(a => {
+        teacherLoad[a.teacher_name] = (teacherLoad[a.teacher_name] || 0) + (parseInt(a.periods_per_week) || 0);
+    });
+
+    teachersList.forEach(t => {
+        const load = teacherLoad[t.name] || 0;
+        const max = t.max_periods_weekly || 35;
+        const pct = Math.min(100, Math.round((load / max) * 100));
+
+        let barCol = 'var(--success)';
+        if (pct >= 100) barCol = 'var(--danger)';
+        else if (pct >= 85) barCol = 'var(--warning)';
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.marginBottom = '0';
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                <div>
+                    <h3 style="margin:0; font-size:15px; color:var(--slate-800);">${t.name}</h3>
+                    <small style="color:var(--slate-500);">${t.department || 'General'}</small>
+                </div>
+                <span class="tag" style="font-size:11px;">Max: ${max}/wk</span>
+            </div>
+            
+            <div style="margin-bottom:10px;">
+                ${(t.subjects || []).map(s => `<span class="tag tag-primary" style="margin:2px 3px 2px 0;">${s}</span>`).join('')}
+            </div>
+
+            <div style="display:flex; justify-content:space-between; font-size:11.5px; font-weight:700; color:var(--slate-600); margin-top:6px;">
+                <span>Weekly Workload:</span>
+                <span style="color:${load > max ? 'var(--danger)' : 'var(--primary)'}">${load} / ${max} periods</span>
+            </div>
+            <div class="workload-bar-wrap">
+                <div class="workload-bar-fill" style="width:${pct}%; background:${barCol};"></div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:14px;">
+                <button onclick="openAddTeacherModal('${t.id}')" class="btn-outline" style="padding:4px 9px; font-size:11px;">✏️ Edit</button>
+                <button onclick="deleteTeacher('${t.id}')" class="btn-danger" style="padding:4px 8px; font-size:11px;">Delete</button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function filterTeachers() {
+    const q = document.getElementById('teacherSearch').value.toLowerCase();
+    const filtered = APP.teachers.filter(t =>
+        t.name.toLowerCase().includes(q) ||
+        (t.department && t.department.toLowerCase().includes(q)) ||
+        (t.subjects && t.subjects.some(s => s.toLowerCase().includes(q)))
+    );
+    renderTeachers(filtered);
+}
+
+function openAddTeacherModal(teacherId = null) {
+    const modalTitle = document.getElementById('teacherModalTitle');
+    const idInput = document.getElementById('editTeacherId');
+    const nameInput = document.getElementById('newTeacherName');
+    const maxInput = document.getElementById('newTeacherMax');
+    const checkContainer = document.getElementById('teacherSubjectCheckboxes');
+
+    checkContainer.innerHTML = '';
+    let selectedSubjs = [];
+
+    if (teacherId) {
+        const t = APP.teachers.find(x => x.id === teacherId);
+        if (t) {
+            modalTitle.textContent = 'Edit Teacher';
+            idInput.value = t.id;
+            nameInput.value = t.name;
+            maxInput.value = t.max_periods_weekly || 35;
+            selectedSubjs = t.subjects || [];
+        }
+    } else {
+        modalTitle.textContent = 'Add Teacher';
+        idInput.value = '';
+        nameInput.value = '';
+        maxInput.value = '35';
+    }
+
+    APP.subjects.forEach(s => {
+        const isChecked = selectedSubjs.includes(s.name);
+        const lbl = document.createElement('label');
+        lbl.style.display = 'flex';
+        lbl.style.alignItems = 'center';
+        lbl.style.gap = '6px';
+        lbl.style.fontSize = '12px';
+        lbl.style.fontWeight = '600';
+        lbl.innerHTML = `<input type="checkbox" value="${s.id}" data-name="${s.name}" ${isChecked ? 'checked' : ''} style="width:auto;"> ${s.name}`;
+        checkContainer.appendChild(lbl);
+    });
+
+    document.getElementById('addTeacherModal').style.display = 'flex';
+}
+
+function closeTeacherModal() {
+    document.getElementById('addTeacherModal').style.display = 'none';
+}
+
+async function saveTeacher() {
+    const id = document.getElementById('editTeacherId').value;
+    const name = document.getElementById('newTeacherName').value.trim();
+    const maxP = parseInt(document.getElementById('newTeacherMax').value) || 35;
+
+    if (!name) {
+        showToast("Please enter a teacher name.", "error");
+        return;
+    }
+
+    const checkedInputs = document.querySelectorAll('#teacherSubjectCheckboxes input[type="checkbox"]:checked');
+    const subjectIds = Array.from(checkedInputs).map(cb => cb.value);
+    const subjectNames = Array.from(checkedInputs).map(cb => cb.getAttribute('data-name'));
+
+    try {
+        if (id) {
+            await window.DB.updateTeacher(id, {
+                name: name,
+                max_periods_weekly: maxP,
+                subjects: subjectNames,
+                department: subjectNames.join(', ') || 'General'
+            });
+            await window.DB.setTeacherSubjects(id, subjectIds);
+            showToast(`Updated teacher ${name}!`, "success");
+        } else {
+            const newT = await window.DB.addTeacher({
+                name: name,
+                max_periods_weekly: maxP,
+                subjects: subjectNames,
+                department: subjectNames.join(', ') || 'General'
+            });
+            await window.DB.setTeacherSubjects(newT.id, subjectIds);
+            showToast(`Added teacher ${name}!`, "success");
+        }
+
+        APP.teachers = await window.DB.getTeachers();
+        APP.teacherSubjects = await window.DB.getTeacherSubjects();
+        closeTeacherModal();
+        renderTeachers(APP.teachers);
+        updateTargetDropdown();
+    } catch (e) {
+        showToast("Error saving teacher: " + e.message, "error");
+    }
+}
+
+async function deleteTeacher(teacherId) {
+    if (confirm("Are you sure you want to delete this teacher and their teaching assignments?")) {
+        try {
+            await window.DB.deleteTeacher(teacherId);
+            APP.teachers = await window.DB.getTeachers();
+            APP.allocations = await window.DB.getAllocations();
+            markTimetableOutdated();
+            renderTeachers(APP.teachers);
+            updateTargetDropdown();
+            showToast("Teacher deleted.", "info");
+        } catch (e) {
+            showToast("Error deleting teacher: " + e.message, "error");
+        }
+    }
+}
+
+// =============================================================================
+// ALLOCATIONS TAB
+// =============================================================================
+function loadAllocationsTab() {
+    switchAllocView();
+}
+
+function switchAllocView() {
+    const mode = document.getElementById('allocViewMode').value;
+    const selector = document.getElementById('allocSelector');
+    const label = document.getElementById('allocSelectorLabel');
+
+    selector.innerHTML = '';
+    if (mode === 'section') {
+        label.textContent = 'Section:';
+        APP.classes.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.name;
+            opt.textContent = c.name;
+            selector.appendChild(opt);
+        });
+    } else {
+        label.textContent = 'Teacher:';
+        APP.teachers.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.name;
+            opt.textContent = t.name;
+            selector.appendChild(opt);
+        });
+    }
+    renderAllocations();
+}
+
+function renderAllocations() {
+    const mode = document.getElementById('allocViewMode').value;
+    const target = document.getElementById('allocSelector').value;
+    const container = document.getElementById('allocationsTable');
+    const missingAlert = document.getElementById('missingAlert');
+
+    if (!target) {
+        container.innerHTML = '<p style="padding:16px; color:var(--slate-400);">Select a section or teacher to view assignments.</p>';
+        return;
+    }
+
+    if (mode === 'section') {
+        const cls = APP.classes.find(c => c.name === target);
+        const grade = cls ? (parseInt(cls.grade) || parseInt(cls.name) || 1) : 1;
+        const curList = APP.curriculum.filter(c => c.grade === grade);
+        const sectionAllocs = APP.allocations.filter(a => a.class_name === target);
+
+        // Gap detection
+        const missing = [];
+        curList.forEach(c => {
+            if (c.subject_name === 'P.E') return; // P.E handled automatically
+            const hasAlloc = sectionAllocs.some(a => a.subject_name === c.subject_name);
+            if (!hasAlloc) missing.push(c.subject_name);
+        });
+
+        const slotsPerWeek = APP.DAYS.length * APP.PERIODS.length;
+        const peRow = curList.find(c => c.subject_name === 'P.E');
+        const peP = (peRow && !sectionAllocs.some(a => a.subject_name === 'P.E')) ? (parseInt(peRow.periods_per_week) || 0) : 0;
+        const totalAssigned = sectionAllocs.reduce((n, a) => n + (parseInt(a.periods_per_week) || 0), 0) + peP;
+        const notes = [];
+        if (missing.length > 0) notes.push(`<strong>Missing teacher in ${target}:</strong> ${missing.join(', ')}`);
+        if (totalAssigned !== slotsPerWeek) notes.push(`<strong>${target} has ${totalAssigned} periods</strong> (incl. ${peP} P.E) — must be exactly ${slotsPerWeek}.`);
+        if (notes.length > 0) {
+            missingAlert.style.display = 'block';
+            missingAlert.innerHTML = '⚠️ ' + notes.join('<br>⚠️ ');
+        } else {
+            missingAlert.style.display = 'block';
+            missingAlert.innerHTML = `✅ ${target}: ${totalAssigned} / ${slotsPerWeek} periods — ready.`;
+        }
+
+        let html = `<table>
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Teacher</th>
+                    <th>Periods / Week</th>
+                    <th style="text-align:right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        if (sectionAllocs.length === 0) {
+            html += `<tr><td colspan="4" style="text-align:center; color:var(--slate-400); padding:16px;">No teacher assignments yet for ${target}.</td></tr>`;
+        } else {
+            sectionAllocs.forEach(a => {
+                html += `<tr>
+                    <td><strong>${a.subject_name}</strong></td>
+                    <td><select onchange="inlineSetTeacher('${a.id}', this.value)" style="min-width:160px;">${teacherOptionsHtml(a.subject_name, a.teacher_id)}</select></td>
+                    <td><input type="number" min="1" max="35" value="${a.periods_per_week}" style="width:70px;" onchange="inlineSetPeriods('${a.id}', this.value)"></td>
+                    <td style="text-align:right;">
+                        <button onclick="deleteAllocation('${a.id}')" class="btn-danger" style="padding:3px 8px; font-size:11px;">Remove</button>
+                    </td>
+                </tr>`;
+            });
+        }
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    } else {
+        missingAlert.style.display = 'none';
+        const tObj = APP.teachers.find(t => t.name === target);
+        const teacherAllocs = APP.allocations.filter(a => a.teacher_name === target);
+        const totalPeriods = teacherAllocs.reduce((acc, a) => acc + (parseInt(a.periods_per_week) || 0), 0);
+        const maxP = tObj ? (tObj.max_periods_weekly || 35) : 35;
+        const maxD = tObj ? (parseInt(tObj.max_periods_daily) || 6) : 6;
+        const cap = Math.min(maxP, maxD * APP.DAYS.length);
+        const over = totalPeriods > cap;
+
+        // group: subject -> grade -> classes
+        const bySub = {};
+        teacherAllocs.forEach(a => {
+            const cls = APP.classes.find(c => c.name === a.class_name);
+            const g = cls ? (parseInt(cls.grade) || parseInt(cls.name) || 0) : 0;
+            ((bySub[a.subject_name] = bySub[a.subject_name] || {})[g] = (bySub[a.subject_name][g] || [])).push(a);
+        });
+
+        let html = `
+            <div class="card" style="padding:14px 16px; margin-bottom:12px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
+                <div>
+                    <div style="font-size:16px; font-weight:800; color:var(--primary);">${target}</div>
+                    <div style="font-size:12.5px; color:var(--slate-600);">Subjects: ${(tObj && tObj.subjects && tObj.subjects.length) ? tObj.subjects.join(', ') : '—'}</div>
+                </div>
+                <div style="font-size:13px; font-weight:700;">
+                    Weekly load: <span style="color:${over ? 'var(--danger)' : 'var(--success)'};">${totalPeriods} / ${cap} periods</span>
+                    <span style="font-weight:500; color:var(--slate-400);">(max ${maxD}/day)</span>
+                </div>
+                <button class="btn-primary" onclick="openPlanner('${tObj ? tObj.id : ''}')">➕ Assign grades / sections / subject</button>
+            </div>`;
+
+        if (teacherAllocs.length === 0) {
+            html += `<p style="padding:16px; color:var(--slate-400); text-align:center;">No classes assigned to ${target} yet. Click the button above.</p>`;
+        }
+
+        Object.keys(bySub).sort().forEach(subName => {
+            const subObj = APP.subjects.find(s => s.name === subName);
+            const grades = Object.keys(bySub[subName]).map(Number).sort((x, y) => x - y);
+            const subTotal = grades.reduce((n, g) => n + bySub[subName][g].reduce((m, a) => m + (parseInt(a.periods_per_week) || 0), 0), 0);
+            html += `<div class="card" style="padding:12px 16px; margin-bottom:10px; border-left:5px solid ${(subObj && subObj.color_accent) || 'var(--primary)'};">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                    <div style="font-weight:800; font-size:14.5px;">${subName} <span style="font-weight:600; color:var(--slate-600); font-size:12.5px;">· Grades ${grades.join(', ')} · ${subTotal} periods</span></div>
+                    <button class="btn-outline" style="padding:4px 10px; font-size:12px;" onclick="openPlanner('${tObj ? tObj.id : ''}', '${subObj ? subObj.id : ''}')">✏️ Edit grades / sections</button>
+                </div>`;
+            grades.forEach(g => {
+                html += `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:5px 0; border-top:1px dashed var(--slate-200);">
+                    <div style="width:70px; font-weight:700; font-size:13px;">Grade ${g}</div>
+                    ${bySub[subName][g].sort((x, y) => x.class_name.localeCompare(y.class_name)).map(a => `
+                        <span style="display:inline-flex; align-items:center; gap:6px; background:var(--slate-100); border-radius:8px; padding:3px 6px 3px 10px; font-size:12.5px;">
+                            <strong>${a.class_name.replace(/^\d+\s*/, '')}</strong>
+                            <input type="number" min="1" max="35" value="${a.periods_per_week}" title="Periods per week" style="width:52px; padding:2px 4px;" onchange="inlineSetPeriods('${a.id}', this.value)">
+                            <span style="color:var(--slate-400);">p/wk</span>
+                            <button title="Remove" onclick="deleteAllocation('${a.id}')" style="border:none; background:none; color:var(--danger); font-weight:800; cursor:pointer; font-size:14px;">×</button>
+                        </span>`).join('')}
+                </div>`;
+            });
+            html += `</div>`;
+        });
+        container.innerHTML = html;
+    }
+}
+
+
+// =============================================================================
+// FLEXIBLE ASSIGNMENT PLANNER (any teacher + any subject + any classes + any periods)
+// =============================================================================
+function teacherLoad(name) {
+    return APP.allocations.filter(a => a.teacher_name === name).reduce((n, a) => n + (parseInt(a.periods_per_week) || 0), 0);
+}
+function curriculumPeriods(grade, subjectName) {
+    const row = APP.curriculum.find(c => c.grade === grade && c.subject_name === subjectName);
+    return row ? parseInt(row.periods_per_week) : null;
+}
+function openPlanner(presetTeacherId, presetSubjectId) {
+    const tSel = document.getElementById('plTeacher');
+    const sSel = document.getElementById('plSubject');
+    tSel.innerHTML = APP.teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+    sSel.innerHTML = APP.subjects.filter(s => s.name !== 'P.E').map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    let tId = presetTeacherId;
+    if (!tId && document.getElementById('allocViewMode').value === 'teacher') {
+        const t = APP.teachers.find(x => x.name === document.getElementById('allocSelector').value);
+        if (t) tId = t.id;
+    }
+    if (tId) tSel.value = tId;
+    if (presetSubjectId) sSel.value = presetSubjectId;
+    else {
+        // default to the teacher's first subject
+        const t = APP.teachers.find(x => x.id === tSel.value);
+        const first = t && t.subjects && t.subjects[0] ? APP.subjects.find(s => s.name === t.subjects[0]) : null;
+        if (first) sSel.value = first.id;
+    }
+    // class checklist grouped by grade
+    const grades = [...new Set(APP.classes.map(c => parseInt(c.grade) || parseInt(c.name) || 1))].sort((a, b) => a - b);
+    document.getElementById('plClasses').innerHTML = grades.map(g => {
+        const cls = APP.classes.filter(c => (parseInt(c.grade) || parseInt(c.name) || 1) === g);
+        return `<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:4px 0; border-bottom:1px dashed var(--slate-200);">
+            <label style="width:90px; font-weight:700; display:flex; gap:6px; align-items:center;"><input type="checkbox" style="width:auto;" onchange="plToggleGrade(${g}, this.checked)"> Grade ${g}</label>
+            ${cls.map(c => `<label style="display:flex; gap:4px; align-items:center; font-size:12.5px;"><input type="checkbox" class="plCls" data-grade="${g}" value="${c.name}" style="width:auto;" onchange="plRefresh()"> <span>${c.name.replace(/^\d+\s*/, '')}</span><small class="plCur" data-cls="${c.name}" style="color:var(--slate-400);"></small></label>`).join('')}
+        </div>`;
+    }).join('');
+    document.getElementById('plannerModal').style.display = 'flex';
+    plPreload();
+}
+// Tick the classes this teacher ALREADY has for the chosen subject, so they can be changed
+let PL_TOUCHED = false;
+function plPreload() {
+    PL_TOUCHED = false;
+    const subj = APP.subjects.find(s => s.id === document.getElementById('plSubject').value);
+    const teacher = APP.teachers.find(t => t.id === document.getElementById('plTeacher').value);
+    const mine = (subj && teacher) ? APP.allocations.filter(a => a.teacher_id === teacher.id && a.subject_name === subj.name) : [];
+    const names = new Set(mine.map(a => a.class_name));
+    document.querySelectorAll('.plCls').forEach(cb => { cb.checked = names.has(cb.value); });
+    document.querySelectorAll('#plClasses > div > label:first-child input').forEach(cb => { cb.checked = false; });
+    const rm = document.getElementById('plRemove');
+    if (rm) rm.checked = mine.length > 0;
+    document.getElementById('plExistingNote').textContent = mine.length
+        ? `Currently assigned: ${mine.map(a => a.class_name + ' (' + a.periods_per_week + 'p)').join(', ')}. Tick/untick to change.`
+        : 'No classes yet for this teacher + subject.';
+    // keep existing periods unless the user wants the curriculum defaults
+    if (mine.length) {
+        const ps = [...new Set(mine.map(a => parseInt(a.periods_per_week)))];
+        document.getElementById('plAuto').checked = false;
+        document.getElementById('plPeriods').value = ps.length === 1 ? ps[0] : (curriculumPeriods(parseInt((APP.classes.find(c => c.name === mine[0].class_name) || {}).grade), subj.name) || 4);
+    } else {
+        document.getElementById('plAuto').checked = true;
+    }
+    plRefresh();
+}
+function closePlanner() { document.getElementById('plannerModal').style.display = 'none'; }
+function plToggleGrade(g, on) {
+    document.querySelectorAll(`.plCls[data-grade="${g}"]`).forEach(cb => cb.checked = on);
+    plRefresh();
+}
+function plSelected() {
+    const subj = APP.subjects.find(s => s.id === document.getElementById('plSubject').value);
+    const auto = document.getElementById('plAuto').checked;
+    const custom = parseInt(document.getElementById('plPeriods').value) || 1;
+    const rows = [];
+    document.querySelectorAll('.plCls:checked').forEach(cb => {
+        const cls = APP.classes.find(c => c.name === cb.value);
+        const grade = parseInt(cls.grade) || parseInt(cls.name) || 1;
+        const tId = document.getElementById('plTeacher').value;
+        const mine = APP.allocations.find(a => a.teacher_id === tId && a.subject_name === (subj ? subj.name : '') && a.class_name === cls.name);
+        if (mine && !PL_TOUCHED) { rows.push({ cls, grade, periods: parseInt(mine.periods_per_week) }); return; }
+        const cur = auto ? curriculumPeriods(grade, subj ? subj.name : '') : null;
+        rows.push({ cls, grade, periods: cur || custom });
+    });
+    return rows;
+}
+function plRefresh() {
+    const subj = APP.subjects.find(s => s.id === document.getElementById('plSubject').value);
+    const teacher = APP.teachers.find(t => t.id === document.getElementById('plTeacher').value);
+    if (!subj || !teacher) return;
+    // show who currently teaches this subject in each class
+    document.querySelectorAll('.plCur').forEach(el => {
+        const cur = APP.allocations.filter(a => a.class_name === el.dataset.cls && a.subject_name === subj.name);
+        el.textContent = cur.length ? ' (' + cur.map(a => a.teacher_name).join('+') + ')' : '';
+    });
+    const rows = plSelected();
+    const add = rows.reduce((n, r) => n + r.periods, 0);
+    const keepNames = new Set(rows.map(r => r.cls.name));
+    const rmList = document.getElementById('plRemove') && document.getElementById('plRemove').checked
+        ? APP.allocations.filter(a => a.teacher_id === teacher.id && a.subject_name === subj.name && !keepNames.has(a.class_name)) : [];
+    const rmPeriods = rmList.reduce((n, a) => n + (parseInt(a.periods_per_week) || 0), 0);
+    const reAdd = rows.reduce((n, r) => n + (APP.allocations.filter(a => a.teacher_id === teacher.id && a.subject_name === subj.name && a.class_name === r.cls.name).reduce((m, a) => m + (parseInt(a.periods_per_week) || 0), 0)), 0);
+    const load = teacherLoad(teacher.name) - rmPeriods - reAdd;
+    const max = teacher.max_periods_weekly || 35;
+    const after = load + add;
+    document.getElementById('plSummary').innerHTML = (rows.length === 0 && rmList.length === 0)
+        ? `<span style="color:var(--slate-400);">Tick one or more classes. ${teacher.name} currently has ${teacherLoad(teacher.name)} / ${max} periods.</span>`
+        : `${rows.length} class(es) × ${subj.name} = <span style="color:var(--primary);">${add} periods</span>${rmList.length ? ` · <span style="color:var(--danger);">removing ${rmList.length} class(es)</span>` : ''} → ${teacher.name}: ${load} → <span style="color:${after > max ? 'var(--danger)' : 'var(--success)'};">${after} / ${max}</span>${after > max ? ' ⚠️ above the limit (you can still continue; raise the limit in the Teachers tab)' : ''}`;
+}
+async function ensureTeacherHasSubject(teacher, subjectName) {
+    const cur = (teacher.subjects || []).slice();
+    if (cur.includes(subjectName)) return;
+    cur.push(subjectName);
+    const ids = cur.map(n => (APP.subjects.find(s => s.name === n) || {}).id).filter(Boolean);
+    await window.DB.setTeacherSubjects(teacher.id, ids);
+}
+async function savePlanner() {
+    const subj = APP.subjects.find(s => s.id === document.getElementById('plSubject').value);
+    const teacher = APP.teachers.find(t => t.id === document.getElementById('plTeacher').value);
+    const mode = document.getElementById('plMode').value;
+    const rows = plSelected();
+    const keepNames = new Set(rows.map(r => r.cls.name));
+    const removeUnticked = document.getElementById('plRemove').checked;
+    const toRemove = removeUnticked ? APP.allocations.filter(a => a.teacher_id === teacher.id && a.subject_name === subj.name && !keepNames.has(a.class_name)) : [];
+    if (!rows.length && !toRemove.length) { showToast('Please tick at least one class.', 'error'); return; }
+    try {
+        for (const a of toRemove) await window.DB.deleteAllocation(a.id);
+        APP.allocations = await window.DB.getAllocations();
+        for (const r of rows) {
+            const existing = APP.allocations.filter(a => a.class_name === r.cls.name && a.subject_name === subj.name);
+            const same = existing.find(a => a.teacher_id === teacher.id);
+            if (mode === 'replace') {
+                for (const a of existing) if (a !== same) await window.DB.deleteAllocation(a.id);
+            }
+            if (same) await window.DB.updateAllocation(same.id, { periods_per_week: r.periods });
+            else await window.DB.addAllocation(teacher.id, subj.id, r.cls.id, r.periods);
+            APP.allocations = await window.DB.getAllocations();
+        }
+        if (rows.length) await ensureTeacherHasSubject(teacher, subj.name);
+        APP.teachers = await window.DB.getTeachers();
+        APP.teacherSubjects = await window.DB.getTeacherSubjects();
+        APP.allocations = await window.DB.getAllocations();
+        markTimetableOutdated();
+        closePlanner();
+        renderAllocations();
+        showToast(`✅ ${teacher.name}: ${subj.name} saved (${rows.length} class(es)${toRemove.length ? ', ' + toRemove.length + ' removed' : ''}).`, 'success');
+    } catch (e) {
+        showToast('Error assigning: ' + e.message, 'error');
+    }
+}
+
+// Inline editing in the tables
+async function inlineSetPeriods(allocId, value) {
+    const v = parseInt(value);
+    if (!v || v < 1) { renderAllocations(); return; }
+    try {
+        await window.DB.updateAllocation(allocId, { periods_per_week: v });
+        APP.allocations = await window.DB.getAllocations();
+        markTimetableOutdated();
+        renderAllocations();
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+async function inlineSetTeacher(allocId, teacherId) {
+    try {
+        const a = APP.allocations.find(x => x.id === allocId);
+        await window.DB.updateAllocation(allocId, { teacher_id: teacherId });
+        const t = APP.teachers.find(x => x.id === teacherId);
+        if (t && a) await ensureTeacherHasSubject(t, a.subject_name);
+        APP.teachers = await window.DB.getTeachers();
+        APP.allocations = await window.DB.getAllocations();
+        markTimetableOutdated();
+        renderAllocations();
+        showToast('Teacher changed.', 'success');
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+function teacherOptionsHtml(subjectName, selectedId) {
+    // qualified teachers first, but EVERY teacher can be chosen
+    const q = APP.teachers.filter(t => (t.subjects || []).includes(subjectName));
+    const o = APP.teachers.filter(t => !(t.subjects || []).includes(subjectName));
+    const opt = t => `<option value="${t.id}" ${t.id === selectedId ? 'selected' : ''}>${t.name}</option>`;
+    return `<optgroup label="Teaches ${subjectName}">${q.map(opt).join('')}</optgroup><optgroup label="Other teachers">${o.map(opt).join('')}</optgroup>`;
+}
+
+function openAddAllocModal() {
+    const secSelect = document.getElementById('newAllocSection');
+    const subSelect = document.getElementById('newAllocSubject');
+
+    secSelect.innerHTML = APP.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    subSelect.innerHTML = APP.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+
+    onAllocSubjectChange();
+    document.getElementById('addAllocModal').style.display = 'flex';
+}
+
+function closeAllocModal() {
+    document.getElementById('addAllocModal').style.display = 'none';
+}
+
+function onAllocSubjectChange() {
+    const subId = document.getElementById('newAllocSubject').value;
+    const subObj = APP.subjects.find(s => s.id === subId);
+    document.getElementById('newAllocTeacher').innerHTML = teacherOptionsHtml(subObj ? subObj.name : '', null);
+}
+
+async function saveAllocation() {
+    const classId = document.getElementById('newAllocSection').value;
+    const subjectId = document.getElementById('newAllocSubject').value;
+    const teacherId = document.getElementById('newAllocTeacher').value;
+    const periods = parseInt(document.getElementById('newAllocPeriods').value) || 5;
+
+    try {
+        await window.DB.addAllocation(teacherId, subjectId, classId, periods);
+        const tt = APP.teachers.find(t => t.id === teacherId), ss = APP.subjects.find(s => s.id === subjectId);
+        if (tt && ss) { await ensureTeacherHasSubject(tt, ss.name); APP.teachers = await window.DB.getTeachers(); }
+        APP.allocations = await window.DB.getAllocations();
+        markTimetableOutdated();
+        closeAllocModal();
+        renderAllocations();
+        showToast("Allocation saved successfully!", "success");
+    } catch (e) {
+        showToast("Error saving allocation: " + e.message, "error");
+    }
+}
+
+async function deleteAllocation(allocId) {
+    if (confirm("Remove this assignment?")) {
+        try {
+            await window.DB.deleteAllocation(allocId);
+            APP.allocations = await window.DB.getAllocations();
+            markTimetableOutdated();
+            renderAllocations();
+            showToast("Assignment removed.", "info");
+        } catch (e) {
+            showToast("Error removing allocation: " + e.message, "error");
+        }
+    }
+}
+
+// Bulk Import Allocations CSV
+let parsedBulkRows = [];
+
+function openBulkImport() {
+    document.getElementById('csvInput').value = '';
+    document.getElementById('csvPreview').innerHTML = '';
+    document.getElementById('btnImportConfirm').disabled = true;
+    parsedBulkRows = [];
+    document.getElementById('bulkImportModal').style.display = 'flex';
+}
+
+function closeBulkImport() {
+    document.getElementById('bulkImportModal').style.display = 'none';
+}
+
+function parseBulkCSV() {
+    const text = document.getElementById('csvInput').value.trim();
+    const preview = document.getElementById('csvPreview');
+    const confirmBtn = document.getElementById('btnImportConfirm');
+
+    if (!text) {
+        preview.innerHTML = '<p style="color:var(--danger); font-size:12px;">Please enter CSV data.</p>';
+        return;
+    }
+
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    const validRows = [];
+    let html = `<table><thead><tr><th>Teacher</th><th>Subject</th><th>Class</th><th>Periods</th><th>Status</th></tr></thead><tbody>`;
+
+    const tMap = {}, sMap = {}, cMap = {};
+    APP.teachers.forEach(t => { tMap[t.name.toLowerCase()] = t; });
+    APP.subjects.forEach(s => { sMap[s.name.toLowerCase()] = s; });
+    APP.classes.forEach(c => { cMap[c.name.toLowerCase()] = c; });
+
+    lines.forEach((line, idx) => {
+        const parts = line.split(',').map(p => p.trim());
+        if (parts.length < 4) {
+            html += `<tr><td colspan="4">${line}</td><td style="color:var(--danger)">❌ Invalid columns</td></tr>`;
+            return;
+        }
+
+        const [tName, sName, cName, pStr] = parts;
+        const tObj = tMap[tName.toLowerCase()];
+        const sObj = sMap[sName.toLowerCase()];
+        const cObj = cMap[cName.toLowerCase()];
+        const pNum = parseInt(pStr);
+
+        let err = null;
+        if (!tObj) err = `Teacher "${tName}" not found`;
+        else if (!sObj) err = `Subject "${sName}" not found`;
+        else if (!cObj) err = `Class "${cName}" not found`;
+        else if (!pNum || pNum < 1 || pNum > 10) err = `Invalid periods (${pStr})`;
+
+        if (err) {
+            html += `<tr><td>${tName}</td><td>${sName}</td><td>${cName}</td><td>${pStr}</td><td style="color:var(--danger)">❌ ${err}</td></tr>`;
+        } else {
+            validRows.push({ teacher_id: tObj.id, subject_id: sObj.id, class_id: cObj.id, periods: pNum });
+            html += `<tr><td>${tObj.name}</td><td>${sObj.name}</td><td>${cObj.name}</td><td>${pNum}</td><td style="color:var(--success)">✅ Valid</td></tr>`;
+        }
+    });
+
+    html += `</tbody></table>`;
+    preview.innerHTML = html;
+    parsedBulkRows = validRows;
+    confirmBtn.disabled = validRows.length === 0;
+    confirmBtn.textContent = `Import ${validRows.length} Valid Assignments`;
+}
+
+async function importBulkCSV() {
+    if (parsedBulkRows.length === 0) return;
+    const btn = document.getElementById('btnImportConfirm');
+    btn.disabled = true;
+    btn.textContent = 'Importing...';
+
+    try {
+        for (const row of parsedBulkRows) {
+            await window.DB.addAllocation(row.teacher_id, row.subject_id, row.class_id, row.periods);
+        }
+        APP.allocations = await window.DB.getAllocations();
+        markTimetableOutdated();
+        closeBulkImport();
+        renderAllocations();
+        showToast(`Successfully imported ${parsedBulkRows.length} allocations!`, "success");
+    } catch (e) {
+        showToast("Error importing allocations: " + e.message, "error");
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// =============================================================================
+// SUBSTITUTIONS TAB
+// =============================================================================
+function updateSubBadge() {
+    const badge = document.getElementById('countSubstitutionsBadge');
+    if (badge) badge.textContent = (APP.ACTIVE_SUBSTITUTIONS || []).length;
+}
+
+function toggleSubViewStyle() {
+    const view = document.getElementById('subViewType').value;
+    document.getElementById('subViewCards').style.display = (view === 'CARDS') ? 'block' : 'none';
+    document.getElementById('subViewMatrix').style.display = (view === 'MATRIX') ? 'block' : 'none';
+    document.getElementById('subViewActive').style.display = (view === 'ACTIVE_SUBS') ? 'block' : 'none';
+    renderFreeTeachersView();
+}
+
+function renderFreeTeachersView() {
+    const day = document.getElementById('subFilterDay').value;
+    const periodSelect = document.getElementById('subFilterPeriod');
+
+    if (periodSelect.options.length === 0) {
+        periodSelect.innerHTML = APP.PERIODS.map(p => `<option value="${p}">Period ${p}</option>`).join('');
+    }
+    const period = parseInt(periodSelect.value) || 1;
+
+    document.getElementById('lblCurrentSlot').textContent = `${day} - Period ${period}`;
+    document.getElementById('lblMatrixDay').textContent = day;
+    document.getElementById('lblActiveSubDay').textContent = day;
+
+    const slotInfo = window.DB.getFreeTeachersForSlot(day, period, APP.schedule, APP.teachers, APP.PERIODS);
+    const statBadge = document.getElementById('freeStatBadge');
+    statBadge.textContent = `🟢 ${slotInfo.freeCount} / ${slotInfo.totalTeachers} Teachers Free (${slotInfo.busyCount} Busy)`;
+
+    // 1. Render Cards
+    const grid = document.getElementById('freeTeachersGrid');
+    grid.innerHTML = '';
+    if (slotInfo.freeTeachers.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1; padding:20px; text-align:center; color:var(--slate-400);">No free teachers available during this period.</div>';
+    } else {
+        slotInfo.freeTeachers.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.marginBottom = '0';
+            const pct = Math.min(100, Math.round((t.periods_today / t.max_periods_daily) * 100));
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                    <div>
+                        <strong style="font-size:14px; color:var(--slate-800);">${t.name}</strong>
+                        <div style="font-size:11px; color:var(--slate-500);">${t.department || 'General'}</div>
+                    </div>
+                    <span class="tag ${t.can_take_more_today ? 'tag-success' : ''}" style="font-size:10px;">
+                        ${t.periods_today}/${t.max_periods_daily} Today
+                    </span>
+                </div>
+                <div style="margin-bottom:8px;">
+                    ${(t.subjects || []).map(s => `<span class="tag tag-primary" style="font-size:10px; margin:1px 2px 1px 0;">${s}</span>`).join('')}
+                </div>
+                <div class="workload-bar-wrap">
+                    <div class="workload-bar-fill" style="width:${pct}%; background:${pct >= 100 ? 'var(--warning)' : 'var(--success)'};"></div>
+                </div>
+                <div style="font-size:11px; color:var(--slate-500); margin-top:4px;">Weekly total: ${t.periods_weekly}/${t.max_periods_weekly} periods</div>
+                <button onclick="quickAssignSubstitute('${day}', ${period}, '${t.name}')" class="btn-outline" style="width:100%; margin-top:10px; font-size:11.5px; color:var(--primary); border-color:var(--primary-light);">
+                    ⚡ Assign as Substitute
+                </button>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    // 2. Render Matrix
+    renderMatrixTable(day);
+
+    // 3. Render Active Substitutions
+    renderActiveSubstitutions(day);
+}
+
+function renderMatrixTable(day) {
+    const thead = document.getElementById('matrixHeader');
+    const tbody = document.getElementById('matrixBody');
+    thead.innerHTML = `<tr><th style="min-width:140px;">Teacher</th>${APP.PERIODS.map(p => `<th>P${p}</th>`).join('')}</tr>`;
+    tbody.innerHTML = '';
+
+    APP.teachers.forEach(t => {
+        let trHtml = `<tr><td style="font-weight:700;">${t.name}</td>`;
+        APP.PERIODS.forEach(p => {
+            let busyClass = null;
+            for (const cl in APP.schedule) {
+                const cell = APP.schedule[cl] && APP.schedule[cl][day] ? APP.schedule[cl][day][p] : null;
+                if (cell && cell.teacher === t.name) {
+                    busyClass = cl;
+                    break;
+                }
+            }
+            if (busyClass) {
+                trHtml += `<td><span class="tag" style="background:var(--danger-bg); color:var(--danger); border-color:#fecaca;">${busyClass}</span></td>`;
+            } else {
+                trHtml += `<td><span class="tag tag-success">Free</span></td>`;
+            }
+        });
+        trHtml += `</tr>`;
+        tbody.innerHTML += trHtml;
+    });
+}
+
+function renderActiveSubstitutions(day) {
+    const tbody = document.getElementById('activeSubstitutionsTableBody');
+    tbody.innerHTML = '';
+    const daySubs = (APP.ACTIVE_SUBSTITUTIONS || []).filter(s => s.day === day);
+
+    if (daySubs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:16px; color:var(--slate-400);">No active substitutions for ${day}.</td></tr>`;
+        return;
+    }
+
+    daySubs.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${s.day} - Period ${s.period}</strong></td>
+            <td><span class="tag tag-primary">${s.class_id}</span></td>
+            <td><strong>${s.subject_id}</strong></td>
+            <td style="color:var(--danger); font-weight:600;">${s.original_teacher_id} (Absent)</td>
+            <td style="color:var(--success); font-weight:700;">${s.substitute_teacher_id} (Covering)</td>
+            <td style="font-size:11px; color:var(--slate-500);">${s.note || '-'}</td>
+            <td style="text-align:right;">
+                <button onclick="handleDeleteSubstitution('${s.id}')" class="btn-danger" style="padding:3px 8px; font-size:11px;">Remove</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function openAbsenceReportModal() {
+    const select = document.getElementById('absentTeacherSelect');
+    select.innerHTML = APP.teachers.map(t => `<option value="${t.name}">${t.name} (${t.department || 'General'})</option>`).join('');
+    renderAbsentTeacherSchedule();
+    document.getElementById('absenceModal').style.display = 'flex';
+}
+
+function closeAbsenceModal() {
+    document.getElementById('absenceModal').style.display = 'none';
+}
+
+function renderAbsentTeacherSchedule() {
+    const absentTeacher = document.getElementById('absentTeacherSelect').value;
+    const day = document.getElementById('absentDaySelect').value;
+    const container = document.getElementById('absentClassesList');
+    container.innerHTML = '';
+
+    const scheduled = [];
+    APP.PERIODS.forEach(p => {
+        for (const cl in APP.schedule) {
+            const cell = APP.schedule[cl] && APP.schedule[cl][day] ? APP.schedule[cl][day][p] : null;
+            if (cell && cell.teacher === absentTeacher) {
+                scheduled.push({ period: p, className: cl, subject: cell.subject });
+            }
+        }
+    });
+
+    if (scheduled.length === 0) {
+        container.innerHTML = `<p style="padding:12px; text-align:center; color:var(--slate-400);">This teacher has 0 periods scheduled on ${day}.</p>`;
+        return;
+    }
+
+    scheduled.forEach(slot => {
+        const freeInfo = window.DB.getFreeTeachersForSlot(day, slot.period, APP.schedule, APP.teachers, APP.PERIODS);
+        const freeCandidates = freeInfo.freeTeachers.filter(t => t.name !== absentTeacher);
+
+        const existingSub = (APP.ACTIVE_SUBSTITUTIONS || []).find(s => s.day === day && parseInt(s.period) === slot.period && s.class_id === slot.className);
+
+        const item = document.createElement('div');
+        item.style.padding = '10px 14px';
+        item.style.background = 'white';
+        item.style.border = '1px solid var(--slate-200)';
+        item.style.borderRadius = '8px';
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.justifyContent = 'space-between';
+        item.style.gap = '10px';
+        item.style.flexWrap = 'wrap';
+
+        const optHtml = freeCandidates.map(t => {
+            const sel = existingSub && existingSub.substitute_teacher_id === t.name ? 'selected' : '';
+            return `<option value="${t.name}" ${sel}>${t.name} (${t.periods_today}/${t.max_periods_daily} today)</option>`;
+        }).join('');
+
+        item.innerHTML = `
+            <div>
+                <strong style="color:var(--primary); font-size:13px;">Period ${slot.period} • ${slot.className} (${slot.subject})</strong>
+                <div style="font-size:11px; color:var(--slate-500);">${freeCandidates.length} teachers free in this slot</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <select id="subSelect_${slot.period}" style="font-size:12px; padding:6px 10px; width:auto;">
+                    ${optHtml}
+                </select>
+                <button onclick="applySlotSubstitution('${day}', ${slot.period}, '${slot.className}', '${absentTeacher}', '${slot.subject}')" class="btn-success" style="font-size:12px; padding:6px 12px;">
+                    ${existingSub ? 'Update Cover' : 'Assign Cover'}
+                </button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+async function applySlotSubstitution(day, period, className, origTeacher, subject) {
+    const select = document.getElementById(`subSelect_${period}`);
+    if (!select) return;
+    const subTeacher = select.value;
+    if (!subTeacher) {
+        showToast("Please choose a substitute teacher.", "error");
+        return;
+    }
+
+    try {
+        await window.DB.saveSubstitution({
+            day: day,
+            period: period,
+            className: className,
+            originalTeacher: origTeacher,
+            substituteTeacher: subTeacher,
+            subject: subject,
+            note: `Teacher ${origTeacher} absent`
+        });
+        APP.ACTIVE_SUBSTITUTIONS = await window.DB.getSubstitutions();
+        updateSubBadge();
+        renderTimetable();
+        renderAbsentTeacherSchedule();
+        showToast(`Substitute assigned: ${subTeacher} covering ${className}!`, "success");
+    } catch (e) {
+        showToast("Error assigning substitute: " + e.message, "error");
+    }
+}
+
+async function quickAssignSubstitute(day, period, subTeacher) {
+    const promptClass = prompt(`Assign ${subTeacher} as substitute on ${day} Period ${period}.\nEnter Class Name (e.g. '10 Blue'):`);
+    if (!promptClass) return;
+
+    const curCell = APP.schedule[promptClass] && APP.schedule[promptClass][day] ? APP.schedule[promptClass][day][period] : null;
+    const origTeacher = curCell ? curCell.teacher : "Unassigned";
+    const subject = curCell ? curCell.subject : "General";
+
+    try {
+        await window.DB.saveSubstitution({
+            day: day,
+            period: period,
+            className: promptClass,
+            originalTeacher: origTeacher,
+            substituteTeacher: subTeacher,
+            subject: subject,
+            note: `Quick cover for ${origTeacher}`
+        });
+        APP.ACTIVE_SUBSTITUTIONS = await window.DB.getSubstitutions();
+        updateSubBadge();
+        renderTimetable();
+        renderFreeTeachersView();
+        showToast(`Assigned ${subTeacher} to cover ${promptClass}!`, "success");
+    } catch (e) {
+        showToast("Error: " + e.message, "error");
+    }
+}
+
+async function handleDeleteSubstitution(id) {
+    if (confirm("Remove this substitution?")) {
+        try {
+            await window.DB.deleteSubstitution(id);
+            APP.ACTIVE_SUBSTITUTIONS = await window.DB.getSubstitutions();
+            updateSubBadge();
+            renderTimetable();
+            renderFreeTeachersView();
+            showToast("Substitution removed.", "info");
+        } catch (e) {
+            showToast("Error: " + e.message, "error");
+        }
+    }
+}
+
+function filterFreeCards() {
+    const q = document.getElementById('filterFreeTeacherSearch').value.toLowerCase();
+    document.querySelectorAll('#freeTeachersGrid .card').forEach(c => {
+        c.style.display = c.innerText.toLowerCase().includes(q) ? 'block' : 'none';
+    });
+}
+
+// =============================================================================
+// SETTINGS TAB
+// =============================================================================
+function loadSettingsTab() {
+    document.getElementById('settingSchoolName').value = APP.settings.school_name || 'Smart School';
+    document.getElementById('settingPeriods').value = APP.settings.periods_per_day || '7';
+    document.getElementById('settingBreak').value = APP.settings.break_after_period || '3';
+
+    // Working days
+    const cont = document.getElementById('workingDaysCheckboxes');
+    cont.innerHTML = '';
+    const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    allDays.forEach(d => {
+        const isChecked = APP.DAYS.includes(d);
+        const lbl = document.createElement('label');
+        lbl.style.display = 'flex';
+        lbl.style.alignItems = 'center';
+        lbl.style.gap = '6px';
+        lbl.style.fontSize = '13px';
+        lbl.style.fontWeight = '600';
+        lbl.innerHTML = `<input type="checkbox" value="${d}" ${isChecked ? 'checked' : ''} style="width:auto;"> ${d}`;
+        cont.appendChild(lbl);
+    });
+
+    renderPeriodTimesTable();
+}
+
+function renderPeriodTimesTable() {
+    const tbody = document.getElementById('periodTimesBody');
+    tbody.innerHTML = '';
+    const breakAfter = parseInt(document.getElementById('settingBreak').value) || 3;
+    const periodsCount = parseInt(document.getElementById('settingPeriods').value) || 7;
+
+    let periodTimes = [];
+    try {
+        if (APP.settings.period_times) {
+            periodTimes = typeof APP.settings.period_times === 'string' ? JSON.parse(APP.settings.period_times) : APP.settings.period_times;
+        }
+    } catch (e) {}
+
+    for (let p = 1; p <= periodsCount; p++) {
+        const found = periodTimes.find(t => parseInt(t.period) === p) || { start: `0${7+p}:00`, end: `0${7+p}:45` };
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>Period ${p}</td>
+            <td><input type="time" class="time-start" data-period="${p}" value="${found.start}"></td>
+            <td><input type="time" class="time-end" data-period="${p}" value="${found.end}"></td>
+        `;
+        tbody.appendChild(tr);
+
+        if (p === breakAfter) {
+            const bFound = periodTimes.find(t => t.period === 'break') || { start: '10:15', end: '10:45' };
+            const bTr = document.createElement('tr');
+            bTr.style.background = 'var(--primary-bg)';
+            bTr.innerHTML = `
+                <td><strong>BREAK</strong></td>
+                <td><input type="time" class="time-start" data-period="break" value="${bFound.start}"></td>
+                <td><input type="time" class="time-end" data-period="break" value="${bFound.end}"></td>
+            `;
+            tbody.appendChild(bTr);
+        }
+    }
+}
+
+async function saveSettings() {
+    const schoolName = document.getElementById('settingSchoolName').value.trim();
+    const periodsPerDay = document.getElementById('settingPeriods').value;
+    const breakAfter = document.getElementById('settingBreak').value;
+
+    const checkedDays = Array.from(document.querySelectorAll('#workingDaysCheckboxes input:checked')).map(cb => cb.value);
+    if (checkedDays.length === 0) {
+        showToast("Please select at least 1 working day.", "error");
+        return;
+    }
+
+    const times = [];
+    document.querySelectorAll('#periodTimesBody tr').forEach(tr => {
+        const startInput = tr.querySelector('.time-start');
+        const endInput = tr.querySelector('.time-end');
+        if (startInput && endInput) {
+            times.push({
+                period: startInput.getAttribute('data-period'),
+                start: startInput.value,
+                end: endInput.value
+            });
+        }
+    });
+
+    try {
+        await window.DB.saveSetting('school_name', schoolName);
+        await window.DB.saveSetting('periods_per_day', periodsPerDay);
+        await window.DB.saveSetting('break_after_period', breakAfter);
+        await window.DB.saveSetting('working_days', JSON.stringify(checkedDays));
+        await window.DB.saveSetting('period_times', JSON.stringify(times));
+
+        APP.settings.school_name = schoolName;
+        APP.settings.periods_per_day = periodsPerDay;
+        APP.settings.break_after_period = breakAfter;
+        APP.settings.working_days = JSON.stringify(checkedDays);
+        APP.settings.period_times = JSON.stringify(times);
+
+        APP.DAYS = checkedDays;
+        APP.PERIODS = Array.from({ length: parseInt(periodsPerDay) }, (_, i) => i + 1);
+
+        renderHeader();
+        renderTimetable();
+        markTimetableOutdated();
+        showToast("Settings saved successfully!", "success");
+    } catch (e) {
+        showToast("Error saving settings: " + e.message, "error");
+    }
+}
+
+async function downloadBackup() {
+    try {
+        const data = await window.DB.exportAllData();
+        const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+        const a = document.createElement("a");
+        a.setAttribute("href", jsonStr);
+        a.setAttribute("download", `smart_school_backup_${new Date().toISOString().slice(0, 10)}.json`);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast("Backup downloaded successfully!", "success");
+    } catch (e) {
+        showToast("Backup failed: " + e.message, "error");
+    }
+}
+
+function clearTimetableSlots() {
+    if (confirm("WARNING: Are you sure you want to clear all generated timetable slots?")) {
+        if (confirm("Please confirm again. Teacher allocations will NOT be touched.")) {
+            clearTimetable();
+        }
+    }
+}
+
+// =============================================================================
+// UTILITIES & TOAST
+// =============================================================================
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = message;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.25s ease';
+        setTimeout(() => toast.remove(), 250);
+    }, 4000);
+}
+
+// Window Load Bootstrap
+window.addEventListener('load', init);
+</script>
+
+</body>
+</html>
