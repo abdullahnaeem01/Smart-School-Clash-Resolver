@@ -173,6 +173,298 @@
         ]
     };
 
+    // Default teaching allocations [teacher, subject, class, periods/week] (matches supabase_schema.sql, with data fixes)
+    var DEFAULT_ALLOCATIONS = [
+        ["Rubab", "Maths", "10 Blue", 5],
+        ["Rubab", "Maths", "10 Pink", 5],
+        ["Rubab", "Maths", "9 Blue", 5],
+        ["Rubab", "Maths", "8 Pink", 5],
+        ["Rubina Malik", "Maths", "9 Pink", 5],
+        ["Rubina Malik", "Maths", "8 Blue", 5],
+        ["Rubina Malik", "Maths", "7 Pink", 5],
+        ["Rubina Malik", "Maths", "7 Blue", 5],
+        ["Zeenat", "Maths", "7 Red", 5],
+        ["Zeenat", "Maths", "7 White", 5],
+        ["Zeenat", "Maths", "6 White", 5],
+        ["Zeenat", "Maths", "4 Red", 5],
+        ["Beenish", "Maths", "6 Blue", 5],
+        ["Beenish", "Maths", "6 Pink", 5],
+        ["Beenish", "Maths", "6 Red", 5],
+        ["Beenish", "Maths", "5 Blue", 5],
+        ["Samina Gul", "Maths", "5 Red", 5],
+        ["Samina Gul", "Maths", "5 White", 5],
+        ["Samina Gul", "Maths", "5 Pink", 5],
+        ["Samina Gul", "Maths", "4 White", 5],
+        ["Misbah Sohail", "Maths", "4 Pink", 5],
+        ["Misbah Sohail", "Maths", "4 Blue", 5],
+        ["Misbah Sohail", "Maths", "4 Green", 5],
+        ["Misbah Sohail", "Maths", "3 Green", 5],
+        ["Faiza", "Maths", "3 Blue", 5],
+        ["Faiza", "Maths", "3 White", 5],
+        ["Faiza", "Maths", "3 Pink", 5],
+        ["Faiza", "Maths", "3 Red", 5],
+        ["Eman", "Maths", "2 Pink", 5],
+        ["Eman", "Maths", "2 Red", 5],
+        ["Eman", "Maths", "1 Blue", 5],
+        ["Eman", "Maths", "1 White", 5],
+        ["Sumaira Rashid", "Maths", "2 Blue", 5],
+        ["Sumaira Rashid", "Maths", "2 White", 5],
+        ["Sumaira Rashid", "Maths", "1 Pink", 5],
+        ["Sumaira Rashid", "Maths", "1 Red", 5],
+        ["Mehmoona (English)", "English", "10 Blue", 5],
+        ["Mehmoona (English)", "English", "10 Pink", 5],
+        ["Mehmoona (English)", "English", "9 Blue", 5],
+        ["Mehmoona (English)", "English", "9 Pink", 5],
+        ["Ishrat", "English", "8 Pink", 5],
+        ["Ishrat", "English", "8 Blue", 5],
+        ["Ishrat", "English", "6 Pink", 6],
+        ["Ishrat", "English", "6 Red", 6],
+        ["Kiran", "English", "6 Blue", 6],
+        ["Kiran", "English", "6 White", 6],
+        ["Kiran", "English", "7 Pink", 6],
+        ["Kiran", "English", "7 Red", 6],
+        ["Salma", "English", "7 Blue", 6],
+        ["Salma", "English", "7 White", 6],
+        ["Salma", "English", "5 Red", 6],
+        ["Zarmeen", "English", "5 Pink", 6],
+        ["Zarmeen", "English", "4 Red", 6],
+        ["Zarmeen", "English", "4 Blue", 6],
+        ["Zarmeen", "English", "4 White", 6],
+        ["Farah", "English", "5 Blue", 6],
+        ["Farah", "English", "5 White", 6],
+        ["Farah", "English", "4 Pink", 6],
+        ["Farah", "English", "4 Green", 6],
+        ["Tasneem", "English", "3 Blue", 6],
+        ["Tasneem", "English", "3 White", 6],
+        ["Tasneem", "English", "3 Green", 6],
+        ["Sarwat", "English", "3 Red", 6],
+        ["Sarwat", "English", "2 Blue", 6],
+        ["Sarwat", "English", "2 White", 6],
+        ["Sarwat", "English", "1 Pink", 6],
+        ["Anum", "English", "2 Pink", 6],
+        ["Anum", "English", "3 Pink", 6],
+        ["Anum", "English", "1 Blue", 6],
+        ["Anum", "English", "1 White", 6],
+        ["Urooj", "English", "2 Red", 6],
+        ["Urooj", "English", "1 Red", 6],
+        ["Sadia Waseem", "Urdu", "10 Pink", 5],
+        ["Sadia Waseem", "Urdu", "10 Blue", 5],
+        ["Sadia Waseem", "Urdu", "9 Pink", 5],
+        ["Sadia Waseem", "Urdu", "8 Pink", 5],
+        ["Sadia Waseem", "Urdu", "8 Blue", 5],
+        ["Sonia", "Urdu", "9 Blue", 5],
+        ["Sonia", "Urdu", "7 Pink", 6],
+        ["Naseem", "Urdu", "7 Red", 6],
+        ["Naseem", "Urdu", "7 Blue", 6],
+        ["Naseem", "Urdu", "7 White", 6],
+        ["Naseem", "Urdu", "5 Red", 6],
+        ["Nazia", "Urdu", "6 Pink", 6],
+        ["Nazia", "Urdu", "6 Blue", 6],
+        ["Nazia", "Urdu", "5 Blue", 6],
+        ["Nazia", "Urdu", "6 White", 6],
+        ["Summaiya", "Urdu", "5 Pink", 6],
+        ["Summaiya", "Urdu", "4 Pink", 6],
+        ["Summaiya", "Urdu", "3 Pink", 6],
+        ["Summaiya", "Urdu", "6 Red", 6],
+        ["New 1", "Urdu", "5 White", 6],
+        ["Shazia Sohail", "Urdu", "4 Blue", 6],
+        ["Shazia Sohail", "Urdu", "4 White", 6],
+        ["Shazia Sohail", "Urdu", "4 Red", 6],
+        ["Shazia Sohail", "Urdu", "3 Red", 6],
+        ["Saiqa", "Urdu", "3 Blue", 6],
+        ["Saiqa", "Urdu", "4 Green", 6],
+        ["Saiqa", "Urdu", "3 White", 6],
+        ["Saiqa", "Urdu", "3 Green", 6],
+        ["Atiya", "Urdu", "1 Red", 6],
+        ["Atiya", "Urdu", "1 White", 6],
+        ["Atiya", "Urdu", "2 Red", 6],
+        ["Atiya", "Urdu", "2 White", 6],
+        ["Nabeela", "Urdu", "1 Pink", 6],
+        ["Nabeela", "Urdu", "1 Blue", 6],
+        ["Nabeela", "Urdu", "2 Pink", 6],
+        ["Nabeela", "Urdu", "2 Blue", 6],
+        ["Meharyan", "Biology", "10 Pink", 4],
+        ["Meharyan", "Biology", "10 Blue", 4],
+        ["Meharyan", "Biology", "9 Pink", 4],
+        ["Meharyan", "Biology", "9 Blue", 4],
+        ["Meharyan", "Biology", "8 Pink", 4],
+        ["Meharyan", "Biology", "8 Blue", 4],
+        ["Saira", "Science", "7 Blue", 4],
+        ["Saira", "Science", "7 White", 4],
+        ["Saira", "Science", "6 Pink", 4],
+        ["Saira", "Science", "5 Pink", 4],
+        ["Saira", "Science", "5 Red", 4],
+        ["Saira", "Science", "5 Blue", 4],
+        ["Kinza", "Science", "7 Red", 4],
+        ["Kinza", "Science", "6 Blue", 4],
+        ["Kinza", "Science", "6 White", 4],
+        ["Kinza", "Science", "5 White", 4],
+        ["Kinza", "Science", "4 White", 4],
+        ["Ifza", "Science", "6 Red", 4],
+        ["Ifza", "Science", "3 Green", 4],
+        ["Ifza", "Science", "4 Pink", 4],
+        ["Ifza", "Science", "4 Red", 4],
+        ["Ifza", "Science", "4 Green", 4],
+        ["Sadia Sarwar", "Science", "3 White", 4],
+        ["Sadia Sarwar", "Science", "4 Blue", 4],
+        ["Sadia Sarwar", "Science", "3 Blue", 4],
+        ["Yusra", "Science", "2 Blue", 4],
+        ["Yusra", "Science", "2 White", 4],
+        ["Yusra", "Science", "2 Pink", 4],
+        ["Yusra", "Science", "2 Red", 4],
+        ["Yusra", "Science", "3 Pink", 4],
+        ["Yusra", "Science", "3 Red", 4],
+        ["Saleha", "Science", "1 Pink", 4],
+        ["Saleha", "Science", "1 Red", 4],
+        ["Saleha", "Science", "1 Blue", 4],
+        ["Saleha", "Science", "1 White", 4],
+        ["Sajida", "Chemistry", "10 Blue", 5],
+        ["Sajida", "Chemistry", "9 Blue", 5],
+        ["Sajida", "Chemistry", "8 Blue", 5],
+        ["Sajida", "Chemistry", "8 Pink", 5],
+        ["Sidra", "Physics", "10 Blue", 4],
+        ["Sidra", "Physics", "10 Pink", 4],
+        ["Sidra", "Physics", "9 Blue", 4],
+        ["Sidra", "Physics", "9 Pink", 4],
+        ["Sidra", "Physics", "8 Blue", 4],
+        ["Sadia Sarwar", "Chemistry", "10 Pink", 5],
+        ["Sadia Sarwar", "Chemistry", "9 Pink", 5],
+        ["Sumaira Gul", "T.Q", "10 Pink", 3],
+        ["Sumaira Gul", "T.Q", "10 Blue", 3],
+        ["Sumaira Gul", "T.Q", "9 Pink", 3],
+        ["Sumaira Gul", "T.Q", "8 Pink", 3],
+        ["Sumaira Gul", "T.Q", "8 Blue", 3],
+        ["Sumaira Gul", "Islamiat", "9 Pink", 3],
+        ["Sumaira Gul", "Islamiat", "8 Pink", 3],
+        ["Sumaira Gul", "Islamiat", "8 Blue", 3],
+        ["Farhat", "T.Q", "9 Blue", 3],
+        ["Farhat", "T.Q", "7 Pink", 3],
+        ["Farhat", "T.Q", "7 Red", 3],
+        ["Farhat", "T.Q", "7 Blue", 3],
+        ["Farhat", "T.Q", "7 White", 3],
+        ["Farhat", "Islamiat", "9 Blue", 3],
+        ["Farhat", "Islamiat", "7 Pink", 3],
+        ["Farhat", "Islamiat", "7 Blue", 3],
+        ["New 1", "Islamiat", "6 Pink", 3],
+        ["New 1", "Islamiat", "6 Red", 3],
+        ["New 1", "Islamiat", "6 Blue", 3],
+        ["New 1", "Islamiat", "6 White", 3],
+        ["New 1", "Islamiat", "5 Pink", 3],
+        ["New 1", "Islamiat", "5 Red", 3],
+        ["Huma", "T.Q", "6 Pink", 3],
+        ["Huma", "T.Q", "6 Red", 3],
+        ["Huma", "T.Q", "6 Blue", 3],
+        ["Huma", "T.Q", "6 White", 3],
+        ["Huma", "Islamiat", "7 White", 3],
+        ["Huma", "Islamiat", "7 Red", 3],
+        ["Huma", "Islamiat", "5 Blue", 3],
+        ["Huma", "Islamiat", "5 White", 3],
+        ["Aima", "Islamiat", "3 Pink", 3],
+        ["Aima", "Islamiat", "3 Blue", 3],
+        ["Aima", "Islamiat", "3 Green", 3],
+        ["Aima", "Islamiat", "4 Pink", 3],
+        ["Aima", "Islamiat", "4 Red", 3],
+        ["Aima", "Islamiat", "4 White", 3],
+        ["Aima", "Islamiat", "4 Green", 3],
+        ["Aima", "Islamiat", "4 Blue", 3],
+        ["Arshia", "Islamiat", "1 Blue", 3],
+        ["Arshia", "Islamiat", "1 White", 3],
+        ["Arshia", "Islamiat", "2 Pink", 3],
+        ["Arshia", "Islamiat", "2 Red", 3],
+        ["Arshia", "Islamiat", "2 White", 3],
+        ["Arshia", "Islamiat", "2 Blue", 3],
+        ["Arshia", "Islamiat", "3 Red", 3],
+        ["Arshia", "Islamiat", "3 White", 3],
+        ["Saleha", "Islamiat", "1 Pink", 3],
+        ["Saleha", "Islamiat", "1 Red", 3],
+        ["Mehwish", "S.St", "6 Pink", 4],
+        ["Mehwish", "S.St", "6 Blue", 4],
+        ["Mehwish", "S.St", "6 White", 4],
+        ["Mehwish", "S.St", "7 Red", 4],
+        ["Mehwish", "S.St", "7 Blue", 4],
+        ["Mehwish", "S.St", "7 White", 4],
+        ["Sehrish", "S.St", "7 Pink", 4],
+        ["Sehrish", "S.St", "6 Red", 4],
+        ["Sehrish", "S.St", "5 Pink", 4],
+        ["Sehrish", "S.St", "5 Red", 4],
+        ["Sehrish", "S.St", "4 Blue", 4],
+        ["Sehrish", "S.St", "4 White", 4],
+        ["Bushra", "S.St", "5 Blue", 4],
+        ["Bushra", "S.St", "5 White", 4],
+        ["Bushra", "S.St", "4 Pink", 4],
+        ["Bushra", "S.St", "4 Red", 4],
+        ["Bushra", "S.St", "3 Pink", 4],
+        ["Bushra", "S.St", "4 Green", 4],
+        ["Habiba", "S.St", "3 Red", 4],
+        ["Habiba", "S.St", "3 Blue", 4],
+        ["Habiba", "S.St", "3 White", 4],
+        ["Habiba", "S.St", "2 Red", 4],
+        ["Habiba", "S.St", "2 White", 4],
+        ["Habiba", "S.St", "3 Green", 4],
+        ["Mehmoona (S.St)", "S.St", "1 Pink", 4],
+        ["Mehmoona (S.St)", "S.St", "1 Red", 4],
+        ["Mehmoona (S.St)", "S.St", "1 Blue", 4],
+        ["Mehmoona (S.St)", "S.St", "1 White", 4],
+        ["Mehmoona (S.St)", "S.St", "2 Pink", 4],
+        ["Mehmoona (S.St)", "S.St", "2 Blue", 4],
+        ["Salma", "Pak. Study", "10 Pink", 3],
+        ["Salma", "Pak. Study", "10 Blue", 3],
+        ["Musarat", "ICT", "7 Pink", 3],
+        ["Musarat", "ICT", "7 Red", 3],
+        ["Musarat", "ICT", "7 Blue", 3],
+        ["Musarat", "ICT", "7 White", 3],
+        ["Humaira", "ICT", "6 Pink", 3],
+        ["Humaira", "ICT", "6 Red", 3],
+        ["Humaira", "ICT", "6 Blue", 3],
+        ["Humaira", "ICT", "6 White", 3],
+        ["Humaira", "ICT", "5 Pink", 3],
+        ["Humaira", "ICT", "5 Red", 3],
+        ["Humaira", "ICT", "5 Blue", 3],
+        ["Humaira", "ICT", "5 White", 3],
+        ["Rabiya", "ICT", "2 Pink", 3],
+        ["Rabiya", "ICT", "2 Blue", 3],
+        ["Rabiya", "ICT", "3 Red", 3],
+        ["Rabiya", "ICT", "3 White", 3],
+        ["Rabiya", "ICT", "4 Red", 3],
+        ["Rabiya", "ICT", "4 White", 3],
+        ["Rabiya", "ICT", "3 Green", 3],
+        ["Rabiya", "ICT", "1 Pink", 2],
+        ["Rabiya", "ICT", "1 Blue", 2],
+        ["Haleema ICT", "ICT", "2 Red", 3],
+        ["Haleema ICT", "ICT", "2 White", 3],
+        ["Haleema ICT", "ICT", "3 Pink", 3],
+        ["Haleema ICT", "ICT", "3 Blue", 3],
+        ["Haleema ICT", "ICT", "4 Pink", 3],
+        ["Haleema ICT", "ICT", "4 Blue", 3],
+        ["Haleema ICT", "ICT", "4 Green", 3],
+        ["Haleema ICT", "ICT", "1 Red", 2],
+        ["Haleema ICT", "ICT", "1 White", 2],
+        ["Sania", "Nazra", "1 Pink", 3],
+        ["Sania", "Nazra", "2 White", 3],
+        ["Sania", "Nazra", "3 Blue", 3],
+        ["Sania", "Nazra", "3 White", 3],
+        ["Sania", "Nazra", "4 Blue", 3],
+        ["Sania", "Nazra", "4 White", 3],
+        ["Sania", "Nazra", "5 Blue", 3],
+        ["Sania", "Nazra", "5 White", 3],
+        ["Mudassira", "Nazra", "1 Red", 3],
+        ["Mudassira", "Nazra", "2 Pink", 3],
+        ["Mudassira", "Nazra", "3 Pink", 3],
+        ["Mudassira", "Nazra", "3 Red", 3],
+        ["Mudassira", "Nazra", "4 Pink", 3],
+        ["Mudassira", "Nazra", "4 Red", 3],
+        ["Mudassira", "Nazra", "5 Pink", 3],
+        ["Mudassira", "Nazra", "5 Red", 3],
+        ["Haleema (Nazra)", "Nazra", "1 Blue", 3],
+        ["Haleema (Nazra)", "Nazra", "1 White", 3],
+        ["Haleema (Nazra)", "Nazra", "2 Red", 3],
+        ["Haleema (Nazra)", "Nazra", "2 Blue", 3],
+        ["Haleema (Nazra)", "Nazra", "3 Green", 3],
+        ["Haleema (Nazra)", "Nazra", "4 Green", 3],
+        ["Ifza", "Science", "7 Pink", 4],
+        ["Sidra", "Physics", "8 Pink", 4]
+    ];
+
     // Initialize LocalStorage Data if not present
     function initLocalStorage() {
         if (!localStorage.getItem("SCH_TEACHERS")) {
@@ -222,6 +514,21 @@
                 working_days: '["Monday","Tuesday","Wednesday","Thursday","Friday"]'
             }));
         }
+        var existingAllocs = [];
+        try { existingAllocs = JSON.parse(localStorage.getItem("SCH_ALLOCATIONS") || "[]"); } catch (e) {}
+        if (!existingAllocs || existingAllocs.length === 0) {
+            var tByName = {}, sByName = {}, cByName = {};
+            DEFAULT_DATA.teachers.forEach(function(t) { tByName[t.name] = t; });
+            DEFAULT_DATA.subjects.forEach(function(s) { sByName[s.name] = s; });
+            DEFAULT_DATA.classes.forEach(function(c) { cByName[c.name] = c; });
+            var seeded = [];
+            DEFAULT_ALLOCATIONS.forEach(function(a, i) {
+                var t = tByName[a[0]], s = sByName[a[1]], c = cByName[a[2]];
+                if (!t || !s || !c) return;
+                seeded.push({ id: "alloc-seed-" + (i + 1), teacher_id: t.id, subject_id: s.id, class_id: c.id, periods_per_week: a[3] });
+            });
+            localStorage.setItem("SCH_ALLOCATIONS", JSON.stringify(seeded));
+        }
         if (!localStorage.getItem("SCH_CURRICULUM")) {
             var sMap = {};
             DEFAULT_DATA.subjects.forEach(function(s) { sMap[s.name] = s; });
@@ -245,35 +552,83 @@
     window.DB = {
         client: null,
 
-        // Init connection to Supabase
+        // Init connection to Supabase (with timeout + clear error reporting)
+        lastError: null,
+        onStatusChange: null,
+
         init: async function() {
             initLocalStorage();
+            var self = this;
             var defaultUrl = "https://aoxloxnkctbccyqsdghk.supabase.co";
             var defaultKey = "sb_publishable_WfV3i9xNoFmsiLUiJtzoRA_tWUcBtIW";
-            var url = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url) || localStorage.getItem("SB_URL") || defaultUrl;
-            var key = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.anonKey) || localStorage.getItem("SB_KEY") || defaultKey;
+            // Credentials saved by the user in the Settings tab win over the built-in config
+            var url = localStorage.getItem("SB_URL") || (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url) || defaultUrl;
+            var key = localStorage.getItem("SB_KEY") || (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.anonKey) || defaultKey;
+            this.lastError = null;
 
-            if (url && key && window.supabase && window.supabase.createClient) {
-                try {
-                    supabaseClient = window.supabase.createClient(url, key);
-                    this.client = supabaseClient;
-                    // Test ping
-                    var test = await supabaseClient.from("teachers").select("count", { count: "exact", head: true });
-                    if (!test.error) {
-                        isConnected = true;
-                        console.log("Connected to Supabase PostgreSQL Database successfully!");
-                        return { connected: true, client: supabaseClient };
-                    } else {
-                        console.warn("Supabase credentials entered, but test query returned:", test.error.message);
-                    }
-                } catch (e) {
-                    console.warn("Supabase connection failed, falling back to Local Storage:", e);
+            if (!(window.supabase && window.supabase.createClient)) {
+                this.lastError = "Supabase library failed to load (check internet connection).";
+                console.warn(this.lastError);
+                isConnected = false; this.client = null; supabaseClient = null;
+                return { connected: false, fallback: true, error: this.lastError };
+            }
+
+            try {
+                supabaseClient = window.supabase.createClient(url, key, {
+                    auth: { persistSession: false, autoRefreshToken: false }
+                });
+                this.client = supabaseClient;
+
+                // Test ping: a real column + HEAD request (the old "count" column does not exist -> always failed)
+                var ping = supabaseClient.from("teachers").select("id", { count: "exact", head: true });
+                var timeout = new Promise(function(_, rej) { setTimeout(function() { rej(new Error("Connection timed out")); }, 8000); });
+                var test = await Promise.race([ping, timeout]);
+
+                if (!test.error) {
+                    isConnected = true;
+                    console.log("Connected to Supabase PostgreSQL Database successfully!");
+                    return { connected: true, client: supabaseClient };
                 }
+                this.lastError = test.error.message || String(test.error);
+                console.warn("Supabase test query returned:", this.lastError);
+            } catch (e) {
+                this.lastError = (e && e.message) || String(e);
+                console.warn("Supabase connection failed, falling back to Local Storage:", e);
             }
 
             isConnected = false;
-            this.client = supabaseClient;
-            return { connected: false, fallback: true };
+            return { connected: false, fallback: true, error: this.lastError };
+        },
+
+        // Try again (used by the "Reconnect" button and when the browser comes back online)
+        reconnect: async function() {
+            var r = await this.init();
+            if (typeof this.onStatusChange === "function") this.onStatusChange(isConnected, this.lastError);
+            return r;
+        },
+
+        // Report cloud write failures instead of hiding them
+        _fail: function(where, error) {
+            var msg = where + ": " + ((error && error.message) || error);
+            console.error("Supabase " + msg);
+            this.lastError = msg;
+            if (typeof this.onSyncError === "function") this.onSyncError(msg);
+        },
+        onSyncError: null,
+
+        // Name <-> UUID helpers (the app works with names, the cloud with UUIDs)
+        _idMaps: async function() {
+            var maps = { t: {}, s: {}, c: {}, tRev: {}, sRev: {}, cRev: {} };
+            if (!(isConnected && supabaseClient)) return maps;
+            var results = await Promise.all([
+                supabaseClient.from("teachers").select("id,name"),
+                supabaseClient.from("subjects").select("id,name"),
+                supabaseClient.from("classes").select("id,name")
+            ]);
+            (results[0].data || []).forEach(function(r) { maps.t[r.name] = r.id; maps.tRev[r.id] = r.name; });
+            (results[1].data || []).forEach(function(r) { maps.s[r.name] = r.id; maps.sRev[r.id] = r.name; });
+            (results[2].data || []).forEach(function(r) { maps.c[r.name] = r.id; maps.cRev[r.id] = r.name; });
+            return maps;
         },
 
         isConnected: function() {
@@ -281,9 +636,9 @@
         },
 
         setCredentials: async function(url, key) {
-            localStorage.setItem("SB_URL", url);
-            localStorage.setItem("SB_KEY", key);
-            return await this.init();
+            localStorage.setItem("SB_URL", String(url).trim());
+            localStorage.setItem("SB_KEY", String(key).trim());
+            return await this.reconnect();
         },
 
         clearCredentials: function() {
@@ -307,6 +662,15 @@
             }
             if (!list || list.length === 0) {
                 list = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
+            } else {
+                try {
+                    var ts = await supabaseClient.from("teacher_subjects").select("teacher_id, subjects(name)");
+                    if (!ts.error && ts.data && ts.data.length > 0) {
+                        var byT = {};
+                        ts.data.forEach(function(r) { if (r.subjects && r.subjects.name) (byT[r.teacher_id] = byT[r.teacher_id] || []).push(r.subjects.name); });
+                        list.forEach(function(t) { if (byT[t.id]) t.subjects = byT[t.id]; });
+                    }
+                } catch (e) {}
             }
 
             var defMap = {};
@@ -349,7 +713,7 @@
                 var res = await supabaseClient.from("teachers").insert([sbPayload]).select().single();
                 if (!res.error && res.data) {
                     newT.id = res.data.id;
-                }
+                } else if (res.error) { this._fail("addTeacher", res.error); }
             }
 
             var list = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
@@ -410,8 +774,10 @@
             };
 
             if (isConnected && supabaseClient) {
-                var res = await supabaseClient.from("subjects").insert([newS]).select().single();
+                var sbS = { name: newS.name, code: newS.code, color_accent: newS.color_accent };
+                var res = await supabaseClient.from("subjects").insert([sbS]).select().single();
                 if (!res.error && res.data) return res.data;
+                if (res.error) this._fail("addSubject", res.error);
             }
 
             var list = JSON.parse(localStorage.getItem("SCH_SUBJECTS") || "[]");
@@ -466,8 +832,10 @@
             };
 
             if (isConnected && supabaseClient) {
-                var res = await supabaseClient.from("classes").insert([newC]).select().single();
+                var sbC = { name: newC.name, grade: newC.grade, section: newC.section };
+                var res = await supabaseClient.from("classes").insert([sbC]).select().single();
                 if (!res.error && res.data) return res.data;
+                if (res.error) this._fail("addClass", res.error);
             }
 
             var list = JSON.parse(localStorage.getItem("SCH_CLASSES") || "[]");
@@ -553,6 +921,7 @@
                     class_id: class_id,
                     periods_per_week: periodsInt
                 }]).select("*, teachers(name), subjects(name), classes(name)").single();
+                if (res.error) this._fail("addAllocation", res.error);
                 if (!res.error && res.data) {
                     newAlloc.id = res.data.id;
                     newAlloc.teacher_name = res.data.teachers?.name;
@@ -565,6 +934,23 @@
             list.push(newAlloc);
             localStorage.setItem("SCH_ALLOCATIONS", JSON.stringify(list));
             return newAlloc;
+        },
+
+        // Change periods and/or teacher of an existing assignment (inline editing)
+        updateAllocation: async function(id, updates) {
+            var clean = {};
+            if (updates.periods_per_week !== undefined) clean.periods_per_week = Math.max(1, parseInt(updates.periods_per_week) || 1);
+            if (updates.teacher_id) clean.teacher_id = updates.teacher_id;
+            if (isConnected && supabaseClient) {
+                var r = await supabaseClient.from("allocations").update(clean).eq("id", id);
+                if (r.error) this._fail("updateAllocation", r.error);
+            }
+            var list = JSON.parse(localStorage.getItem("SCH_ALLOCATIONS") || "[]");
+            for (var i = 0; i < list.length; i++) {
+                if (list[i].id === id) { Object.assign(list[i], clean); break; }
+            }
+            localStorage.setItem("SCH_ALLOCATIONS", JSON.stringify(list));
+            return true;
         },
 
         deleteAllocation: async function(id) {
@@ -994,13 +1380,25 @@
                 var query = supabaseClient.from("substitutions").select("*").order("created_at", { ascending: false });
                 if (filterDay) query = query.eq("day", filterDay);
                 var res = await query;
-                if (!res.error && res.data) list = res.data;
-            } else {
-                list = JSON.parse(localStorage.getItem("SCH_SUBSTITUTIONS") || "[]");
-                if (filterDay) {
-                    list = list.filter(function(s) { return s.day === filterDay; });
+                if (!res.error && res.data) {
+                    var m = await this._idMaps();
+                    // the app displays names, the cloud stores UUIDs
+                    list = res.data.map(function(r) {
+                        return {
+                            id: r.id, day: r.day, period: r.period,
+                            class_id: m.cRev[r.class_id] || r.class_id,
+                            original_teacher_id: m.tRev[r.original_teacher_id] || r.original_teacher_id,
+                            substitute_teacher_id: m.tRev[r.substitute_teacher_id] || r.substitute_teacher_id,
+                            subject_id: m.sRev[r.subject_id] || r.subject_id,
+                            note: r.note, created_at: r.created_at
+                        };
+                    });
+                    return list;
                 }
+                if (res.error) this._fail("getSubstitutions", res.error);
             }
+            list = JSON.parse(localStorage.getItem("SCH_SUBSTITUTIONS") || "[]");
+            if (filterDay) list = list.filter(function(s) { return s.day === filterDay; });
             return list;
         },
 
@@ -1018,32 +1416,104 @@
             };
 
             if (isConnected && supabaseClient) {
-                var res = await supabaseClient.from("substitutions").upsert([newSub]).select().single();
-                if (!res.error && res.data) return res.data;
+                var m = await this._idMaps();
+                var row = {
+                    day: newSub.day, period: newSub.period,
+                    class_id: m.c[newSub.class_id],
+                    original_teacher_id: m.t[newSub.original_teacher_id],
+                    substitute_teacher_id: m.t[newSub.substitute_teacher_id],
+                    subject_id: m.s[newSub.subject_id],
+                    note: newSub.note
+                };
+                if (row.class_id && row.original_teacher_id && row.substitute_teacher_id && row.subject_id) {
+                    var res = await supabaseClient.from("substitutions")
+                        .upsert([row], { onConflict: "class_id,day,period" }).select().single();
+                    if (!res.error && res.data) { newSub.id = res.data.id; return newSub; }
+                    if (res.error) this._fail("saveSubstitution", res.error);
+                } else {
+                    this._fail("saveSubstitution", "Could not match names to database records (class/teacher/subject)");
+                }
             }
 
             var list = JSON.parse(localStorage.getItem("SCH_SUBSTITUTIONS") || "[]");
             var existingIdx = list.findIndex(function(s) {
                 return s.day === newSub.day && s.period === newSub.period && s.class_id === newSub.class_id;
             });
-            if (existingIdx >= 0) {
-                list[existingIdx] = newSub;
-            } else {
-                list.push(newSub);
-            }
+            if (existingIdx >= 0) list[existingIdx] = newSub; else list.push(newSub);
             localStorage.setItem("SCH_SUBSTITUTIONS", JSON.stringify(list));
             return newSub;
         },
 
         deleteSubstitution: async function(id) {
             if (isConnected && supabaseClient) {
-                await supabaseClient.from("substitutions").delete().eq("id", id);
+                var r = await supabaseClient.from("substitutions").delete().eq("id", id);
+                if (r.error) this._fail("deleteSubstitution", r.error);
             }
             var list = JSON.parse(localStorage.getItem("SCH_SUBSTITUTIONS") || "[]").filter(function(s) {
                 return s.id !== id;
             });
             localStorage.setItem("SCH_SUBSTITUTIONS", JSON.stringify(list));
             return true;
+        },
+
+        // ==========================
+        // TIMETABLE (saved in Supabase table `timetable_slots`)
+        // ==========================
+        saveTimetable: async function(schedule) {
+            localStorage.setItem("SCH_ACTIVE_TIMETABLE", JSON.stringify(schedule));
+            if (!(isConnected && supabaseClient)) return { cloud: false };
+            var m = await this._idMaps();
+            var rows = [];
+            for (var cls in schedule) {
+                for (var day in schedule[cls]) {
+                    for (var p in schedule[cls][day]) {
+                        var cell = schedule[cls][day][p];
+                        if (!m.c[cls]) continue;
+                        rows.push({
+                            class_id: m.c[cls], day: day, period: parseInt(p),
+                            teacher_id: (cell && cell.teacher && m.t[cell.teacher]) || null,
+                            subject_id: (cell && cell.subject && m.s[cell.subject]) || null
+                        });
+                    }
+                }
+            }
+            var del = await supabaseClient.from("timetable_slots").delete().not("id", "is", null);
+            if (del.error) { this._fail("saveTimetable (clear)", del.error); return { cloud: false }; }
+            for (var i = 0; i < rows.length; i += 500) {
+                var ins = await supabaseClient.from("timetable_slots").insert(rows.slice(i, i + 500));
+                if (ins.error) { this._fail("saveTimetable", ins.error); return { cloud: false }; }
+            }
+            return { cloud: true, rows: rows.length };
+        },
+
+        loadTimetable: async function() {
+            if (isConnected && supabaseClient) {
+                var res = await supabaseClient.from("timetable_slots").select("*");
+                if (!res.error && res.data && res.data.length > 0) {
+                    var m = await this._idMaps();
+                    var sch = {};
+                    res.data.forEach(function(r) {
+                        var cn = m.cRev[r.class_id]; if (!cn) return;
+                        sch[cn] = sch[cn] || {};
+                        sch[cn][r.day] = sch[cn][r.day] || {};
+                        sch[cn][r.day][r.period] = (r.subject_id && m.sRev[r.subject_id])
+                            ? { subject: m.sRev[r.subject_id], teacher: r.teacher_id ? (m.tRev[r.teacher_id] || null) : null }
+                            : null;
+                    });
+                    localStorage.setItem("SCH_ACTIVE_TIMETABLE", JSON.stringify(sch));
+                    return sch;
+                }
+                if (res.error) this._fail("loadTimetable", res.error);
+            }
+            try { return JSON.parse(localStorage.getItem("SCH_ACTIVE_TIMETABLE") || "null"); } catch (e) { return null; }
+        },
+
+        clearTimetableData: async function() {
+            localStorage.removeItem("SCH_ACTIVE_TIMETABLE");
+            if (isConnected && supabaseClient) {
+                var r = await supabaseClient.from("timetable_slots").delete().not("id", "is", null);
+                if (r.error) this._fail("clearTimetable", r.error);
+            }
         },
 
         // Helper: Find Free Teachers for any slot with intelligent ranking
@@ -1132,6 +1602,7 @@
             localStorage.removeItem("SCH_CURRICULUM");
             localStorage.removeItem("SCH_SETTINGS");
             localStorage.removeItem("SCH_SUBSTITUTIONS");
+            localStorage.removeItem("SCH_ACTIVE_TIMETABLE");
             initLocalStorage();
         }
     };
