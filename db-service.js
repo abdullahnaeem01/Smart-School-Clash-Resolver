@@ -745,6 +745,13 @@
             var lT = read("SCH_TEACHERS"), lS = read("SCH_SUBJECTS"), lC = read("SCH_CLASSES"), lA = read("SCH_ALLOCATIONS");
             var m = await this._idMaps();
             var i, r;
+            var cloudHasData = Object.keys(m.t).length > 0;     // cloud already has the school's data: never re-add stale defaults
+            var isDefaultId = function(id) { return /^(t|s|c)-[a-z0-9-]+$/i.test(String(id)) && !/^(t|s|c)-\d{10,}$/.test(String(id)); };
+            if (cloudHasData) {
+                lT = lT.filter(function(x) { return !isDefaultId(x.id); });
+                lS = lS.filter(function(x) { return !isDefaultId(x.id); });
+                lC = lC.filter(function(x) { return !isDefaultId(x.id); });
+            }
             for (i = 0; i < lT.length; i++) {
                 if (m.t[lT[i].name]) continue;
                 r = await supabaseClient.from("teachers").insert([{ name: lT[i].name, department: lT[i].department || "General",
@@ -776,6 +783,10 @@
             var ca = await supabaseClient.from("allocations").select("teacher_id, subject_id, class_id");
             var haveA = {}; ((ca.data) || []).forEach(function(x) { haveA[x.teacher_id + "|" + x.subject_id + "|" + x.class_id] = 1; });
             var aRows = [];
+            if (cloudHasData && Object.keys(haveA).length > 0) {
+                // allocations already exist in the cloud: only upload ones created offline, never the old default list
+                lA = lA.filter(function(a) { return !/^alloc-seed-/.test(String(a.id)); });
+            }
             lA.forEach(function(a) {
                 var t = m.t[tN[a.teacher_id] || a.teacher_name], s = m.s[sN[a.subject_id] || a.subject_name], c = m.c[cN[a.class_id] || a.class_name];
                 if (t && s && c && !haveA[t + "|" + s + "|" + c]) aRows.push({ teacher_id: t, subject_id: s, class_id: c, periods_per_week: a.periods_per_week });
@@ -1651,18 +1662,26 @@
                     for (var p in schedule[cls][day]) {
                         var cell = schedule[cls][day][p];
                         if (!m.c[cls]) continue;
-                        rows.push({
+                        var row = {
                             class_id: m.c[cls], day: day, period: parseInt(p),
                             teacher_id: (cell && cell.teacher && m.t[cell.teacher]) || null,
                             subject_id: (cell && cell.subject && m.s[cell.subject]) || null
-                        });
+                        };
+                        if (cell && cell.also && cell.also.length) row.parallel = cell.also;   // e.g. the ICT half of a Biology/ICT period
+                        rows.push(row);
                     }
                 }
             }
             var del = await supabaseClient.from("timetable_slots").delete().not("id", "is", null);
             if (del.error) { this._fail("saveTimetable (clear)", del.error); return { cloud: false }; }
             for (var i = 0; i < rows.length; i += 500) {
-                var ins = await supabaseClient.from("timetable_slots").insert(rows.slice(i, i + 500));
+                var chunk = rows.slice(i, i + 500);
+                var ins = await supabaseClient.from("timetable_slots").insert(chunk);
+                if (ins.error && /parallel/i.test(ins.error.message || "")) {
+                    // column not created yet: save without it, and tell the user what to run
+                    this._fail("saveTimetable", "Run supabase_parallel_subjects.sql in the Supabase SQL Editor (needed to save Biology+ICT periods).");
+                    ins = await supabaseClient.from("timetable_slots").insert(chunk.map(function(r) { var c = Object.assign({}, r); delete c.parallel; return c; }));
+                }
                 if (ins.error) { this._fail("saveTimetable", ins.error); return { cloud: false }; }
             }
             return { cloud: true, rows: rows.length };
@@ -1678,9 +1697,11 @@
                         var cn = m.cRev[r.class_id]; if (!cn) return;
                         sch[cn] = sch[cn] || {};
                         sch[cn][r.day] = sch[cn][r.day] || {};
-                        sch[cn][r.day][r.period] = (r.subject_id && m.sRev[r.subject_id])
+                        var cellObj = (r.subject_id && m.sRev[r.subject_id])
                             ? { subject: m.sRev[r.subject_id], teacher: r.teacher_id ? (m.tRev[r.teacher_id] || null) : null }
                             : null;
+                        if (cellObj && Array.isArray(r.parallel) && r.parallel.length) cellObj.also = r.parallel;
+                        sch[cn][r.day][r.period] = cellObj;
                     });
                     localStorage.setItem("SCH_ACTIVE_TIMETABLE", JSON.stringify(sch));
                     return sch;

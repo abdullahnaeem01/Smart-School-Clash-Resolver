@@ -985,6 +985,14 @@
     </div>
     
     <div class="card" style="max-width:650px; padding:24px; margin-top:16px;">
+      <h3 style="margin-bottom:6px;">🔀 Parallel Subjects (same period)</h3>
+      <p style="font-size:12.5px; color:var(--slate-600); margin-bottom:10px;">Subjects listed together are taught in the <strong>same period</strong> to different students of one class (e.g. Biology + ICT). They count once toward the 35 periods, and both teachers are scheduled in that slot.</p>
+      <div id="parallelGroupsBox"></div>
+      <button onclick="addParallelRow()" class="btn-outline" style="margin-right:8px;">+ Add group</button>
+      <button onclick="saveParallelGroups()" class="btn-primary">💾 Save parallel subjects</button>
+    </div>
+
+    <div class="card" style="max-width:650px; padding:24px; margin-top:16px;">
       <h3 style="margin-bottom:8px;">Database</h3>
       <p id="dbConnStatus" style="color:var(--success); font-weight:600; margin-bottom:12px;">✅ Connected to Supabase Cloud</p>
       <button onclick="reconnectDb()" class="btn-outline" style="margin-right:8px;">🔄 Reconnect to Supabase</button>
@@ -1411,6 +1419,44 @@ function switchTab(tabId) {
 }
 
 // =============================================================================
+// PARALLEL SUBJECTS (e.g. Biology + ICT: half the class in each, SAME period)
+// =============================================================================
+const DEFAULT_PARALLEL_GROUPS = [{ grades: [8, 9], subjects: ['Biology', 'ICT'] }];
+function getParallelGroups() {
+    try {
+        const raw = APP.settings && APP.settings.parallel_groups;
+        if (raw) { const v = typeof raw === 'string' ? JSON.parse(raw) : raw; if (Array.isArray(v)) return v; }
+    } catch (e) {}
+    return DEFAULT_PARALLEL_GROUPS;
+}
+// For one class: which of its subjects run side-by-side, and how many periods that frees up
+function classParallelInfo(clsName, grade) {
+    const sum = {};
+    APP.allocations.filter(a => a.class_name === clsName).forEach(a => {
+        sum[a.subject_name] = (sum[a.subject_name] || 0) + (parseInt(a.periods_per_week) || 0);
+    });
+    const out = [];
+    getParallelGroups().forEach(g => {
+        if (!(g.grades || []).map(Number).includes(grade)) return;
+        const present = (g.subjects || []).filter(s => sum[s] > 0);
+        if (present.length < 2) return;
+        const per = present.map(s => sum[s]);
+        const slots = Math.max(...per);
+        out.push({ subjects: present, slots, overlap: per.reduce((a, b) => a + b, 0) - slots });
+    });
+    return out;
+}
+// A timetable cell may hold several teachers: {subject, teacher, also:[{subject, teacher}]}
+function cellMembers(cell) {
+    if (!cell || !cell.subject) return [];
+    return [{ subject: cell.subject, teacher: cell.teacher || null }].concat(cell.also || []);
+}
+function cellHasTeacher(cell, name) { return cellMembers(cell).some(m => m.teacher && m.teacher === name); }
+function cellSubjectOf(cell, name) { const m = cellMembers(cell).find(x => x.teacher === name); return m ? m.subject : (cell ? cell.subject : ''); }
+function cellLabel(cell) { return cellMembers(cell).map(m => m.subject).join(' / '); }
+function cellTeacherLabel(cell) { return cellMembers(cell).map(m => m.teacher || 'Unassigned').join(' / '); }
+
+// =============================================================================
 // PRE-CHECK VALIDATION
 // =============================================================================
 function preCheck() {
@@ -1449,10 +1495,13 @@ function preCheck() {
         const peRow = curList.find(c => c.subject_name === 'P.E');
         const hasPeAlloc = classAllocs.some(a => a.subject_name === 'P.E');
         const pe = (!hasPeAlloc && peRow) ? (parseInt(peRow.periods_per_week) || 0) : 0;
-        const total = assigned + pe;
+        const par = classParallelInfo(cls.name, grade);
+        const overlap = par.reduce((n, g) => n + g.overlap, 0);
+        const total = assigned + pe - overlap;
         if (total !== totalSlots) {
             const diff = total - totalSlots;
-            issues.push(`Class "${cls.name}" has ${total} periods/week assigned (incl. ${pe} P.E) but needs exactly ${totalSlots} — ${diff > 0 ? 'remove ' + diff : 'add ' + (-diff)} period(s).`);
+            const extra = par.length ? ` (${par.map(g => g.subjects.join(' + ') + ' share ' + g.slots + ' period(s)').join('; ')})` : '';
+            issues.push(`Class "${cls.name}" fills ${total} periods/week (incl. ${pe} P.E)${extra} but needs exactly ${totalSlots} — ${diff > 0 ? 'remove ' + diff : 'add ' + (-diff)} period(s).`);
         }
     });
 
@@ -1559,25 +1608,47 @@ function generateTimetable() {
         const bySubject = {};
         classAllocs.forEach(a => { (bySubject[a.subject_name] = bySubject[a.subject_name] || []).push(a); });
 
+        const mk = (subj, teacher, maxPerDay) => ({
+            subject: subj, teacher, t: teacher ? tId(teacher) : -1, ts: teacher ? [tId(teacher)] : [],
+            members: [{ subject: subj, teacher }], key: subj + '|' + teacher, maxPerDay, gender: gender(subj)
+        });
+        const perSubjectLessons = {};   // subject -> [lesson per period]
+        const subjMaxPerDay = {};
         Object.keys(bySubject).forEach(subj => {
             const total = bySubject[subj].reduce((n, a) => n + (parseInt(a.periods_per_week) || 0), 0);
             const curMax = (curBySubj[subj] && curBySubj[subj].max_per_day) || 1;
-            const maxPerDay = Math.max(curMax, Math.ceil(total / nD));
+            subjMaxPerDay[subj] = Math.max(curMax, Math.ceil(total / nD));
+            perSubjectLessons[subj] = [];
             bySubject[subj].forEach(a => {
                 const n = parseInt(a.periods_per_week) || 0;
-                for (let i = 0; i < n; i++) {
-                    lessons.push({ subject: subj, teacher: a.teacher_name, t: tId(a.teacher_name), maxPerDay, gender: gender(subj) });
-                }
+                for (let i = 0; i < n; i++) perSubjectLessons[subj].push(mk(subj, a.teacher_name, subjMaxPerDay[subj]));
             });
         });
+        // Parallel subjects (e.g. Biology + ICT) share ONE slot: both teachers are busy in that period
+        const grouped = new Set();
+        classParallelInfo(cls.name, grade).forEach(g => {
+            g.subjects.forEach(s => grouped.add(s));
+            for (let k = 0; k < g.slots; k++) {
+                const members = g.subjects.map(s => perSubjectLessons[s][k]).filter(Boolean);
+                const p = members[0];
+                lessons.push({
+                    subject: p.subject, teacher: p.teacher, t: p.t,
+                    ts: [...new Set(members.flatMap(m => m.ts))],
+                    members: members.map(m => m.members[0]),
+                    key: members.map(m => m.key).join('+'),
+                    maxPerDay: Math.max(subjMaxPerDay[p.subject], Math.ceil(g.slots / nD)), gender: 0
+                });
+            }
+        });
+        Object.keys(perSubjectLessons).forEach(subj => { if (!grouped.has(subj)) perSubjectLessons[subj].forEach(L => lessons.push(L)); });
         // P.E from curriculum (no teacher) unless P.E was assigned to a teacher
         if (!bySubject['P.E'] && curBySubj['P.E']) {
             for (let i = 0; i < curBySubj['P.E'].periods_per_week; i++) {
-                lessons.push({ subject: 'P.E', teacher: null, t: -1, maxPerDay: curBySubj['P.E'].max_per_day || 1, gender: gender('P.E') });
+                lessons.push({ subject: 'P.E', teacher: null, t: -1, ts: [], members: [{ subject: 'P.E', teacher: null }], key: 'P.E|null', maxPerDay: curBySubj['P.E'].max_per_day || 1, gender: gender('P.E') });
             }
         }
         // pad (should not happen once pre-check passes) / trim
-        while (lessons.length < nS) lessons.push({ subject: 'Free', teacher: null, t: -1, maxPerDay: nS, gender: 0 });
+        while (lessons.length < nS) lessons.push({ subject: 'Free', teacher: null, t: -1, ts: [], members: [{ subject: 'Free', teacher: null }], key: 'Free|null', maxPerDay: nS, gender: 0 });
         lessons.length = nS;
         for (let i = nS - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [lessons[i], lessons[j]] = [lessons[j], lessons[i]]; }
         grid.push(lessons);
@@ -1594,7 +1665,7 @@ function generateTimetable() {
         for (let c = 0; c < nC; c++) for (let s = 0; s < nS; s++) addL(c, s, grid[c][s], 1);
     }
     function addL(c, s, L, k) {
-        if (L.t >= 0) { tSlot[L.t][s] += k; tDay[L.t][dayOf(s)] += k; }
+        for (const t of L.ts) { tSlot[t][s] += k; tDay[t][dayOf(s)] += k; }
         cds[c][dayOf(s)][L.subject] = (cds[c][dayOf(s)][L.subject] || 0) + k;
         if (L.gender === 1) peG[s] += k; else if (L.gender === 2) peB[s] += k;
     }
@@ -1603,7 +1674,7 @@ function generateTimetable() {
     function pairPen(c, a) { // pair (a, a+1) inside the same day with same teacher
         if (a < 0 || a + 1 >= nS || dayOf(a) !== dayOf(a + 1)) return 0;
         const x = grid[c][a], y = grid[c][a + 1];
-        return (x.t >= 0 && x.t === y.t) ? SOFT * 3 : 0;
+        return (x.ts.length && x.ts.some(t => y.ts.includes(t))) ? SOFT * 3 : 0;
     }
     function cellLocal(c, s) {  // penalties that depend only on this one cell
         const L = grid[c][s]; let p = 0;
@@ -1615,19 +1686,10 @@ function generateTimetable() {
         let p = 0;
         const d1 = dayOf(s1), d2 = dayOf(s2);
         // teacher clashes + daily load
-        const seenTS = new Set();
-        for (const [L, ss] of [[L1, [s1, s2]], [L2, [s1, s2]]]) {
-            if (L.t < 0) continue;
-            for (const s of ss) {
-                const key = L.t * 1000 + s;
-                if (seenTS.has(key)) continue; seenTS.add(key);
-                if (tSlot[L.t][s] > 1) p += HARD * (tSlot[L.t][s] - 1);
-            }
-            for (const d of [d1, d2]) {
-                const key = -(L.t * 10 + d) - 1;
-                if (seenTS.has(key)) continue; seenTS.add(key);
-                if (tDay[L.t][d] > tMaxDaily[L.t]) p += HARD * (tDay[L.t][d] - tMaxDaily[L.t]);
-            }
+        const tList = new Set([...L1.ts, ...L2.ts]);
+        for (const t of tList) {
+            for (const s of [s1, s2]) if (tSlot[t][s] > 1) p += HARD * (tSlot[t][s] - 1);
+            for (const d of [d1, d2]) if (tDay[t][d] > tMaxDaily[t]) p += HARD * (tDay[t][d] - tMaxDaily[t]);
         }
         // subject-per-day for this class
         const seenSD = new Set();
@@ -1677,7 +1739,7 @@ function generateTimetable() {
     }
     function cellBad(c, s) {
         const L = grid[c][s];
-        if (L.t >= 0 && (tSlot[L.t][s] > 1 || tDay[L.t][dayOf(s)] > tMaxDaily[L.t])) return true;
+        for (const t of L.ts) if (tSlot[t][s] > 1 || tDay[t][dayOf(s)] > tMaxDaily[t]) return true;
         if ((cds[c][dayOf(s)][L.subject] || 0) > L.maxPerDay) return true;
         if (L.subject === 'Maths' && perOf(s) === lastP) return true;
         if (L.gender && peG[s] > 0 && peB[s] > 0) return true;
@@ -1719,7 +1781,7 @@ function generateTimetable() {
             for (let s2 = 0; s2 < nS; s2++) {
                 if (s2 === s1) continue;
                 const B = grid[c][s2];
-                if (A.subject === B.subject && A.t === B.t) continue;
+                if (A.key === B.key) continue;
                 const d = tryMove(c, s1, s2).delta;
                 swap(c, s1, s2);                      // undo
                 if (d < bestD) { bestD = d; bestS2 = s2; ties = 1; }
@@ -1749,7 +1811,9 @@ function generateTimetable() {
             schedule[cls.name][day] = {};
             PERIODS.forEach((p, pi) => {
                 const L = best[ci][d * nP + pi];
-                schedule[cls.name][day][p] = L.subject === 'Free' ? null : { subject: L.subject, teacher: L.teacher };
+                schedule[cls.name][day][p] = L.subject === 'Free' ? null : (L.members.length > 1
+                    ? { subject: L.members[0].subject, teacher: L.members[0].teacher, also: L.members.slice(1).map(m => ({ subject: m.subject, teacher: m.teacher })) }
+                    : { subject: L.subject, teacher: L.teacher });
             });
         });
     });
@@ -1850,10 +1914,11 @@ function renderTimetable() {
         for (const d in APP.schedule[cl]) {
             for (const p in APP.schedule[cl][d]) {
                 const cell = APP.schedule[cl][d][p];
-                if (cell && cell.teacher) {
-                    const k = d + '_' + p + '_' + cell.teacher;
+                cellMembers(cell).forEach(m => {
+                    if (!m.teacher) return;
+                    const k = d + '_' + p + '_' + m.teacher;
                     slotTeacherCounts[k] = (slotTeacherCounts[k] || 0) + 1;
-                }
+                });
             }
         }
     }
@@ -1869,16 +1934,16 @@ function renderTimetable() {
 
                 if (cellData && cellData.subject) {
                     const isMathsLast = (cellData.subject === 'Maths' && p === lastPeriod);
-                    const isClash = cellData.teacher && slotTeacherCounts[day + '_' + p + '_' + cellData.teacher] > 1;
+                    const isClash = cellMembers(cellData).some(m => m.teacher && slotTeacherCounts[day + '_' + p + '_' + m.teacher] > 1);
                     const subClass = sub ? 'substituted' : '';
                     const clashClass = isClash ? 'clash' : (isMathsLast ? 'maths-last' : '');
 
                     const subjColor = colorMap[cellData.subject] || 'var(--primary)';
-                    const displayTeacher = sub ? `${sub.substitute_teacher_id} (Cover)` : (cellData.teacher || 'Unassigned');
+                    const displayTeacher = sub ? `${sub.substitute_teacher_id} (Cover)` : cellTeacherLabel(cellData);
 
                     rowHtml += `<td>
                         <div class="period-cell ${clashClass} ${subClass}" onclick="openEditModal('${target}','${day}',${p})">
-                            <span class="cell-subject" style="color:${subjColor}">${cellData.subject}</span>
+                            <span class="cell-subject" style="color:${subjColor}">${cellLabel(cellData)}</span>
                             <span class="cell-teacher">${displayTeacher}</span>
                             ${sub ? '<span class="tag tag-success" style="font-size:9px; padding:1px 5px;">SUB</span>' : ''}
                         </div>
@@ -1906,9 +1971,9 @@ function renderTimetable() {
 
                 for (const cl in APP.schedule) {
                     const cell = APP.schedule[cl] && APP.schedule[cl][day] ? APP.schedule[cl][day][p] : null;
-                    if (cell && cell.teacher === target) {
+                    if (cellHasTeacher(cell, target)) {
                         taughtClass = cl;
-                        taughtSubject = cell.subject;
+                        taughtSubject = cellSubjectOf(cell, target);
                         break;
                     }
                 }
@@ -1959,10 +2024,11 @@ function validateAndShowStatus() {
                     if (cell.subject === 'Maths' && parseInt(p) === lastPeriod) {
                         mathsLastCount++;
                     }
-                    if (cell.teacher) {
-                        const key = d + '_' + p + '_' + cell.teacher;
+                    cellMembers(cell).forEach(m => {
+                        if (!m.teacher) return;
+                        const key = d + '_' + p + '_' + m.teacher;
                         slotTeacherMap[key] = (slotTeacherMap[key] || 0) + 1;
-                    }
+                    });
                 }
             }
         }
@@ -1974,7 +2040,7 @@ function validateAndShowStatus() {
             clashes += (slotTeacherMap[k] - 1);
             const [cd, cp, ...ct] = k.split('_');
             const who = ct.join('_');
-            const where = Object.keys(APP.schedule).filter(c => APP.schedule[c][cd] && APP.schedule[c][cd][cp] && APP.schedule[c][cd][cp].teacher === who);
+            const where = Object.keys(APP.schedule).filter(c => APP.schedule[c][cd] && cellHasTeacher(APP.schedule[c][cd][cp], who));
             clashList.push(`${who} — ${cd} P${cp}: ${where.join(' & ')}`);
         }
     }
@@ -2081,7 +2147,7 @@ function saveEditModal() {
     // Clash guard: is this teacher already teaching another class at the same time?
     if (subj && teacher) {
         const other = Object.keys(APP.schedule).find(c => c !== cls && APP.schedule[c] && APP.schedule[c][day] &&
-            APP.schedule[c][day][period] && APP.schedule[c][day][period].teacher === teacher);
+            cellHasTeacher(APP.schedule[c][day][period], teacher));
         if (other && !confirm(`⚠️ ${teacher} is already teaching ${other} on ${day} Period ${period}.\n\nSaving will create a CLASH. Save anyway?`)) return;
     }
 
@@ -2089,7 +2155,9 @@ function saveEditModal() {
     if (!APP.schedule[cls][day]) APP.schedule[cls][day] = {};
 
     if (subj) {
-        APP.schedule[cls][day][period] = { subject: subj, teacher: teacher || null };
+        const prev = APP.schedule[cls][day][period];
+        const keepAlso = prev && prev.also && prev.subject === subj && prev.teacher === (teacher || null);
+        APP.schedule[cls][day][period] = keepAlso ? prev : { subject: subj, teacher: teacher || null };
     } else {
         APP.schedule[cls][day][period] = null;
     }
@@ -2113,7 +2181,7 @@ function exportCSV() {
             for (const p in APP.schedule[cls][day]) {
                 const cell = APP.schedule[cls][day][p];
                 if (cell && cell.subject) {
-                    rows.push([cls, day, p, cell.subject, cell.teacher || ""]);
+                    rows.push([cls, day, p, cellLabel(cell), cellMembers(cell).map(m => m.teacher || '').join(' / ')]);
                 }
             }
         }
@@ -2499,16 +2567,19 @@ function renderAllocations() {
         const slotsPerWeek = APP.DAYS.length * APP.PERIODS.length;
         const peRow = curList.find(c => c.subject_name === 'P.E');
         const peP = (peRow && !sectionAllocs.some(a => a.subject_name === 'P.E')) ? (parseInt(peRow.periods_per_week) || 0) : 0;
-        const totalAssigned = sectionAllocs.reduce((n, a) => n + (parseInt(a.periods_per_week) || 0), 0) + peP;
+        const parInfo = classParallelInfo(target, parseInt((APP.classes.find(c => c.name === target) || {}).grade) || parseInt(target) || 1);
+        const parOverlap = parInfo.reduce((n, g) => n + g.overlap, 0);
+        const totalAssigned = sectionAllocs.reduce((n, a) => n + (parseInt(a.periods_per_week) || 0), 0) + peP - parOverlap;
         const notes = [];
         if (missing.length > 0) notes.push(`<strong>Missing teacher in ${target}:</strong> ${missing.join(', ')}`);
         if (totalAssigned !== slotsPerWeek) notes.push(`<strong>${target} has ${totalAssigned} periods</strong> (incl. ${peP} P.E) — must be exactly ${slotsPerWeek}.`);
+        const parTxt = parInfo.length ? ` · ${parInfo.map(g => g.subjects.join(' + ') + ' run together (' + g.slots + ' periods)').join('; ')}` : '';
         if (notes.length > 0) {
             missingAlert.style.display = 'block';
             missingAlert.innerHTML = '⚠️ ' + notes.join('<br>⚠️ ');
         } else {
             missingAlert.style.display = 'block';
-            missingAlert.innerHTML = `✅ ${target}: ${totalAssigned} / ${slotsPerWeek} periods — ready.`;
+            missingAlert.innerHTML = `✅ ${target}: ${totalAssigned} / ${slotsPerWeek} periods — ready${parTxt}.`;
         }
 
         let html = `<table>
@@ -3017,7 +3088,7 @@ function renderMatrixTable(day) {
             let busyClass = null;
             for (const cl in APP.schedule) {
                 const cell = APP.schedule[cl] && APP.schedule[cl][day] ? APP.schedule[cl][day][p] : null;
-                if (cell && cell.teacher === t.name) {
+                if (cellHasTeacher(cell, t.name)) {
                     busyClass = cl;
                     break;
                 }
@@ -3081,8 +3152,8 @@ function renderAbsentTeacherSchedule() {
     APP.PERIODS.forEach(p => {
         for (const cl in APP.schedule) {
             const cell = APP.schedule[cl] && APP.schedule[cl][day] ? APP.schedule[cl][day][p] : null;
-            if (cell && cell.teacher === absentTeacher) {
-                scheduled.push({ period: p, className: cl, subject: cell.subject });
+            if (cellHasTeacher(cell, absentTeacher)) {
+                scheduled.push({ period: p, className: cl, subject: cellSubjectOf(cell, absentTeacher) });
             }
         }
     });
@@ -3236,6 +3307,40 @@ function loadSettingsTab() {
     });
 
     renderPeriodTimesTable();
+    renderParallelGroups();
+}
+function renderParallelGroups() {
+    const box = document.getElementById('parallelGroupsBox');
+    if (!box) return;
+    box.innerHTML = getParallelGroups().map(g => parallelRowHtml(g)).join('') || '<p style="color:var(--slate-400); font-size:13px;">No parallel subjects.</p>';
+}
+function parallelRowHtml(g) {
+    return `<div class="parRow" style="display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+        <label style="font-size:12px; font-weight:700;">Grades</label><input type="text" class="parGrades" value="${(g.grades || []).join(', ')}" placeholder="8, 9" style="width:90px;">
+        <label style="font-size:12px; font-weight:700;">Subjects</label><input type="text" class="parSubjects" value="${(g.subjects || []).join(', ')}" placeholder="Biology, ICT" style="width:200px;">
+        <button onclick="this.parentElement.remove()" style="border:none; background:none; color:var(--danger); font-weight:800; cursor:pointer; font-size:16px;">×</button>
+    </div>`;
+}
+function addParallelRow() {
+    const box = document.getElementById('parallelGroupsBox');
+    if (!box.querySelector('.parRow')) box.innerHTML = '';
+    box.insertAdjacentHTML('beforeend', parallelRowHtml({ grades: [], subjects: [] }));
+}
+async function saveParallelGroups() {
+    const groups = [];
+    for (const row of document.querySelectorAll('#parallelGroupsBox .parRow')) {
+        const grades = row.querySelector('.parGrades').value.split(',').map(x => parseInt(x)).filter(Boolean);
+        const subjects = row.querySelector('.parSubjects').value.split(',').map(x => x.trim()).filter(Boolean);
+        const unknown = subjects.filter(s => !APP.subjects.some(x => x.name.toLowerCase() === s.toLowerCase()));
+        if (unknown.length) { showToast('Unknown subject: ' + unknown.join(', '), 'error'); return; }
+        const fixed = subjects.map(s => APP.subjects.find(x => x.name.toLowerCase() === s.toLowerCase()).name);
+        if (grades.length && fixed.length >= 2) groups.push({ grades, subjects: fixed });
+    }
+    const json = JSON.stringify(groups);
+    await window.DB.saveSetting('parallel_groups', json);
+    APP.settings.parallel_groups = json;
+    markTimetableOutdated();
+    showToast('Parallel subjects saved. Generate the timetable again.', 'success');
 }
 
 function renderPeriodTimesTable() {
