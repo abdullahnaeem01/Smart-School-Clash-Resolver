@@ -490,6 +490,19 @@
         try { return new URL(u).origin; } catch (e) { return u.replace(/\/+$/, ""); }
     }
     function cleanKey(k) { return String(k || "").replace(/\s+/g, "").replace(/^["']|["']$/g, ""); }
+    // Supabase returns at most ~1000 rows per request. Read big tables page by page so NOTHING is cut off.
+    async function fetchAll(makeQuery) {
+        var all = [], from = 0, step = 500;
+        for (;;) {
+            var res = await makeQuery().range(from, from + step - 1);
+            if (res.error) return { data: null, error: res.error };
+            var rows = res.data || [];
+            all = all.concat(rows);
+            if (rows.length < step) break;
+            from += step;
+        }
+        return { data: all, error: null };
+    }
     var reconnectTimer = null;
     var lastToastAt = 0;
 
@@ -770,7 +783,7 @@
             }
             m = await this._idMaps();
             // teacher <-> subject qualifications of teachers that were just created
-            var ts = await supabaseClient.from("teacher_subjects").select("teacher_id, subject_id");
+            var ts = await fetchAll(function() { return supabaseClient.from("teacher_subjects").select("teacher_id, subject_id").order("id"); });
             var haveTS = {}; ((ts.data) || []).forEach(function(x) { haveTS[x.teacher_id + "|" + x.subject_id] = 1; });
             var tsRows = [];
             lT.forEach(function(t) { (t.subjects || []).forEach(function(sn) {
@@ -780,7 +793,7 @@
             // allocations
             var tN = {}, sN = {}, cN = {};
             lT.forEach(function(x) { tN[x.id] = x.name; }); lS.forEach(function(x) { sN[x.id] = x.name; }); lC.forEach(function(x) { cN[x.id] = x.name; });
-            var ca = await supabaseClient.from("allocations").select("teacher_id, subject_id, class_id");
+            var ca = await fetchAll(function() { return supabaseClient.from("allocations").select("teacher_id, subject_id, class_id").order("id"); });
             var haveA = {}; ((ca.data) || []).forEach(function(x) { haveA[x.teacher_id + "|" + x.subject_id + "|" + x.class_id] = 1; });
             var aRows = [];
             if (cloudHasData && Object.keys(haveA).length > 0) {
@@ -806,9 +819,9 @@
             var maps = { t: {}, s: {}, c: {}, tRev: {}, sRev: {}, cRev: {} };
             if (!(isConnected && supabaseClient)) return maps;
             var results = await Promise.all([
-                supabaseClient.from("teachers").select("id,name"),
-                supabaseClient.from("subjects").select("id,name"),
-                supabaseClient.from("classes").select("id,name")
+                fetchAll(function() { return supabaseClient.from("teachers").select("id,name").order("id"); }),
+                fetchAll(function() { return supabaseClient.from("subjects").select("id,name").order("id"); }),
+                fetchAll(function() { return supabaseClient.from("classes").select("id,name").order("id"); })
             ]);
             (results[0].data || []).forEach(function(r) { maps.t[r.name] = r.id; maps.tRev[r.id] = r.name; });
             (results[1].data || []).forEach(function(r) { maps.s[r.name] = r.id; maps.sRev[r.id] = r.name; });
@@ -840,7 +853,7 @@
         getTeachers: async function() {
             var list = [], cloudOk = false;
             if (isConnected && supabaseClient) {
-                var res = await supabaseClient.from("teachers").select("*").order("name");
+                var res = await fetchAll(function() { return supabaseClient.from("teachers").select("*").order("name"); });
                 if (res.error) this._fail("getTeachers", res.error);
                 else { list = res.data || []; cloudOk = true; }
             }
@@ -848,7 +861,7 @@
                 list = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
             } else if (list.length > 0) {
                 try {
-                    var ts = await supabaseClient.from("teacher_subjects").select("teacher_id, subjects(name)");
+                    var ts = await fetchAll(function() { return supabaseClient.from("teacher_subjects").select("teacher_id, subjects(name)").order("id"); });
                     if (!ts.error && ts.data && ts.data.length > 0) {
                         var byT = {};
                         ts.data.forEach(function(r) { if (r.subjects && r.subjects.name) (byT[r.teacher_id] = byT[r.teacher_id] || []).push(r.subjects.name); });
@@ -944,7 +957,7 @@
         // ==========================
         getSubjects: async function() {
             if (isConnected && supabaseClient) {
-                var res = await supabaseClient.from("subjects").select("*").order("name");
+                var res = await fetchAll(function() { return supabaseClient.from("subjects").select("*").order("name"); });
                 if (res.error) this._fail("getSubjects", res.error);
                 else { try { localStorage.setItem("SCH_SUBJECTS", JSON.stringify(res.data || [])); } catch (e) {} return res.data || []; }
             }
@@ -1003,7 +1016,7 @@
         // ==========================
         getClasses: async function() {
             if (isConnected && supabaseClient) {
-                var res = await supabaseClient.from("classes").select("*").order("grade");
+                var res = await fetchAll(function() { return supabaseClient.from("classes").select("*").order("grade").order("name"); });
                 if (res.error) this._fail("getClasses", res.error);
                 else { try { localStorage.setItem("SCH_CLASSES", JSON.stringify(res.data || [])); } catch (e) {} return res.data || []; }
             }
@@ -1054,9 +1067,10 @@
             classes.forEach(function(c) { cMap[c.id] = c; cMap[c.name] = c; });
 
             if (isConnected && supabaseClient) {
-                var res = await supabaseClient
-                    .from("allocations")
-                    .select("*, teachers(name), subjects(name), classes(name, grade, section)");
+                var res = await fetchAll(function() {
+                    return supabaseClient.from("allocations")
+                        .select("*, teachers(name), subjects(name), classes(name, grade, section)").order("id");
+                });
                 if (res.error) this._fail("getAllocations", res.error);
                 if (!res.error && res.data) {
                     var mappedA = res.data.map(function(r) {
@@ -1254,9 +1268,9 @@
             var client = this.client || supabaseClient;
             if (isConnected && client) {
                 try {
-                    const { data, error } = await client
-                        .from('teacher_subjects')
-                        .select('*, teachers(name), subjects(name)');
+                    const { data, error } = await fetchAll(function() {
+                        return client.from('teacher_subjects').select('*, teachers(name), subjects(name)').order('id');
+                    });
                     if (error) this._fail("getTeacherSubjects", error);
                     if (!error && data && data.length > 0) {
                         return data.map(r => ({ ...r, teacher_name: r.teachers?.name, subject_name: r.subjects?.name }));
@@ -1570,9 +1584,11 @@
         getSubstitutions: async function(filterDay) {
             var list = [];
             if (isConnected && supabaseClient) {
-                var query = supabaseClient.from("substitutions").select("*").order("created_at", { ascending: false });
-                if (filterDay) query = query.eq("day", filterDay);
-                var res = await query;
+                var res = await fetchAll(function() {
+                    var q = supabaseClient.from("substitutions").select("*").order("created_at", { ascending: false }).order("id");
+                    if (filterDay) q = q.eq("day", filterDay);
+                    return q;
+                });
                 if (!res.error && res.data) {
                     var m = await this._idMaps();
                     // the app displays names, the cloud stores UUIDs
@@ -1689,7 +1705,7 @@
 
         loadTimetable: async function() {
             if (isConnected && supabaseClient) {
-                var res = await supabaseClient.from("timetable_slots").select("*");
+                var res = await fetchAll(function() { return supabaseClient.from("timetable_slots").select("*").order("id"); });
                 if (!res.error && res.data && res.data.length > 0) {
                     var m = await this._idMaps();
                     var sch = {};
