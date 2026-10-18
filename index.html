@@ -985,6 +985,15 @@
     </div>
     
     <div class="card" style="max-width:650px; padding:24px; margin-top:16px;">
+      <h3 style="margin-bottom:6px;">🏃 P.E Rules</h3>
+      <p style="font-size:12.5px; color:var(--slate-600); margin-bottom:10px;">Grade 4 and above: boys' and girls' classes never share the ground. Grades 1–3 (boys and girls together is fine) share the ground only with other Grade 1–3 classes, never with senior sections.</p>
+      <label style="display:flex; gap:8px; align-items:center; margin-bottom:8px; font-weight:600;"><input type="checkbox" id="peAvoidFirst" style="width:auto;"> Never in the <strong>first</strong> period</label>
+      <label style="display:flex; gap:8px; align-items:center; margin-bottom:8px; font-weight:600;"><input type="checkbox" id="peAvoidLast" style="width:auto;"> Never in the <strong>last</strong> period</label>
+      <label style="display:flex; gap:8px; align-items:center; margin-bottom:12px; font-weight:600;">Classes on the ground at the same time (max): <input type="number" id="peMaxParallel" min="1" max="6" style="width:70px;"></label>
+      <button onclick="savePeRules()" class="btn-primary">💾 Save P.E rules</button>
+    </div>
+
+    <div class="card" style="max-width:650px; padding:24px; margin-top:16px;">
       <h3 style="margin-bottom:6px;">🔀 Parallel Subjects (same period)</h3>
       <p style="font-size:12.5px; color:var(--slate-600); margin-bottom:10px;">Subjects listed together are taught in the <strong>same period</strong> to different students of one class (e.g. Biology + ICT). They count once toward the 35 periods, and both teachers are scheduled in that slot.</p>
       <div id="parallelGroupsBox"></div>
@@ -1419,6 +1428,28 @@ function switchTab(tabId) {
 }
 
 // =============================================================================
+// P.E RULES: never first/last period; max N classes on the ground; never boys + girls together
+// =============================================================================
+function getPeRules() {
+    const s = APP.settings || {};
+    const cap = parseInt(s.pe_max_parallel);
+    const yes = v => !(v === false || v === 'false' || v === '0' || v === 0);
+    return {
+        cap: (cap >= 1 && cap <= 6) ? cap : 2,
+        avoidFirst: yes(s.pe_avoid_first === undefined ? true : s.pe_avoid_first),
+        avoidLast: yes(s.pe_avoid_last === undefined ? true : s.pe_avoid_last)
+    };
+}
+// 1 = girls, 2 = boys, 3 = Grades 1-3 (mixed boys+girls among themselves is fine, but only with other Grade 1-3 classes)
+function peGroupOf(clsName, grade) {
+    if (grade <= 3) return 3;
+    if (/pink|red/i.test(clsName)) return 1;
+    if (/white|green|blue/i.test(clsName)) return 2;
+    return 3;
+}
+const PE_GROUP_NAME = { 1: 'girls', 2: 'boys', 3: 'mixed (Grades 1–3)' };
+
+// =============================================================================
 // PARALLEL SUBJECTS (e.g. Biology + ICT: half the class in each, SAME period)
 // =============================================================================
 const DEFAULT_PARALLEL_GROUPS = [{ grades: [8, 9], subjects: ['Biology', 'ICT'] }];
@@ -1504,6 +1535,23 @@ function preCheck() {
             issues.push(`Class "${cls.name}" fills ${total} periods/week (incl. ${pe} P.E)${extra} but needs exactly ${totalSlots} — ${diff > 0 ? 'remove ' + diff : 'add ' + (-diff)} period(s).`);
         }
     });
+
+    // 2b. P.E ground capacity: are there enough P.E slots for all classes?
+    {
+        const rules = getPeRules();
+        const cnt = { 1: 0, 2: 0, 3: 0 };
+        APP.classes.forEach(cls => {
+            const grade = parseInt(cls.grade) || parseInt(cls.name) || 1;
+            const row = APP.curriculum.find(c => c.grade === grade && c.subject_name === 'P.E');
+            if (row) cnt[peGroupOf(cls.name, grade)] += parseInt(row.periods_per_week) || 0;
+        });
+        const slotsPerDay = APP.PERIODS.length - (rules.avoidFirst ? 1 : 0) - (rules.avoidLast ? 1 : 0);
+        const available = APP.DAYS.length * Math.max(0, slotsPerDay);
+        const needed = Math.ceil(cnt[1] / rules.cap) + Math.ceil(cnt[2] / rules.cap) + Math.ceil(cnt[3] / rules.cap);
+        if (needed > available) {
+            issues.push(`P.E needs ${needed} ground slots (girls ${cnt[1]}, boys ${cnt[2]}, Grades 1–3 ${cnt[3]} periods; max ${rules.cap} classes at a time, groups never share) but only ${available} are available. Raise "classes on the ground at once" in Settings → P.E Rules.`);
+        }
+    }
 
     // 3. Verify no teacher is allocated over their max limit
     const teacherWeeklyLoad = {};
@@ -1596,12 +1644,13 @@ function generateTimetable() {
     const isGirls = n => /pink|red/i.test(n);
     const isBoys  = n => /white|green|blue/i.test(n);
     const grid = [];   // grid[c][s] = lesson
+    const base = [];   // base[c] = that class's lessons (unplaced)
     classes.forEach((cls, ci) => {
         const grade = parseInt(cls.grade) || parseInt(cls.name) || 1;
         const lessons = [];
         const curBySubj = {};
         APP.curriculum.filter(c => c.grade === grade).forEach(c => { curBySubj[c.subject_name] = c; });
-        const gender = (subject) => (subject === 'P.E' && grade > 3) ? (isGirls(cls.name) ? 1 : (isBoys(cls.name) ? 2 : 0)) : 0;
+        const gender = (subject) => subject === 'P.E' ? peGroupOf(cls.name, grade) : 0;
 
         // Teaching assignments of this class are the source of truth (any teacher / subject / periods)
         const classAllocs = APP.allocations.filter(a => a.class_name === cls.name);
@@ -1650,27 +1699,35 @@ function generateTimetable() {
         // pad (should not happen once pre-check passes) / trim
         while (lessons.length < nS) lessons.push({ subject: 'Free', teacher: null, t: -1, ts: [], members: [{ subject: 'Free', teacher: null }], key: 'Free|null', maxPerDay: nS, gender: 0 });
         lessons.length = nS;
-        for (let i = nS - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [lessons[i], lessons[j]] = [lessons[j], lessons[i]]; }
-        grid.push(lessons);
+        // teacher-less P.E lessons are placed first on the ground schedule and never moved afterwards
+        lessons.forEach(L => { L.fixed = (L.subject === 'P.E' && L.ts.length === 0); });
+        base.push(lessons);
+        grid.push(new Array(nS));
     });
 
     // ---- state counters ------------------------------------------------------
     const nT = () => tMaxDaily.length;
-    let tSlot, tDay, cds, peG, peB;
+    const PE = getPeRules();
+    let tSlot, tDay, cds, peC;
     function resetCounters() {
         tSlot = Array.from({ length: nT() }, () => new Int16Array(nS));
         tDay  = Array.from({ length: nT() }, () => new Int16Array(nD));
         cds   = Array.from({ length: nC }, () => Array.from({ length: nD }, () => ({})));
-        peG = new Int16Array(nS); peB = new Int16Array(nS);
+        peC = [new Int16Array(nS), new Int16Array(nS), new Int16Array(nS)];
         for (let c = 0; c < nC; c++) for (let s = 0; s < nS; s++) addL(c, s, grid[c][s], 1);
     }
     function addL(c, s, L, k) {
         for (const t of L.ts) { tSlot[t][s] += k; tDay[t][dayOf(s)] += k; }
         cds[c][dayOf(s)][L.subject] = (cds[c][dayOf(s)][L.subject] || 0) + k;
-        if (L.gender === 1) peG[s] += k; else if (L.gender === 2) peB[s] += k;
+        if (L.gender) peC[L.gender - 1][s] += k;
     }
 
     // ---- cost pieces ---------------------------------------------------------
+    function peSlotPen(s) {   // classes on the ground in slot s: same group only, at most PE.cap
+        const g = peC[0][s], b = peC[1][s], m = peC[2][s], total = g + b + m;
+        if (total === 0) return 0;
+        return HARD * ((total - Math.max(g, b, m)) + Math.max(0, total - PE.cap));   // girls / boys / Grades 1-3 never share
+    }
     function pairPen(c, a) { // pair (a, a+1) inside the same day with same teacher
         if (a < 0 || a + 1 >= nS || dayOf(a) !== dayOf(a + 1)) return 0;
         const x = grid[c][a], y = grid[c][a + 1];
@@ -1679,6 +1736,7 @@ function generateTimetable() {
     function cellLocal(c, s) {  // penalties that depend only on this one cell
         const L = grid[c][s]; let p = 0;
         if (L.subject === 'Maths' && perOf(s) === lastP) p += HARD;
+        if (L.subject === 'P.E' && ((PE.avoidFirst && perOf(s) === 0) || (PE.avoidLast && perOf(s) === lastP))) p += HARD;
         return p;
     }
     function evalMove(c, s1, s2) {
@@ -1699,8 +1757,8 @@ function generateTimetable() {
             const over = (cds[c][d][L.subject] || 0) - L.maxPerDay;
             if (over > 0) p += HARD * over;
         }
-        // P.E gender mix
-        for (const s of [s1, s2]) if (peG[s] > 0 && peB[s] > 0) p += HARD * Math.min(peG[s], peB[s]);
+        // P.E ground rules (capacity + no boys/girls mix)
+        p += peSlotPen(s1) + peSlotPen(s2);
         // maths in last period
         p += cellLocal(c, s1) + cellLocal(c, s2);
         // adjacency
@@ -1734,7 +1792,7 @@ function generateTimetable() {
             }
             for (let s = 0; s < nS; s++) { if (cellLocal(c, s) > 0) h++; sft += pairPen(c, s) / 3; }
         }
-        for (let s = 0; s < nS; s++) if (peG[s] > 0 && peB[s] > 0) h += Math.min(peG[s], peB[s]);
+        for (let s = 0; s < nS; s++) h += peSlotPen(s) / HARD;
         return { hard: Math.round(h), soft: Math.round(sft) };
     }
     function cellBad(c, s) {
@@ -1742,22 +1800,71 @@ function generateTimetable() {
         for (const t of L.ts) if (tSlot[t][s] > 1 || tDay[t][dayOf(s)] > tMaxDaily[t]) return true;
         if ((cds[c][dayOf(s)][L.subject] || 0) > L.maxPerDay) return true;
         if (L.subject === 'Maths' && perOf(s) === lastP) return true;
-        if (L.gender && peG[s] > 0 && peB[s] > 0) return true;
+        if (L.gender && peSlotPen(s) > 0) return true;
         if (pairPen(c, s) > 0 || pairPen(c, s - 1) > 0) return true;
         return false;
+    }
+
+    // ---- P.E ground schedule: first/last period excluded, max PE.cap classes, never boys+girls together ----
+    function placePE() {
+        const slots = [];
+        for (let d = 0; d < nD; d++) for (let p = (PE.avoidFirst ? 1 : 0); p <= (PE.avoidLast ? nP - 2 : nP - 1); p++) slots.push(d * nP + p);
+        const items = { 1: [], 2: [], 3: [] };   // group -> [{c, L}]
+        base.forEach((lessons, c) => lessons.forEach(L => { if (L.fixed) items[L.gender || 3].push({ c, L }); }));
+        for (let attempt = 0; attempt < 300; attempt++) {
+            const pool = slots.slice();
+            for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+            const place = {};                    // class -> [{L, s}]
+            const used = {};                     // slot -> count
+            const classDays = {};                // c -> Set(day)
+            let ok = true, cursor = 0;
+            const put = (it, s) => {
+                used[s] = (used[s] || 0) + 1;
+                (classDays[it.c] = classDays[it.c] || new Set()).add(dayOf(s));
+                (place[it.c] = place[it.c] || []).push({ L: it.L, s });
+            };
+            const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+            // girls, boys and Grades 1-3: each group gets its own slots (never together)
+            for (const g of [1, 2, 3]) {
+                const list = shuffle(items[g].slice());
+                const need = Math.ceil(list.length / PE.cap);
+                if (cursor + need > pool.length) { ok = false; break; }
+                const mine = pool.slice(cursor, cursor + need); cursor += need;
+                for (const it of list) {
+                    const free = mine.filter(s => (used[s] || 0) < PE.cap && !(classDays[it.c] && classDays[it.c].has(dayOf(s))));
+                    if (!free.length) { ok = false; break; }
+                    put(it, free[Math.floor(Math.random() * free.length)]);
+                }
+                if (!ok) break;
+            }
+            if (ok) return place;
+        }
+        return null;
+    }
+    function initGrid() {
+        const place = placePE();
+        if (!place && base.some(ls => ls.some(L => L.fixed))) throw new Error('P.E cannot be scheduled with the current P.E rules (not enough ground slots). Raise "classes on the ground at once" in Settings → P.E Rules.');
+        base.forEach((lessons, c) => {
+            const row = grid[c];
+            for (let s = 0; s < nS; s++) row[s] = null;
+            (place && place[c] || []).forEach(x => { row[x.s] = x.L; });
+            const rest = lessons.filter(L => !L.fixed);
+            for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+            let k = 0;
+            for (let s = 0; s < nS; s++) if (!row[s]) row[s] = rest[k++];
+        });
     }
 
     // ---- search: min-conflicts (best swap for a conflicted cell) + noise + restarts ----
     const t0 = Date.now();
     const TIME_LIMIT = 15000;
-    const shuffleAll = () => grid.forEach(row => { for (let i = nS - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [row[i], row[j]] = [row[j], row[i]]; } });
     let best = null, bestHard = Infinity, attempt = 0;
     while (Date.now() - t0 < TIME_LIMIT) {
-        if (attempt > 0) shuffleAll();
+        initGrid();
         attempt++;
         resetCounters();
         const NOISE = 0.12;
-        const MAX_ITER = 40000;
+        const MAX_ITER = 12000;
         for (let iter = 0; iter < MAX_ITER; iter++) {
             if (iter % 400 === 0) {
                 const fc = fullCost();
@@ -1778,9 +1885,11 @@ function generateTimetable() {
             // try swapping with EVERY other slot of this class, keep the best
             let bestS2 = -1, bestD = Infinity, ties = 0;
             const A = grid[c][s1];
+            if (A.fixed) continue;
             for (let s2 = 0; s2 < nS; s2++) {
                 if (s2 === s1) continue;
                 const B = grid[c][s2];
+                if (B.fixed) continue;
                 if (A.key === B.key) continue;
                 const d = tryMove(c, s1, s2).delta;
                 swap(c, s1, s2);                      // undo
@@ -1790,7 +1899,7 @@ function generateTimetable() {
             if (bestS2 < 0) continue;
             if (bestD <= 0) swap(c, s1, bestS2);
             else if (Math.random() < NOISE) {         // escape local minimum with a random move
-                let r; do { r = Math.floor(Math.random() * nS); } while (r === s1);
+                let r; do { r = Math.floor(Math.random() * nS); } while (r === s1 || grid[c][r].fixed);
                 swap(c, s1, r);
             }
         }
@@ -2034,6 +2143,28 @@ function validateAndShowStatus() {
         }
     }
 
+    // P.E rule check (first/last period, ground capacity, boys/girls mixing)
+    const peIssues = [];
+    {
+        const rules = getPeRules();
+        const bySlot = {};
+        for (const cl in APP.schedule) {
+            const clsObj = APP.classes.find(c => c.name === cl);
+            const grade = clsObj ? (parseInt(clsObj.grade) || parseInt(cl) || 1) : 1;
+            for (const d in APP.schedule[cl]) for (const p in APP.schedule[cl][d]) {
+                const cell = APP.schedule[cl][d][p];
+                if (!cell || cell.subject !== 'P.E') continue;
+                const pi = parseInt(p);
+                if ((rules.avoidFirst && pi === APP.PERIODS[0]) || (rules.avoidLast && pi === lastPeriod)) peIssues.push(`${cl}: P.E in ${pi === lastPeriod ? 'last' : 'first'} period (${d})`);
+                (bySlot[d + '|' + p] = bySlot[d + '|' + p] || []).push({ cl, g: peGroupOf(cl, grade) });
+            }
+        }
+        for (const k in bySlot) {
+            const arr = bySlot[k], [d, p] = k.split('|');
+            if (new Set(arr.map(x => x.g)).size > 1) peIssues.push(`${d} P${p}: different groups on the ground together (${arr.map(x => x.cl).join(', ')})`);
+            else if (arr.length > rules.cap) peIssues.push(`${d} P${p}: ${arr.length} classes on the ground (max ${rules.cap}): ${arr.map(x => x.cl).join(', ')}`);
+        }
+    }
     const clashList = [];
     for (const k in slotTeacherMap) {
         if (slotTeacherMap[k] > 1) {
@@ -2075,6 +2206,7 @@ function validateAndShowStatus() {
                 Total Periods Placed: <strong style="color:var(--primary);">${totalScheduled}</strong>
             </div>
         </div>
+        ${peIssues.length ? `<div class="alert-warning" style="margin-top:10px;"><strong>P.E rule problems:</strong><br>${peIssues.slice(0, 8).join('<br>')}${peIssues.length > 8 ? '<br>…and ' + (peIssues.length - 8) + ' more' : ''}</div>` : `<div style="margin-top:8px; font-size:12.5px; font-weight:700; color:var(--success);">✅ P.E rules OK (not first/last period · max ${getPeRules().cap} classes on the ground · no boys/girls mix · Grades 1–3 only with Grades 1–3)</div>`}
         ${clashList.length ? `<div class="alert-warning" style="margin-top:10px;"><strong>Clashes to fix (click ⚡ Generate Timetable to rebuild with 0 clashes):</strong><br>${clashList.join('<br>')}</div>` : ''}
     `;
 }
@@ -2149,6 +2281,22 @@ function saveEditModal() {
         const other = Object.keys(APP.schedule).find(c => c !== cls && APP.schedule[c] && APP.schedule[c][day] &&
             cellHasTeacher(APP.schedule[c][day][period], teacher));
         if (other && !confirm(`⚠️ ${teacher} is already teaching ${other} on ${day} Period ${period}.\n\nSaving will create a CLASH. Save anyway?`)) return;
+    }
+
+    // P.E guard: first/last period, ground capacity, boys/girls mixing
+    if (subj === 'P.E') {
+        const rules = getPeRules();
+        const msgs = [];
+        const pi = parseInt(period);
+        if (rules.avoidFirst && pi === APP.PERIODS[0]) msgs.push('P.E should not be in the first period.');
+        if (rules.avoidLast && pi === APP.PERIODS[APP.PERIODS.length - 1]) msgs.push('P.E should not be in the last period.');
+        const clsObj = APP.classes.find(c => c.name === cls);
+        const myG = peGroupOf(cls, clsObj ? (parseInt(clsObj.grade) || parseInt(cls) || 1) : 1);
+        const others = Object.keys(APP.schedule).filter(c => c !== cls && APP.schedule[c][day] && APP.schedule[c][day][period] && APP.schedule[c][day][period].subject === 'P.E');
+        const mix = others.filter(c => { const o = APP.classes.find(x => x.name === c); return peGroupOf(c, o ? (parseInt(o.grade) || parseInt(c) || 1) : 1) !== myG; });
+        if (mix.length) msgs.push(`${mix.join(', ')} have P.E at the same time — boys/girls or junior (Grade 1–3) and senior classes would be mixed.`);
+        else if (others.length + 1 > rules.cap) msgs.push(`Already ${others.length} classes on the ground (max ${rules.cap}).`);
+        if (msgs.length && !confirm('⚠️ ' + msgs.join('\n') + '\n\nSave anyway?')) return;
     }
 
     if (!APP.schedule[cls]) APP.schedule[cls] = {};
@@ -3308,6 +3456,19 @@ function loadSettingsTab() {
 
     renderPeriodTimesTable();
     renderParallelGroups();
+    const pr = getPeRules();
+    document.getElementById('peAvoidFirst').checked = pr.avoidFirst;
+    document.getElementById('peAvoidLast').checked = pr.avoidLast;
+    document.getElementById('peMaxParallel').value = pr.cap;
+}
+async function savePeRules() {
+    const cap = Math.min(6, Math.max(1, parseInt(document.getElementById('peMaxParallel').value) || 2));
+    const vals = { pe_avoid_first: document.getElementById('peAvoidFirst').checked ? 'true' : 'false',
+                   pe_avoid_last: document.getElementById('peAvoidLast').checked ? 'true' : 'false',
+                   pe_max_parallel: String(cap) };
+    for (const k in vals) { await window.DB.saveSetting(k, vals[k]); APP.settings[k] = vals[k]; }
+    markTimetableOutdated();
+    showToast('P.E rules saved. Generate the timetable again.', 'success');
 }
 function renderParallelGroups() {
     const box = document.getElementById('parallelGroupsBox');
