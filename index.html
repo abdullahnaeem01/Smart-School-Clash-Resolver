@@ -978,9 +978,10 @@
     </div>
 
     <div class="card" style="padding:18px 20px;">
-      <h3 style="margin:0 0 8px;">3 · Assessment timetable</h3>
+      <h3 style="margin:0 0 4px;">3 · Full timetable (assessment days + regular days)</h3>
+      <p style="font-size:12.5px; color:var(--slate-600); margin:0 0 10px;">On an assessment day only 1–2 periods per class are assessments (yellow). The other periods are the class's regular lessons, arranged so no teacher is in two places at once.</p>
       <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-        <select id="asView" onchange="renderAssessResult()" style="width:auto;"><option value="class">By class / section</option><option value="day">By grade &amp; day (all sections)</option></select>
+        <select id="asView" onchange="renderAssessResult()" style="width:auto;"><option value="class">By class / section — full week</option><option value="day">By grade &amp; day — all sections</option></select>
         <select id="asClass" onchange="renderAssessResult()" style="width:auto;"></select>
         <select id="asDay" onchange="renderAssessResult()" style="width:auto; display:none;"></select>
       </div>
@@ -1355,7 +1356,7 @@ function asSolveDay(items, W, budgetMs) {
         const o = [];
         if (it.subs.length === 1) { for (let p = 1; p <= W; p++) o.push([p]); }
         else pairs.forEach(([a, b]) => { o.push([a, b]); o.push([b, a]); });
-        return o;
+        return it.blocked && it.blocked.size ? o.filter(x => !x.some(p => it.blocked.has(p))) : o;   // never on top of a P.E lesson
     };
     const tLoad = {};
     items.forEach(it => it.subs.forEach(s => { if (s.teacher) tLoad[s.teacher] = (tLoad[s.teacher] || 0) + 1; }));
@@ -1391,31 +1392,170 @@ function asSolveDay(items, W, budgetMs) {
     }
     return null;
 }
+// ---------------------------------------------------------------- full-day timetable for assessment days
+function asHasRegular() { return !!(APP.schedule && Object.keys(APP.schedule).length); }
+function asRegCell(cls, day, p) {
+    const c = APP.schedule && APP.schedule[cls] && APP.schedule[cls][day] ? APP.schedule[cls][day][p] : null;
+    return (c && c.subject) ? c : null;
+}
+function asRegularKey() {
+    const s = JSON.stringify(APP.schedule || {}); let h = 5381;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+    return String(h);
+}
+function asBlocked(cls, day) {
+    const set = new Set();
+    APP.PERIODS.forEach(p => { const c = asRegCell(cls, day, p); if (c && c.subject === 'P.E') set.add(p); });
+    return set;
+}
+const asCellTeachers = c => (c ? [c.teacher].concat((c.also || []).map(m => m.teacher)).filter(Boolean) : []);
+
+// Every class keeps the regular lessons of that day, except the ones replaced by assessments.
+// The remaining lessons are re-arranged (inside the class) so that no teacher is in two places at once.
+function asBuildDay(day, items, res, W, budgetMs) {
+    const P = APP.PERIODS, nP = P.length, names = APP.classes.map(c => c.name);
+    const assessOf = {};
+    items.forEach(it => { const o = res.get(it); assessOf[it.cls] = it.subs.map((s, k) => ({ subject: s.subject, teacher: s.teacher, period: o[k] })); });
+    const rows = {}, dropped = {};
+    names.forEach(cn => {
+        const reg = P.map(p => asRegCell(cn, day, p));
+        const A = assessOf[cn] || [];
+        const aIdx = new Set(A.map(a => P.indexOf(a.period)));
+        const row = new Array(nP).fill(null);
+        A.forEach(a => { row[P.indexOf(a.period)] = { kind: 'A', subject: a.subject, teacher: a.teacher, teachers: a.teacher ? [a.teacher] : [] }; });
+        const lessons = []; reg.forEach((c, i) => { if (c) lessons.push({ i, c }); });
+        const mk = c => ({ kind: c.subject === 'P.E' ? 'PE' : 'L', subject: c.subject, teacher: c.teacher || null, also: c.also || null, teachers: asCellTeachers(c), maths: c.subject === 'Maths' });
+        const k = A.length, drop = new Set(), assessed = new Set(A.map(a => a.subject));
+        // the lessons that disappear: first the assessed subjects' own lessons, then those sitting in the assessment slots
+        const pick = pred => {
+            while (drop.size < k) {
+                const cands = lessons.filter(x => !drop.has(x.i) && x.c.subject !== 'P.E' && pred(x));
+                if (!cands.length) break;
+                cands.sort((a, b) => (aIdx.has(b.i) ? 1 : 0) - (aIdx.has(a.i) ? 1 : 0));
+                drop.add(cands[0].i);
+            }
+        };
+        pick(x => assessed.has(x.c.subject)); pick(x => aIdx.has(x.i)); pick(() => true);
+        const kept = lessons.filter(x => !drop.has(x.i));
+        kept.filter(x => !aIdx.has(x.i)).forEach(x => { row[x.i] = mk(x.c); });
+        const empty = []; row.forEach((c, i) => { if (!c) empty.push(i); });
+        kept.filter(x => aIdx.has(x.i)).forEach((x, j) => { row[empty[j]] = mk(x.c); });
+        rows[cn] = row;
+        dropped[cn] = [...drop].sort((a, b) => a - b).map(i => cellLabel(reg[i]));
+    });
+
+    // ---- remove teacher clashes by swapping cells inside a class (assessments keep every rule)
+    const tc = {};
+    const inc = (i, t, d) => { const key = i + '|' + t; tc[key] = (tc[key] || 0) + d; };
+    names.forEach(cn => rows[cn].forEach((c, i) => { if (c) c.teachers.forEach(t => inc(i, t, 1)); }));
+    const bad = (cn, i) => {
+        const c = rows[cn][i];
+        if (!c) return false;
+        if (c.maths && c.kind === 'L' && i === nP - 1) return true;
+        return c.teachers.some(t => tc[i + '|' + t] > 1);
+    };
+    const okSwap = (cn, i, j) => {
+        const r = rows[cn], a = r[i], b = r[j];
+        if ((a && a.kind === 'PE') || (b && b.kind === 'PE')) return false;
+        if (a && a.maths && j === nP - 1) return false;
+        if (b && b.maths && i === nP - 1) return false;
+        const idx = [];
+        for (let s = 0; s < nP; s++) { const c = s === i ? b : (s === j ? a : r[s]); if (c && c.kind === 'A') idx.push(s); }
+        for (let x = 0; x < idx.length; x++) {
+            if (idx[x] >= W) return false;
+            for (let y = x + 1; y < idx.length; y++) if (Math.abs(idx[x] - idx[y]) < 2) return false;
+        }
+        return true;
+    };
+    const local = (i, j, ts) => {
+        let c = 0; const seen = new Set();
+        [i, j].forEach(s => ts.forEach(t => { const k = s + '|' + t; if (seen.has(k)) return; seen.add(k); const n = tc[k] || 0; if (n > 1) c += n - 1; }));
+        return c;
+    };
+    const doSwap = (cn, i, j) => {
+        const r = rows[cn], a = r[i], b = r[j];
+        if (a) a.teachers.forEach(t => inc(i, t, -1));
+        if (b) b.teachers.forEach(t => inc(j, t, -1));
+        r[i] = b; r[j] = a;
+        if (b) b.teachers.forEach(t => inc(i, t, 1));
+        if (a) a.teachers.forEach(t => inc(j, t, 1));
+    };
+    const deadline = Date.now() + (budgetMs || 1500);
+    for (let iter = 0; iter < 30000 && Date.now() < deadline; iter++) {
+        const list = [];
+        names.forEach(cn => rows[cn].forEach((c, i) => { if (c && bad(cn, i)) list.push([cn, i]); }));
+        if (!list.length) return { ok: true, rows, dropped };
+        const [cn, i] = list[Math.floor(Math.random() * list.length)];
+        const a = rows[cn][i];
+        let best = -1, bestD = Infinity, ties = 0;
+        for (let j = 0; j < nP; j++) {
+            if (j === i || !okSwap(cn, i, j)) continue;
+            const b = rows[cn][j];
+            const ts = new Set([...(a ? a.teachers : []), ...(b ? b.teachers : [])]);
+            const before = local(i, j, ts);
+            doSwap(cn, i, j); const after = local(i, j, ts); doSwap(cn, i, j);
+            const d = after - before;
+            if (d < bestD) { bestD = d; best = j; ties = 1; } else if (d === bestD && Math.random() < 1 / (++ties)) best = j;
+        }
+        if (best < 0) continue;
+        if (bestD <= 0 || Math.random() < 0.08) doSwap(cn, i, best);
+    }
+    const left = [];
+    names.forEach(cn => rows[cn].forEach((c, i) => { if (c && bad(cn, i)) left.push({ cls: cn, period: P[i], subject: c.subject, teacher: c.teachers.find(t => tc[i + '|' + t] > 1) || null }); }));
+    return left.length ? { ok: false, left } : { ok: true, rows, dropped };
+}
+const asRowToJson = (row, P) => row.map((c, i) => c
+    ? { p: P[i], kind: c.kind === 'A' ? 'assessment' : 'lesson', subject: c.subject, teacher: c.teacher || null, also: c.also || undefined }
+    : { p: P[i], kind: 'free' });
 function asGenerate(plan) {
-    const W = asW(plan);
-    const schedule = { classes: {}, published: false, generated_at: new Date().toISOString(), plan_key: asPlanKey(plan), window: W };
+    const W = asW(plan), P = APP.PERIODS, regular = asHasRegular();
+    const schedule = { classes: {}, full: regular ? {} : null, dropped: {}, published: false, generated_at: new Date().toISOString(),
+        plan_key: asPlanKey(plan), regular_key: regular ? asRegularKey() : null, window: W };
     const failures = [];
     APP.classes.forEach(c => { schedule.classes[c.name] = {}; });
     APP.DAYS.forEach(day => {
         const items = [];
         APP.classes.forEach(cls => {
             const subs = asPlanOf(plan, asGradeOf(cls), day);
-            if (subs.length) items.push({ cls: cls.name, grade: asGradeOf(cls), subs: subs.map(s => ({ subject: s, teacher: asTeacher(cls.name, s) })) });
+            if (subs.length) items.push({ cls: cls.name, grade: asGradeOf(cls), subs: subs.map(s => ({ subject: s, teacher: asTeacher(cls.name, s) })), blocked: regular ? asBlocked(cls.name, day) : new Set() });
         });
         if (!items.length) return;
-        const res = asSolveDay(items, W);
+        let res = null, build = null, nulls = 0;
+        const t0 = Date.now();
+        for (let attempt = 0; attempt < 60 && Date.now() - t0 < 8000; attempt++) {
+            const r = asSolveDay(items, W, 1500);
+            if (!r) { if (++nulls >= 3) break; continue; }
+            res = r;
+            if (!regular) { build = { ok: true }; break; }
+            build = asBuildDay(day, items, r, W, 1200);
+            if (build.ok) break;
+        }
         if (!res) {
             const byT = {};
             items.forEach(it => it.subs.forEach(s => { if (s.teacher) (byT[s.teacher] = byT[s.teacher] || []).push(`${it.cls} ${s.subject}`); }));
-            const busy = Object.entries(byT).sort((a, b) => b[1].length - a[1].length).slice(0, 3)
-                .map(([t, l]) => `${t} (${l.length}: ${l.join(', ')})`).join('; ');
-            failures.push({ level: 'error', day, msg: `${day}: the assessments cannot all fit into Periods 1–${W} with a free period between two assessments of a class. Busiest teachers: ${busy || '—'}. Move a subject to another day or reduce the load of those teachers.` });
+            const busy = Object.entries(byT).sort((a, b) => b[1].length - a[1].length).slice(0, 3).map(([t, l]) => `${t} (${l.length}: ${l.join(', ')})`).join('; ');
+            failures.push({ level: 'error', day, msg: `${day}: the assessments cannot all fit into Periods 1–${W} with a free period between two assessments of a class (and not on a P.E period). Busiest teachers: ${busy || '—'}. Move a subject to another day or reduce the load of those teachers.` });
+            return;
+        }
+        if (!build || !build.ok) {
+            const ex = (build && build.left ? build.left : []).slice(0, 4).map(x => `${x.cls} Period ${x.period} ${x.subject}${x.teacher ? ' (' + x.teacher + ')' : ''}`).join('; ');
+            failures.push({ level: 'error', day, msg: `${day}: the full-day timetable could not be completed without a teacher being in two classes at once${ex ? ' — e.g. ' + ex : ''}. Move one of that day's assessments to another day.` });
             return;
         }
         items.forEach(it => {
             const o = res.get(it);
-            schedule.classes[it.cls][day] = it.subs.map((s, k) => ({ subject: s.subject, period: o[k], teacher: s.teacher })).sort((a, b) => a.period - b.period);
+            // with a regular timetable the FINAL day timetable is the truth (the repair step may move an assessment to another valid period)
+            schedule.classes[it.cls][day] = regular
+                ? build.rows[it.cls].map((c, i) => c && c.kind === 'A' ? { subject: c.subject, period: P[i], teacher: c.teacher } : null).filter(Boolean).sort((a, b) => a.period - b.period)
+                : it.subs.map((s, k) => ({ subject: s.subject, period: o[k], teacher: s.teacher })).sort((a, b) => a.period - b.period);
         });
+        if (regular) {
+            schedule.full[day] = {}; schedule.dropped[day] = {};
+            APP.classes.forEach(c => {
+                schedule.full[day][c.name] = asRowToJson(build.rows[c.name], P);
+                if (build.dropped[c.name] && build.dropped[c.name].length) schedule.dropped[day][c.name] = build.dropped[c.name];
+            });
+        }
     });
     return { schedule, failures };
 }
@@ -1444,6 +1584,33 @@ function asValidateSchedule(schedule, plan) {
     Object.keys(slot).forEach(k => {
         if (slot[k].length > 1) { const [day, p, t] = k.split('|'); issues.push({ level: 'error', day, teacher: t, msg: `${day} Period ${p}: ${t} is needed in ${slot[k].join(' and ')} at the same time.` }); }
     });
+
+    // ---- full-day timetables of the assessment days
+    if (schedule.full) {
+        const nP = APP.PERIODS.length;
+        Object.keys(schedule.full).forEach(day => {
+            const seen = {};
+            APP.classes.forEach(cls => {
+                const row = schedule.full[day][cls.name];
+                if (!row || row.length !== nP) { issues.push({ level: 'error', cls: cls.name, day, msg: `${cls.name} · ${day}: the full-day timetable is incomplete.` }); return; }
+                const A = row.filter(c => c.kind === 'assessment'), listed = (((schedule.classes || {})[cls.name] || {})[day] || []);
+                if (A.length !== listed.length || A.some(a => !listed.some(x => x.subject === a.subject && x.period === a.p)))
+                    issues.push({ level: 'error', cls: cls.name, day, msg: `${cls.name} · ${day}: the day timetable does not match the assessment periods.` });
+                row.forEach(c => {
+                    if (c.kind === 'lesson' && c.subject === 'Maths' && c.p === APP.PERIODS[nP - 1]) issues.push({ level: 'error', cls: cls.name, day, subject: 'Maths', msg: `${cls.name} · ${day}: a Maths lesson is in the last period.` });
+                    asCellTeachers(c).forEach(t => { const k = c.p + '|' + t; (seen[k] = seen[k] || []).push(`${cls.name} ${c.subject}${c.kind === 'assessment' ? ' (assessment)' : ''}`); });
+                    if (c.kind === 'lesson' && c.subject === 'P.E') { const rc = asRegCell(cls.name, day, c.p); if (!rc || rc.subject !== 'P.E') issues.push({ level: 'error', cls: cls.name, day, msg: `${cls.name} · ${day}: P.E was moved from its regular period.` }); }
+                });
+                // lessons must come from that class's regular timetable of the day
+                const pool = {}; APP.PERIODS.forEach(p => { const rc = asRegCell(cls.name, day, p); if (rc) { const k = cellLabel(rc) + '|' + cellTeacherLabel(rc); pool[k] = (pool[k] || 0) + 1; } });
+                row.filter(c => c.kind === 'lesson').forEach(c => { const k = cellLabel(c) + '|' + cellTeacherLabel(c); if (!pool[k]) issues.push({ level: 'error', cls: cls.name, day, subject: c.subject, msg: `${cls.name} · ${day} · ${c.subject}: this lesson is not in the regular timetable.` }); else pool[k]--; });
+            });
+            Object.keys(seen).forEach(k => { if (seen[k].length > 1) { const [p, t] = k.split('|'); issues.push({ level: 'error', day, teacher: t, msg: `${day} Period ${p}: ${t} is in two classes at once (${seen[k].join(' and ')}).` }); } });
+        });
+        if (schedule.regular_key !== asRegularKey()) issues.push({ level: 'error', msg: 'The regular weekly timetable was changed after the assessment timetable was generated. Generate it again.' });
+    } else if (asHasRegular()) {
+        issues.push({ level: 'error', msg: 'The full-day timetables for the assessment days are missing. Press Generate again.' });
+    }
     return issues;
 }
 
@@ -1483,7 +1650,7 @@ async function asSetWindow() {
 function renderAssessStatus() {
     const plan = asGetPlan(), sch = asGetSchedule(), W = asW(plan);
     const has = sch.classes && Object.values(sch.classes).some(c => Object.keys(c).length);
-    const stale = has && sch.plan_key !== asPlanKey(plan);
+    const stale = has && (sch.plan_key !== asPlanKey(plan) || (sch.full && sch.regular_key !== asRegularKey()));
     let html;
     if (!has) html = '<span class="tag">No timetable yet</span>';
     else if (stale) html = '<span class="tag" style="background:#fef3c7; color:#92400e;">⚠️ Plan changed — generate again</span>';
@@ -1564,20 +1731,29 @@ async function asDoGenerate() {
     }
     const { schedule, failures } = asGenerate(plan);
     if (failures.length) {
-        asShowMessages(asIssuesHtml(failures.concat(planIssues), '') + '<div style="font-size:12.5px;">The rules (periods 1–' + asW(plan) + ' only, free period between two assessments, max 2 per day) were NOT relaxed, so nothing was generated.</div>');
+        asShowMessages(asIssuesHtml(failures.concat(planIssues), '') + '<div style="font-size:12.5px;">The rules (periods 1–' + asW(plan) + ' only, free period between two assessments, max 2 per day, no teacher in two classes) were NOT relaxed, so nothing was generated.</div>');
         showToast('Cannot fit all assessments within the rules.', 'error'); return;
     }
     const bad = asValidateSchedule(schedule, plan);
     if (bad.length) { asShowMessages(asIssuesHtml(bad, '')); showToast('Generated schedule failed validation — not saved.', 'error'); return; }
     await asSaveSchedule(schedule);
-    asShowMessages(asIssuesHtml(planIssues, 'Assessment timetable generated. Every class follows the one-period-gap rule.') + (planIssues.length ? '<div class="alert-success" style="padding:10px 14px; border-radius:8px;">✅ Assessment timetable generated. Every class follows the one-period-gap rule.</div>' : ''));
+    let note = '';
+    if (schedule.full) {
+        const days = Object.keys(schedule.full).length;
+        const lost = Object.values(schedule.dropped).reduce((n, d) => n + Object.values(d).reduce((m, l) => m + l.length, 0), 0);
+        note = `Full-day timetables were created for ${days} assessment day(s). On those days every class keeps its other lessons; ${lost} regular lesson(s) were replaced by assessments.`;
+    } else {
+        note = '⚠️ No regular weekly timetable exists yet. Generate it in the Timetable tab, then press Generate here again to get the full-day timetables.';
+    }
+    asShowMessages(asIssuesHtml(planIssues, 'Assessment timetable generated. Every class follows the one-period-gap rule.') + (planIssues.length ? '<div class="alert-success" style="padding:10px 14px; border-radius:8px;">✅ Assessment timetable generated. Every class follows the one-period-gap rule.</div>' : '') + `<div style="font-size:12.5px; margin-top:8px;">${note}</div>`);
     renderAssessResult(); renderAssessStatus();
     showToast('✅ Assessment timetable generated.', 'success');
 }
 async function asPublish() {
-    const plan = asGetPlan(), sch = asGetSchedule();
+    const sch = asGetSchedule();
     const has = sch.classes && Object.values(sch.classes).some(c => Object.keys(c).length);
     if (!has) { showToast('Generate the assessment timetable first.', 'error'); return; }
+    if (!asHasRegular()) { showToast('Generate the regular weekly timetable first (Timetable tab), then generate here again.', 'error'); asShowMessages(asIssuesHtml([{ level: 'error', msg: 'There is no regular weekly timetable, so the full-day timetables for the assessment days cannot be published.' }], '')); return; }
     const issues = asCheckRules();
     if (issues.some(i => i.level === 'error')) { showToast('Cannot publish: the rules are not satisfied.', 'error'); return; }
     sch.published = true; sch.published_at = new Date().toISOString();
@@ -1588,70 +1764,91 @@ async function asPublish() {
 // manual change of ONE assessment's period (the gap rule can never be broken)
 async function asMove(el) {
     const cls = el.dataset.cls, day = el.dataset.day, sub = el.dataset.subject, np = parseInt(el.value);
-    const plan = asGetPlan(), sch = asGetSchedule();
+    const plan = asGetPlan(), sch = JSON.parse(JSON.stringify(asGetSchedule()));
     const list = sch.classes[cls][day];
-    const item = list.find(x => x.subject === sub);
-    const old = item.period;
-    item.period = np;
-    list.sort((a, b) => a.period - b.period);
-    const probs = asValidateSchedule(sch, plan).filter(i => i.cls === cls && i.day === day);
-    const clash = asValidateSchedule(sch, plan).filter(i => i.teacher && i.day === day && i.msg.includes(cls));
-    if (probs.length) {
-        item.period = old; list.sort((a, b) => a.period - b.period);
-        showToast('Not allowed: ' + probs[0].msg, 'error'); renderAssessResult(); return;
+    const item = list.find(x => x.subject === sub), old = item.period;
+    if (np === old) return;
+    const refuse = msg => { showToast('Not allowed: ' + msg, 'error'); renderAssessResult(); };
+    if (sch.full && sch.full[day] && sch.full[day][cls]) {
+        const row = sch.full[day][cls];
+        const a = row.find(c => c.kind === 'assessment' && c.subject === sub), b = row.find(c => c.p === np);
+        if (!a || !b) return refuse('that period does not exist.');
+        if (b.kind === 'assessment') return refuse('another assessment of this class is already in Period ' + np + '.');
+        if (b.kind === 'lesson' && b.subject === 'P.E') return refuse('a P.E lesson is in Period ' + np + '.');
+        const ai = row.indexOf(a), bi = row.indexOf(b), ca = Object.assign({}, a), cb = Object.assign({}, b);
+        row[ai] = Object.assign({}, cb, { p: a.p }); row[bi] = Object.assign({}, ca, { p: b.p });   // the lesson goes to the old assessment period
     }
-    if (clash.length) {   // a teacher cannot be in two classes at once
-        item.period = old; list.sort((a, b) => a.period - b.period);
-        showToast('Not allowed: ' + clash[0].msg, 'error'); renderAssessResult(); return;
-    }
+    item.period = np; list.sort((x, y) => x.period - y.period);
+    const probs = asValidateSchedule(sch, plan).filter(i => i.level === 'error' && ((i.cls === cls && i.day === day) || (i.day === day && i.teacher)));
+    if (probs.length) return refuse(probs[0].msg);
     sch.published = false; delete sch.published_at;
     await asSaveSchedule(sch);
     renderAssessResult(); renderAssessStatus();
     showToast('Period changed.', 'success');
 }
 function renderAssessResult() {
-    const plan = asGetPlan(), sch = asGetSchedule(), W = asW(plan);
+    const plan = asGetPlan(), sch = asGetSchedule(), W = asW(plan), P = APP.PERIODS;
     const box = document.getElementById('asResult');
     const has = sch.classes && Object.values(sch.classes).some(c => Object.keys(c).length);
     if (!has) { box.innerHTML = '<p style="color:var(--slate-400); text-align:center; padding:18px;">No assessment timetable yet. Select the subjects above and press <strong>Generate</strong>.</p>'; return; }
+    const brk = parseInt(APP.settings.break_after_period) || 3;
+    const head = P.map(p => `<th>Period ${p}</th>` + (p === brk ? '<th style="width:30px;">☕</th>' : '')).join('');
+    const brkCell = '<td style="background:var(--slate-100); text-align:center; font-size:11px;">☕</td>';
+    const cellHtml = (cls, day, p) => {
+        const row = sch.full && sch.full[day] && sch.full[day][cls];
+        const c = row ? row.find(x => x.p === p) : null;
+        if (c && c.kind === 'assessment') {
+            return `<td style="background:#fef3c7; border-left:3px solid #f59e0b;"><strong>📝 ${asEsc(c.subject)}</strong><br><small>${asEsc(c.teacher || 'No teacher')}</small><br><small style="color:#92400e; font-weight:700;">ASSESSMENT</small><br>
+                <select data-cls="${asEsc(cls)}" data-day="${day}" data-subject="${asEsc(c.subject)}" onchange="asMove(this)" style="font-size:11px; padding:1px 2px; width:auto;">${Array.from({ length: W }, (_, i) => i + 1).map(q => `<option value="${q}" ${q === p ? 'selected' : ''}>P${q}</option>`).join('')}</select></td>`;
+        }
+        if (c && c.kind === 'lesson') return `<td><strong>${asEsc(cellLabel(c))}</strong><br><small>${asEsc(cellTeacherLabel(c))}</small></td>`;
+        if (c) return '<td style="color:var(--slate-400); text-align:center;">—</td>';
+        // not an assessment day for this class: show its regular lesson
+        const rc = asRegCell(cls, day, p);
+        if (rc) return `<td><strong>${asEsc(cellLabel(rc))}</strong><br><small>${asEsc(cellTeacherLabel(rc))}</small></td>`;
+        const a = (((sch.classes || {})[cls] || {})[day] || []).find(x => x.period === p);
+        return a ? `<td style="background:#fef3c7;"><strong>📝 ${asEsc(a.subject)}</strong><br><small>${asEsc(a.teacher || '')}</small></td>` : '<td style="color:var(--slate-400); text-align:center;">—</td>';
+    };
+    const droppedNote = (cls, days) => {
+        const lines = days.filter(d => sch.dropped && sch.dropped[d] && sch.dropped[d][cls]).map(d => `<li><strong>${d}:</strong> ${sch.dropped[d][cls].map(asEsc).join(', ')}</li>`);
+        return lines.length ? `<details style="margin-top:10px; font-size:12.5px;"><summary style="cursor:pointer; font-weight:600;">Regular lessons replaced by assessments (${cls})</summary><ul style="margin:6px 0 0 18px;">${lines.join('')}</ul></details>` : '';
+    };
     const mode = document.getElementById('asView').value;
-    const cols = Array.from({ length: W }, (_, i) => i + 1);
     if (mode === 'class') {
         const cls = document.getElementById('asClass').value || APP.classes[0].name;
         document.getElementById('asClass').style.display = '';
         document.getElementById('asDay').style.display = 'none';
-        box.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%; min-width:560px;"><thead><tr><th>Day</th>${cols.map(p => `<th>Period ${p}</th>`).join('')}<th>After the break</th></tr></thead><tbody>
-            ${APP.DAYS.map(day => {
-                const list = (sch.classes[cls] || {})[day] || [];
-                return `<tr><td><strong>${day}</strong></td>${cols.map(p => {
-                    const x = list.find(a => a.period === p);
-                    if (!x) return `<td style="color:var(--slate-400); text-align:center;">${list.length ? 'Free' : '—'}</td>`;
-                    return `<td style="background:var(--primary-light, #e0e7ff);"><strong>${asEsc(x.subject)}</strong><br><small>${asEsc(x.teacher || 'No teacher')}</small><br>
-                        <select data-cls="${asEsc(cls)}" data-day="${day}" data-subject="${asEsc(x.subject)}" onchange="asMove(this)" style="font-size:11px; padding:1px 2px; width:auto;">${cols.map(q => `<option value="${q}" ${q === p ? 'selected' : ''}>P${q}</option>`).join('')}</select></td>`;
-                }).join('')}<td style="color:var(--slate-400); text-align:center; font-size:12px;">no assessments</td></tr>`;
-            }).join('')}</tbody></table></div>`;
+        const adays = APP.DAYS.filter(d => (((sch.classes || {})[cls] || {})[d] || []).length);
+        box.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%; min-width:760px;"><thead><tr><th>Day</th>${head}</tr></thead><tbody>
+            ${APP.DAYS.map(day => `<tr><td><strong>${day}</strong>${adays.includes(day) ? '<br><span class="tag tag-primary" style="font-size:10px;">📝 Assessment day</span>' : ''}</td>${P.map(p => cellHtml(cls, day, p) + (p === brk ? brkCell : '')).join('')}</tr>`).join('')}
+            </tbody></table></div>${droppedNote(cls, adays)}`;
     } else {
         const grade = parseInt(document.getElementById('asGrade').value) || asGradeOf(APP.classes[0]);
         const day = document.getElementById('asDay').value || APP.DAYS[0];
         document.getElementById('asClass').style.display = 'none';
         document.getElementById('asDay').style.display = '';
         const secs = APP.classes.filter(c => asGradeOf(c) === grade);
-        box.innerHTML = `<p style="font-size:12.5px; color:var(--slate-600);">Grade ${grade} · ${day} (grade chosen in the plan above)</p><div style="overflow-x:auto;"><table style="width:100%; min-width:520px;"><thead><tr><th>Section</th>${cols.map(p => `<th>Period ${p}</th>`).join('')}</tr></thead><tbody>
-            ${secs.map(c => { const list = (sch.classes[c.name] || {})[day] || [];
-                return `<tr><td><strong>${asEsc(c.name)}</strong></td>${cols.map(p => { const x = list.find(a => a.period === p); return x ? `<td style="background:var(--primary-light, #e0e7ff);"><strong>${asEsc(x.subject)}</strong><br><small>${asEsc(x.teacher || 'No teacher')}</small></td>` : `<td style="color:var(--slate-400); text-align:center;">${list.length ? 'Free' : '—'}</td>`; }).join('')}</tr>`; }).join('')}
+        const isA = secs.some(c => (((sch.classes || {})[c.name] || {})[day] || []).length);
+        box.innerHTML = `<p style="font-size:12.5px; color:var(--slate-600);">Grade ${grade} · ${day}${isA ? ' · 📝 assessment day' : ' · no assessments'} (grade chosen in the plan above)</p><div style="overflow-x:auto;"><table style="width:100%; min-width:760px;"><thead><tr><th>Section</th>${head}</tr></thead><tbody>
+            ${secs.map(c => `<tr><td><strong>${asEsc(c.name)}</strong></td>${P.map(p => cellHtml(c.name, day, p) + (p === brk ? brkCell : '')).join('')}</tr>`).join('')}
             </tbody></table></div>`;
     }
 }
 function asExportCsv() {
-    const sch = asGetSchedule(), rows = [['Grade', 'Class', 'Day', 'Period', 'Subject', 'Teacher']];
-    APP.classes.forEach(c => APP.DAYS.forEach(d => (((sch.classes || {})[c.name] || {})[d] || []).forEach(x => rows.push([asGradeOf(c), c.name, d, x.period, x.subject, x.teacher || '']))));
+    const sch = asGetSchedule(), rows = [['Grade', 'Class', 'Day', 'Period', 'Type', 'Subject', 'Teacher']];
+    APP.classes.forEach(c => APP.DAYS.forEach(d => {
+        const full = sch.full && sch.full[d] && sch.full[d][c.name];
+        if (full) full.forEach(x => rows.push([asGradeOf(c), c.name, d, x.p, x.kind === 'assessment' ? 'Assessment' : (x.kind === 'lesson' ? 'Lesson' : 'Free'), x.kind === 'free' ? '' : cellLabel(x), x.kind === 'free' ? '' : cellMembers(x).map(m => m.teacher || '').join(' / ')]));
+        else (((sch.classes || {})[c.name] || {})[d] || []).forEach(x => rows.push([asGradeOf(c), c.name, d, x.period, 'Assessment', x.subject, x.teacher || '']));
+    }));
     if (rows.length === 1) { showToast('Nothing to export yet.', 'error'); return; }
     const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = 'assessment_timetable.csv';
+    a.download = 'assessment_days_full_timetable.csv';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
+
 
 // =============================================================================
 // DATABASE STATUS
