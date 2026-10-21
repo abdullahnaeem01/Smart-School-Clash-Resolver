@@ -1357,9 +1357,9 @@
                 try {
                     const { error } = await client.from('school_settings')
                         .upsert({ key, value: String(value) }, { onConflict: 'key' });
-                    if (error) console.warn('Supabase saveSetting error:', error);
+                    if (error) this._fail('saveSetting ' + key, error);
                 } catch (e) {
-                    console.warn('saveSetting error:', e);
+                    this._fail('saveSetting ' + key, e);
                 }
             }
             const settings = JSON.parse(localStorage.getItem('SCH_SETTINGS') || '{}');

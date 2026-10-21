@@ -724,6 +724,7 @@
     <button class="nav-tab" id="tabBtn-substitutions" onclick="switchTab('substitutions')">
       🔄 Substitutions <span class="tab-badge" id="countSubstitutionsBadge">0</span>
     </button>
+    <button class="nav-tab" id="tabBtn-assessments" onclick="switchTab('assessments')">📝 Assessments</button>
     <button class="nav-tab" id="tabBtn-settings" onclick="switchTab('settings')">⚙️ Settings</button>
   </div>
 
@@ -944,6 +945,49 @@
   </div>
 
   <!-- TAB 6: SETTINGS -->
+  <div id="tab-assessments" class="tab-content">
+    <div class="card" style="padding:18px 20px; margin-bottom:14px;">
+      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
+        <h3 style="margin:0;">📝 Assessment Timetable</h3>
+        <div id="asStatus"></div>
+      </div>
+      <p id="asRules" style="font-size:12.5px; color:var(--slate-600); margin:8px 0;"></p>
+      <label style="font-weight:600; font-size:13px;">Assessment periods before the break:
+        <input type="number" id="asWindow" min="1" max="7" value="4" style="width:70px;" onchange="asSetWindow()"></label>
+    </div>
+
+    <div class="card" style="padding:18px 20px; margin-bottom:14px;">
+      <h3 style="margin:0 0 8px;">1 · Choose the assessments</h3>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <select id="asGrade" onchange="renderAssessPlanGrid(); renderAssessResult();" style="width:auto;"></select>
+        <button class="btn-outline" onclick="asCopyToAll()">📋 Copy this plan to all grades</button>
+        <button class="btn-outline" onclick="asClearGrade()">🗑 Clear this grade</button>
+      </div>
+      <div id="asPlanGrid"></div>
+    </div>
+
+    <div class="card" style="padding:18px 20px; margin-bottom:14px;">
+      <h3 style="margin:0 0 8px;">2 · Check, generate and publish</h3>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+        <button class="btn-outline" onclick="asCheckRules()">🔍 Check rules</button>
+        <button class="btn-primary" onclick="asDoGenerate()">⚡ Generate Assessment Timetable</button>
+        <button class="btn-primary" onclick="asPublish()">📣 Publish</button>
+        <button class="btn-outline" onclick="asExportCsv()">⬇ Export CSV</button>
+      </div>
+      <div id="asMessages"></div>
+    </div>
+
+    <div class="card" style="padding:18px 20px;">
+      <h3 style="margin:0 0 8px;">3 · Assessment timetable</h3>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+        <select id="asView" onchange="renderAssessResult()" style="width:auto;"><option value="class">By class / section</option><option value="day">By grade &amp; day (all sections)</option></select>
+        <select id="asClass" onchange="renderAssessResult()" style="width:auto;"></select>
+        <select id="asDay" onchange="renderAssessResult()" style="width:auto; display:none;"></select>
+      </div>
+      <div id="asResult"></div>
+    </div>
+  </div>
+
   <div id="tab-settings" class="tab-content">
     <div class="card" style="max-width:650px; padding:24px;">
       <h2 style="margin:0 0 20px; font-size:19px; color:var(--primary-dark);">⚙️ School Settings</h2>
@@ -1220,6 +1264,396 @@ const APP = {
 };
 
 // =============================================================================
+// ASSESSMENTS  (mandatory rules, never relaxed)
+//  - every assessment is inside Periods 1..W (the periods BEFORE the break, default 4)
+//  - a class has at most 2 assessments per day
+//  - two assessments on one day need at least ONE free period between them
+//    (for 4 periods the only valid pairs are 1&3, 1&4, 2&4)
+//  - the same plan applies to every section of a grade; the periods may differ per section
+// =============================================================================
+const AS_PLAN_KEY = 'assessment_plan';
+const AS_SCHED_KEY = 'assessment_schedule';
+
+function asParse(key, fallback) {
+    try {
+        const raw = APP.settings && APP.settings[key];
+        if (raw) { const v = typeof raw === 'string' ? JSON.parse(raw) : raw; if (v && typeof v === 'object') return v; }
+    } catch (e) {}
+    return fallback;
+}
+function asGetPlan() {
+    const p = asParse(AS_PLAN_KEY, { window: 4, grades: {} });
+    if (!p.grades) p.grades = {};
+    p.window = Math.min(APP.PERIODS.length, Math.max(1, parseInt(p.window) || 4));
+    return p;
+}
+function asGetSchedule() { return asParse(AS_SCHED_KEY, { classes: {}, published: false }); }
+async function asSavePlan(plan) {
+    const json = JSON.stringify(plan);
+    APP.settings[AS_PLAN_KEY] = json;
+    await window.DB.saveSetting(AS_PLAN_KEY, json);
+}
+async function asSaveSchedule(sch) {
+    const json = JSON.stringify(sch);
+    APP.settings[AS_SCHED_KEY] = json;
+    await window.DB.saveSetting(AS_SCHED_KEY, json);
+}
+const asW = plan => Math.min(APP.PERIODS.length, Math.max(1, parseInt((plan || asGetPlan()).window) || 4));
+const asGradeOf = cls => parseInt(cls.grade) || parseInt(cls.name) || 1;
+const asEsc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+function asTeacher(clsName, subject) {
+    const a = APP.allocations.filter(x => x.class_name === clsName && x.subject_name === subject);
+    return a.length ? a[0].teacher_name : null;
+}
+// valid period pairs: at least one free period between them
+function asPairs(W) { const o = []; for (let a = 1; a <= W; a++) for (let b = a + 2; b <= W; b++) o.push([a, b]); return o; }
+function asGradeSubjects(grade) {
+    const names = [];
+    APP.curriculum.filter(c => c.grade === grade).forEach(c => { if (!names.includes(c.subject_name)) names.push(c.subject_name); });
+    APP.allocations.filter(a => { const c = APP.classes.find(x => x.name === a.class_name); return c && asGradeOf(c) === grade; })
+        .forEach(a => { if (!names.includes(a.subject_name)) names.push(a.subject_name); });
+    return names;
+}
+const asPlanOf = (plan, grade, day) => ((plan.grades[grade] || {})[day] || []);
+function asPlanKey(plan) { return JSON.stringify({ w: asW(plan), g: plan.grades }); }
+
+// ---------------------------------------------------------------- validate the PLAN (before generating)
+function asValidatePlan(plan) {
+    const W = asW(plan), issues = [], pairs = asPairs(W), load = {};
+    let planned = 0;
+    Object.keys(plan.grades).forEach(g => {
+        const grade = parseInt(g);
+        const classes = APP.classes.filter(c => asGradeOf(c) === grade);
+        APP.DAYS.forEach(day => {
+            const subs = asPlanOf(plan, grade, day);
+            if (!subs.length) return;
+            planned += subs.length;
+            if (new Set(subs).size !== subs.length) issues.push({ level: 'error', grade, day, msg: `Grade ${grade} · ${day}: the same subject is selected twice.` });
+            if (subs.length > 2) issues.push({ level: 'error', grade, day, msg: `Grade ${grade} · ${day}: ${subs.length} assessments selected (${subs.join(', ')}) — the maximum is 2 per day.` });
+            if (subs.length >= 2 && pairs.length === 0) issues.push({ level: 'error', grade, day, msg: `Grade ${grade} · ${day}: two assessments need a free period between them, but there are only ${W} period(s) before the break.` });
+            classes.forEach(cls => subs.forEach(sub => {
+                const t = asTeacher(cls.name, sub);
+                if (!t) { issues.push({ level: 'warn', grade, day, cls: cls.name, subject: sub, msg: `${cls.name} · ${day} · ${sub}: no teacher assigned in Allocations (it will be scheduled without a teacher).` }); return; }
+                if (!load[day]) load[day] = {};
+                if (!load[day][t]) load[day][t] = [];
+                load[day][t].push(`${cls.name} ${sub}`);
+            }));
+        });
+    });
+    Object.keys(load).forEach(day => Object.keys(load[day]).forEach(t => {
+        if (load[day][t].length > W) issues.push({ level: 'error', day, teacher: t, msg: `${day}: ${t} has ${load[day][t].length} assessments (${load[day][t].join(', ')}) but only ${W} periods exist before the break — move some to another day.` });
+    }));
+    if (planned === 0) issues.push({ level: 'error', msg: 'No assessments are selected yet. Choose the subjects for each day in the plan above.' });
+    return issues;
+}
+
+// ---------------------------------------------------------------- generate
+function asSolveDay(items, W, budgetMs) {
+    const deadline = Date.now() + (budgetMs || 3000);
+    const pairs = asPairs(W);
+    const optionsOf = it => {
+        const o = [];
+        if (it.subs.length === 1) { for (let p = 1; p <= W; p++) o.push([p]); }
+        else pairs.forEach(([a, b]) => { o.push([a, b]); o.push([b, a]); });
+        return o;
+    };
+    const tLoad = {};
+    items.forEach(it => it.subs.forEach(s => { if (s.teacher) tLoad[s.teacher] = (tLoad[s.teacher] || 0) + 1; }));
+    const degree = it => it.subs.reduce((n, s) => n + (s.teacher ? tLoad[s.teacher] : 0), 0);
+    for (let attempt = 0; attempt < 25 && Date.now() < deadline; attempt++) {
+        const order = items.slice().sort((a, b) => (degree(b) - degree(a)) || (a.grade - b.grade) || (Math.random() - 0.5));
+        const used = new Set(), prefer = {}, result = new Map();
+        let nodes = 0;
+        const rec = i => {
+            if (i === order.length) return true;
+            if (++nodes > 40000) return false;
+            if ((nodes & 511) === 0 && Date.now() > deadline) return false;
+            const it = order[i];
+            let opts = optionsOf(it);
+            for (let k = opts.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [opts[k], opts[j]] = [opts[j], opts[k]]; }
+            const score = o => it.subs.reduce((n, s, k) => n + (prefer[it.grade + '|' + s.subject] === o[k] ? 1 : 0), 0);
+            opts = opts.map(o => ({ o, sc: score(o) })).sort((x, y) => y.sc - x.sc).map(x => x.o);   // same periods as the other sections when possible
+            for (const o of opts) {
+                const keys = it.subs.map((s, k) => s.teacher ? s.teacher + '|' + o[k] : null);
+                if (keys.some(k => k && used.has(k))) continue;
+                keys.forEach(k => k && used.add(k));
+                result.set(it, o);
+                const setNow = [];
+                it.subs.forEach((s, k) => { const pk = it.grade + '|' + s.subject; if (prefer[pk] === undefined) { prefer[pk] = o[k]; setNow.push(pk); } });
+                if (rec(i + 1)) return true;
+                setNow.forEach(pk => delete prefer[pk]);
+                keys.forEach(k => k && used.delete(k));
+                result.delete(it);
+            }
+            return false;
+        };
+        if (rec(0)) return result;
+    }
+    return null;
+}
+function asGenerate(plan) {
+    const W = asW(plan);
+    const schedule = { classes: {}, published: false, generated_at: new Date().toISOString(), plan_key: asPlanKey(plan), window: W };
+    const failures = [];
+    APP.classes.forEach(c => { schedule.classes[c.name] = {}; });
+    APP.DAYS.forEach(day => {
+        const items = [];
+        APP.classes.forEach(cls => {
+            const subs = asPlanOf(plan, asGradeOf(cls), day);
+            if (subs.length) items.push({ cls: cls.name, grade: asGradeOf(cls), subs: subs.map(s => ({ subject: s, teacher: asTeacher(cls.name, s) })) });
+        });
+        if (!items.length) return;
+        const res = asSolveDay(items, W);
+        if (!res) {
+            const byT = {};
+            items.forEach(it => it.subs.forEach(s => { if (s.teacher) (byT[s.teacher] = byT[s.teacher] || []).push(`${it.cls} ${s.subject}`); }));
+            const busy = Object.entries(byT).sort((a, b) => b[1].length - a[1].length).slice(0, 3)
+                .map(([t, l]) => `${t} (${l.length}: ${l.join(', ')})`).join('; ');
+            failures.push({ level: 'error', day, msg: `${day}: the assessments cannot all fit into Periods 1–${W} with a free period between two assessments of a class. Busiest teachers: ${busy || '—'}. Move a subject to another day or reduce the load of those teachers.` });
+            return;
+        }
+        items.forEach(it => {
+            const o = res.get(it);
+            schedule.classes[it.cls][day] = it.subs.map((s, k) => ({ subject: s.subject, period: o[k], teacher: s.teacher })).sort((a, b) => a.period - b.period);
+        });
+    });
+    return { schedule, failures };
+}
+
+// ---------------------------------------------------------------- validate the generated SCHEDULE (rules are never ignored)
+function asValidateSchedule(schedule, plan) {
+    const W = asW(plan), issues = [], slot = {};
+    APP.classes.forEach(cls => {
+        const grade = asGradeOf(cls);
+        APP.DAYS.forEach(day => {
+            const list = ((schedule.classes || {})[cls.name] || {})[day] || [];
+            const planned = asPlanOf(plan, grade, day);
+            const ps = list.map(x => x.period).sort((a, b) => a - b);
+            list.forEach(x => {
+                if (!(x.period >= 1 && x.period <= W)) issues.push({ level: 'error', cls: cls.name, day, subject: x.subject, msg: `${cls.name} · ${day} · ${x.subject}: Period ${x.period} is outside Periods 1–${W} (before the break).` });
+                if (x.teacher) { const k = day + '|' + x.period + '|' + x.teacher; (slot[k] = slot[k] || []).push(`${cls.name} ${x.subject}`); }
+            });
+            if (list.length > 2) issues.push({ level: 'error', cls: cls.name, day, msg: `${cls.name} · ${day}: ${list.length} assessments — the maximum is 2 per day.` });
+            for (let i = 1; i < ps.length; i++) {
+                if (ps[i] - ps[i - 1] < 2) issues.push({ level: 'error', cls: cls.name, day, msg: `${cls.name} · ${day}: assessments in Periods ${ps[i - 1]} and ${ps[i]} have no free period between them.` });
+            }
+            planned.forEach(s => { if (!list.some(x => x.subject === s)) issues.push({ level: 'error', cls: cls.name, day, subject: s, msg: `${cls.name} · ${day} · ${s}: planned but not scheduled.` }); });
+            list.forEach(x => { if (!planned.includes(x.subject)) issues.push({ level: 'error', cls: cls.name, day, subject: x.subject, msg: `${cls.name} · ${day} · ${x.subject}: scheduled but not in the plan.` }); });
+        });
+    });
+    Object.keys(slot).forEach(k => {
+        if (slot[k].length > 1) { const [day, p, t] = k.split('|'); issues.push({ level: 'error', day, teacher: t, msg: `${day} Period ${p}: ${t} is needed in ${slot[k].join(' and ')} at the same time.` }); }
+    });
+    return issues;
+}
+
+// ---------------------------------------------------------------- UI
+function asIssuesHtml(issues, okText) {
+    if (!issues.length) return `<div class="alert-success" style="padding:10px 14px; border-radius:8px;">✅ ${okText}</div>`;
+    const err = issues.filter(i => i.level === 'error'), warn = issues.filter(i => i.level !== 'error');
+    return (err.length ? `<div class="alert-warning" style="margin-bottom:8px;"><strong>❌ ${err.length} problem(s) to fix:</strong><br>${err.map(i => '• ' + i.msg).join('<br>')}</div>` : '')
+        + (warn.length ? `<div class="alert-warning" style="margin-bottom:8px; opacity:.9;"><strong>⚠️ ${warn.length} warning(s):</strong><br>${warn.slice(0, 12).map(i => '• ' + i.msg).join('<br>')}${warn.length > 12 ? `<br>…and ${warn.length - 12} more` : ''}</div>` : '');
+}
+function asShowMessages(html) { document.getElementById('asMessages').innerHTML = html; }
+
+function loadAssessmentsTab() {
+    const plan = asGetPlan();
+    document.getElementById('asWindow').value = asW(plan);
+    const sel = document.getElementById('asGrade');
+    const grades = [...new Set(APP.classes.map(asGradeOf))].sort((a, b) => a - b);
+    const keep = sel.value;
+    sel.innerHTML = grades.map(g => `<option value="${g}">Grade ${g} (${APP.classes.filter(c => asGradeOf(c) === g).length} sections)</option>`).join('');
+    if (keep && grades.includes(parseInt(keep))) sel.value = keep;
+    const cs = document.getElementById('asClass'), keepC = cs.value;
+    cs.innerHTML = APP.classes.map(c => `<option>${asEsc(c.name)}</option>`).join('');
+    if (keepC && APP.classes.some(c => c.name === keepC)) cs.value = keepC;
+    const ds = document.getElementById('asDay');
+    if (!ds.options.length) ds.innerHTML = APP.DAYS.map(d => `<option>${d}</option>`).join('');
+    renderAssessPlanGrid();
+    renderAssessResult();
+    renderAssessStatus();
+}
+async function asSetWindow() {
+    const plan = asGetPlan();
+    plan.window = Math.min(APP.PERIODS.length, Math.max(1, parseInt(document.getElementById('asWindow').value) || 4));
+    await asSavePlan(plan);
+    loadAssessmentsTab();
+    showToast('Assessment window saved. Generate the assessment timetable again.', 'success');
+}
+function renderAssessStatus() {
+    const plan = asGetPlan(), sch = asGetSchedule(), W = asW(plan);
+    const has = sch.classes && Object.values(sch.classes).some(c => Object.keys(c).length);
+    const stale = has && sch.plan_key !== asPlanKey(plan);
+    let html;
+    if (!has) html = '<span class="tag">No timetable yet</span>';
+    else if (stale) html = '<span class="tag" style="background:#fef3c7; color:#92400e;">⚠️ Plan changed — generate again</span>';
+    else if (sch.published) html = `<span class="tag tag-success">✅ Published ${new Date(sch.published_at).toLocaleString()}</span>`;
+    else html = '<span class="tag tag-primary">Draft (not published)</span>';
+    document.getElementById('asStatus').innerHTML = html;
+    document.getElementById('asRules').textContent = `Periods 1–${W} (before the break) · max 2 per class per day · a free period between two assessments (${asPairs(W).map(p => p.join('&')).join(', ') || 'none possible'})`;
+}
+function renderAssessPlanGrid() {
+    const plan = asGetPlan();
+    const grade = parseInt(document.getElementById('asGrade').value);
+    if (!grade) { document.getElementById('asPlanGrid').innerHTML = ''; return; }
+    const subs = asGradeSubjects(grade);
+    const secs = APP.classes.filter(c => asGradeOf(c) === grade).map(c => c.name);
+    document.getElementById('asPlanGrid').innerHTML = `
+        <p style="font-size:12.5px; color:var(--slate-600); margin:6px 0 10px;">This plan applies to every section: <strong>${secs.join(', ')}</strong>. Tick up to <strong>2 subjects per day</strong>.</p>
+        <div style="overflow-x:auto;"><table style="width:100%; min-width:520px;">
+        <thead><tr><th style="text-align:left;">Day</th>${subs.map(s => `<th style="text-align:center;">${asEsc(s)}</th>`).join('')}<th>Selected</th></tr></thead>
+        <tbody>${APP.DAYS.map(day => {
+            const chosen = asPlanOf(plan, grade, day);
+            return `<tr><td><strong>${day}</strong></td>${subs.map(s => `<td style="text-align:center;"><input type="checkbox" style="width:auto;" data-grade="${grade}" data-day="${day}" data-subject="${asEsc(s)}" ${chosen.includes(s) ? 'checked' : ''} onchange="asToggle(this)"></td>`).join('')}
+                <td style="text-align:center; font-weight:700; color:${chosen.length > 2 ? 'var(--danger)' : 'var(--slate-600)'};">${chosen.length}/2</td></tr>`;
+        }).join('')}</tbody></table></div>`;
+}
+async function asToggle(el) {
+    const plan = asGetPlan();
+    const grade = el.dataset.grade, day = el.dataset.day, sub = el.dataset.subject;
+    const cur = asPlanOf(plan, grade, day).slice();
+    if (el.checked) {
+        if (cur.length >= 2) { el.checked = false; showToast(`Maximum 2 assessments per day (Grade ${grade}, ${day}).`, 'error'); return; }
+        cur.push(sub);
+    } else { const i = cur.indexOf(sub); if (i >= 0) cur.splice(i, 1); }
+    if (!plan.grades[grade]) plan.grades[grade] = {};
+    plan.grades[grade][day] = cur;
+    await asSavePlan(plan);
+    renderAssessPlanGrid();
+    renderAssessStatus();
+}
+async function asClearGrade() {
+    const grade = document.getElementById('asGrade').value;
+    const plan = asGetPlan(); delete plan.grades[grade];
+    await asSavePlan(plan); renderAssessPlanGrid(); renderAssessStatus();
+}
+async function asCopyToAll() {
+    const grade = document.getElementById('asGrade').value;
+    const plan = asGetPlan(), src = plan.grades[grade] || {};
+    let skipped = 0;
+    [...new Set(APP.classes.map(asGradeOf))].forEach(g => {
+        if (String(g) === String(grade)) return;
+        const avail = asGradeSubjects(g);
+        plan.grades[g] = {};
+        APP.DAYS.forEach(day => {
+            const keep = (src[day] || []).filter(s => avail.includes(s));
+            skipped += (src[day] || []).length - keep.length;
+            if (keep.length) plan.grades[g][day] = keep;
+        });
+    });
+    await asSavePlan(plan); renderAssessPlanGrid(); renderAssessStatus();
+    showToast(`Plan copied to all grades${skipped ? ` (${skipped} subject(s) skipped where a grade does not have that subject)` : ''}.`, 'success');
+}
+function asCheckRules() {
+    const plan = asGetPlan(), sch = asGetSchedule();
+    let issues = asValidatePlan(plan);
+    const has = sch.classes && Object.values(sch.classes).some(c => Object.keys(c).length);
+    if (has) {
+        if (sch.plan_key !== asPlanKey(plan)) issues.push({ level: 'error', msg: 'The plan was changed after the assessment timetable was generated. Generate it again.' });
+        else issues = issues.concat(asValidateSchedule(sch, plan));
+    }
+    asShowMessages(asIssuesHtml(issues, 'All rules are satisfied.'));
+    return issues;
+}
+async function asDoGenerate() {
+    const plan = asGetPlan();
+    const planIssues = asValidatePlan(plan);
+    if (planIssues.some(i => i.level === 'error')) {
+        asShowMessages(asIssuesHtml(planIssues, '') + '<div style="font-size:12.5px;">Nothing was generated. Fix the problems above first.</div>');
+        showToast('Cannot generate: fix the problems shown first.', 'error'); return;
+    }
+    const { schedule, failures } = asGenerate(plan);
+    if (failures.length) {
+        asShowMessages(asIssuesHtml(failures.concat(planIssues), '') + '<div style="font-size:12.5px;">The rules (periods 1–' + asW(plan) + ' only, free period between two assessments, max 2 per day) were NOT relaxed, so nothing was generated.</div>');
+        showToast('Cannot fit all assessments within the rules.', 'error'); return;
+    }
+    const bad = asValidateSchedule(schedule, plan);
+    if (bad.length) { asShowMessages(asIssuesHtml(bad, '')); showToast('Generated schedule failed validation — not saved.', 'error'); return; }
+    await asSaveSchedule(schedule);
+    asShowMessages(asIssuesHtml(planIssues, 'Assessment timetable generated. Every class follows the one-period-gap rule.') + (planIssues.length ? '<div class="alert-success" style="padding:10px 14px; border-radius:8px;">✅ Assessment timetable generated. Every class follows the one-period-gap rule.</div>' : ''));
+    renderAssessResult(); renderAssessStatus();
+    showToast('✅ Assessment timetable generated.', 'success');
+}
+async function asPublish() {
+    const plan = asGetPlan(), sch = asGetSchedule();
+    const has = sch.classes && Object.values(sch.classes).some(c => Object.keys(c).length);
+    if (!has) { showToast('Generate the assessment timetable first.', 'error'); return; }
+    const issues = asCheckRules();
+    if (issues.some(i => i.level === 'error')) { showToast('Cannot publish: the rules are not satisfied.', 'error'); return; }
+    sch.published = true; sch.published_at = new Date().toISOString();
+    await asSaveSchedule(sch);
+    renderAssessStatus();
+    showToast('📣 Assessment timetable published.', 'success');
+}
+// manual change of ONE assessment's period (the gap rule can never be broken)
+async function asMove(el) {
+    const cls = el.dataset.cls, day = el.dataset.day, sub = el.dataset.subject, np = parseInt(el.value);
+    const plan = asGetPlan(), sch = asGetSchedule();
+    const list = sch.classes[cls][day];
+    const item = list.find(x => x.subject === sub);
+    const old = item.period;
+    item.period = np;
+    list.sort((a, b) => a.period - b.period);
+    const probs = asValidateSchedule(sch, plan).filter(i => i.cls === cls && i.day === day);
+    const clash = asValidateSchedule(sch, plan).filter(i => i.teacher && i.day === day && i.msg.includes(cls));
+    if (probs.length) {
+        item.period = old; list.sort((a, b) => a.period - b.period);
+        showToast('Not allowed: ' + probs[0].msg, 'error'); renderAssessResult(); return;
+    }
+    if (clash.length) {   // a teacher cannot be in two classes at once
+        item.period = old; list.sort((a, b) => a.period - b.period);
+        showToast('Not allowed: ' + clash[0].msg, 'error'); renderAssessResult(); return;
+    }
+    sch.published = false; delete sch.published_at;
+    await asSaveSchedule(sch);
+    renderAssessResult(); renderAssessStatus();
+    showToast('Period changed.', 'success');
+}
+function renderAssessResult() {
+    const plan = asGetPlan(), sch = asGetSchedule(), W = asW(plan);
+    const box = document.getElementById('asResult');
+    const has = sch.classes && Object.values(sch.classes).some(c => Object.keys(c).length);
+    if (!has) { box.innerHTML = '<p style="color:var(--slate-400); text-align:center; padding:18px;">No assessment timetable yet. Select the subjects above and press <strong>Generate</strong>.</p>'; return; }
+    const mode = document.getElementById('asView').value;
+    const cols = Array.from({ length: W }, (_, i) => i + 1);
+    if (mode === 'class') {
+        const cls = document.getElementById('asClass').value || APP.classes[0].name;
+        document.getElementById('asClass').style.display = '';
+        document.getElementById('asDay').style.display = 'none';
+        box.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%; min-width:560px;"><thead><tr><th>Day</th>${cols.map(p => `<th>Period ${p}</th>`).join('')}<th>After the break</th></tr></thead><tbody>
+            ${APP.DAYS.map(day => {
+                const list = (sch.classes[cls] || {})[day] || [];
+                return `<tr><td><strong>${day}</strong></td>${cols.map(p => {
+                    const x = list.find(a => a.period === p);
+                    if (!x) return `<td style="color:var(--slate-400); text-align:center;">${list.length ? 'Free' : '—'}</td>`;
+                    return `<td style="background:var(--primary-light, #e0e7ff);"><strong>${asEsc(x.subject)}</strong><br><small>${asEsc(x.teacher || 'No teacher')}</small><br>
+                        <select data-cls="${asEsc(cls)}" data-day="${day}" data-subject="${asEsc(x.subject)}" onchange="asMove(this)" style="font-size:11px; padding:1px 2px; width:auto;">${cols.map(q => `<option value="${q}" ${q === p ? 'selected' : ''}>P${q}</option>`).join('')}</select></td>`;
+                }).join('')}<td style="color:var(--slate-400); text-align:center; font-size:12px;">no assessments</td></tr>`;
+            }).join('')}</tbody></table></div>`;
+    } else {
+        const grade = parseInt(document.getElementById('asGrade').value) || asGradeOf(APP.classes[0]);
+        const day = document.getElementById('asDay').value || APP.DAYS[0];
+        document.getElementById('asClass').style.display = 'none';
+        document.getElementById('asDay').style.display = '';
+        const secs = APP.classes.filter(c => asGradeOf(c) === grade);
+        box.innerHTML = `<p style="font-size:12.5px; color:var(--slate-600);">Grade ${grade} · ${day} (grade chosen in the plan above)</p><div style="overflow-x:auto;"><table style="width:100%; min-width:520px;"><thead><tr><th>Section</th>${cols.map(p => `<th>Period ${p}</th>`).join('')}</tr></thead><tbody>
+            ${secs.map(c => { const list = (sch.classes[c.name] || {})[day] || [];
+                return `<tr><td><strong>${asEsc(c.name)}</strong></td>${cols.map(p => { const x = list.find(a => a.period === p); return x ? `<td style="background:var(--primary-light, #e0e7ff);"><strong>${asEsc(x.subject)}</strong><br><small>${asEsc(x.teacher || 'No teacher')}</small></td>` : `<td style="color:var(--slate-400); text-align:center;">${list.length ? 'Free' : '—'}</td>`; }).join('')}</tr>`; }).join('')}
+            </tbody></table></div>`;
+    }
+}
+function asExportCsv() {
+    const sch = asGetSchedule(), rows = [['Grade', 'Class', 'Day', 'Period', 'Subject', 'Teacher']];
+    APP.classes.forEach(c => APP.DAYS.forEach(d => (((sch.classes || {})[c.name] || {})[d] || []).forEach(x => rows.push([asGradeOf(c), c.name, d, x.period, x.subject, x.teacher || '']))));
+    if (rows.length === 1) { showToast('Nothing to export yet.', 'error'); return; }
+    const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'assessment_timetable.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+// =============================================================================
 // DATABASE STATUS
 // =============================================================================
 function updateDbStatus() {
@@ -1289,6 +1723,7 @@ async function refreshFromCloud(force) {
         });
         APP.allocations = allocations || []; APP.curriculum = curriculum || []; APP.teacherSubjects = teacherSubjects || [];
         try { APP.ACTIVE_SUBSTITUTIONS = await window.DB.getSubstitutions(); updateSubBadge(); } catch (e) {}
+        try { const st = await window.DB.getSettings(); if (st && Object.keys(st).length) APP.settings = Object.assign({}, APP.settings, st); } catch (e) {}
         const sch = await window.DB.loadTimetable();
         if (sch && Object.keys(sch).length) { APP.schedule = sch; setTimetableStatus('current'); }
         const active = (document.querySelector('.tab-content.active') || {}).id;
@@ -1424,6 +1859,8 @@ function switchTab(tabId) {
         renderFreeTeachersView();
     } else if (tabId === 'settings') {
         loadSettingsTab();
+    } else if (tabId === 'assessments') {
+        loadAssessmentsTab();
     }
 }
 
