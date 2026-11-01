@@ -1705,7 +1705,7 @@
 
     <div class="form-group">
       <label>Subject</label>
-      <select id="arrSubject"></select>
+      <select id="arrSubject" onchange="ABS.refreshTeacherAvailability()"></select>
     </div>
 
     <!-- Combine Fields Container -->
@@ -1753,7 +1753,7 @@
 
       <div class="form-group" style="margin-bottom:0;">
         <label>Selected Period in Timetable *</label>
-        <select id="arrPeriod"></select>
+        <select id="arrPeriod" onchange="ABS.refreshTeacherAvailability()"></select>
       </div>
     </div>
 
@@ -1762,11 +1762,11 @@
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px;">
         <div class="form-group">
           <label>Class Section *</label>
-          <select id="arrSubSec"></select>
+          <select id="arrSubSec" onchange="ABS.refreshTeacherAvailability()"></select>
         </div>
         <div class="form-group">
           <label>Day of Week *</label>
-          <select id="arrSubDay">
+          <select id="arrSubDay" onchange="ABS.refreshTeacherAvailability()">
             <option value="Monday">Monday</option>
             <option value="Tuesday">Tuesday</option>
             <option value="Wednesday">Wednesday</option>
@@ -1783,7 +1783,7 @@
         </div>
         <div class="form-group">
           <label>Period *</label>
-          <select id="arrSubPeriod"></select>
+          <select id="arrSubPeriod" onchange="ABS.refreshTeacherAvailability()"></select>
         </div>
       </div>
     </div>
@@ -5426,6 +5426,7 @@ ABS.closeArrangeModal = function() {
 };
 
 ABS.onArrangeTypeChange = function() {
+    setTimeout(() => ABS.refreshTeacherAvailability(), 0);
     const type = document.querySelector('input[name="arrType"]:checked').value;
     const combineBox = document.getElementById('arrCombineBox');
     const subBox = document.getElementById('arrSubstituteBox');
@@ -5466,6 +5467,32 @@ ABS.onCombineSectionsChange = function() {
 
 ABS.onConductorChange = function() {
     ABS.findCommonPeriod();
+    ABS.refreshTeacherAvailability();
+};
+
+// Marks teachers who already teach at the chosen day/period so they are not picked by mistake
+ABS.refreshTeacherAvailability = async function() {
+    try {
+        const checked = document.querySelector('input[name="arrType"]:checked');
+        if (!checked) return;
+        const combine = checked.value === 'combine';
+        const sel = document.getElementById(combine ? 'arrConductorTeacher' : 'arrSubTeacher');
+        const day = document.getElementById(combine ? 'arrDayOfWeek' : 'arrSubDay').value;
+        const period = parseInt(document.getElementById(combine ? 'arrPeriod' : 'arrSubPeriod').value);
+        const classIds = (combine
+            ? [document.getElementById('arrSec1').value, document.getElementById('arrSec2').value]
+            : [document.getElementById('arrSubSec').value]).filter(Boolean);
+        const absRec = (ABS.state.absences || []).find(a => a.id === ABS.state.currentAbsenceId);
+        if (!sel || !day || !period) return;
+        const busy = await window.DB.getBusyTeachers(day, period, classIds,
+            absRec ? absRec.teacher_id : null, document.getElementById('arrSubject').value);
+        Array.from(sel.options).forEach(opt => {
+            if (!opt.dataset.base) opt.dataset.base = opt.textContent;
+            const b = busy[opt.value];
+            opt.textContent = b ? `⛔ ${opt.dataset.base} — busy: ${b}` : opt.dataset.base;
+            opt.style.color = b ? '#dc2626' : '';
+        });
+    } catch (e) { console.warn('refreshTeacherAvailability:', e); }
 };
 
 ABS.onRecurrenceChange = function() {
@@ -5497,7 +5524,9 @@ ABS.findCommonPeriod = async function() {
     box.innerHTML = '🔍 Checking timetable clashes...';
 
     try {
-        const freePeriods = await window.DB.findCommonPeriod(sec1Id, sec2Id, conductorId, day, APP.PERIODS.length);
+        const absRec = (ABS.state.absences || []).find(a => a.id === ABS.state.currentAbsenceId);
+        const freePeriods = await window.DB.findCommonPeriod(sec1Id, sec2Id, conductorId, day, APP.PERIODS.length,
+            absRec ? absRec.teacher_id : null, document.getElementById('arrSubject').value);
         if (freePeriods.length === 0) {
             box.innerHTML = `<span style="color:var(--danger); font-weight:700;">
                 ⚠️ No period found where Section 1, Section 2, and the conducting teacher are all free on ${day}. You may select a period manually below.
@@ -5641,6 +5670,10 @@ ABS.generate = async function() {
 
         const res = await window.DB.generateTempTimetable(absenceId);
         showToast(`Temporary timetable generated with ${res.generated} slots!`, "success");
+        if (res.conflicts && res.conflicts.length) {
+            showToast(`${res.conflicts.length} clash(es) found: ${res.conflicts[0]}`, "error");
+            console.warn('Temp timetable clashes:', res.conflicts);
+        }
         await ABS.reloadManageData();
 
         window.switchTab('temp-timetable');
@@ -5781,7 +5814,7 @@ ABS.renderTempDaily = function(slots) {
     slots.forEach(s => {
         (s.class_names || []).forEach(cn => {
             byClass[cn] = byClass[cn] || {};
-            byClass[cn][s.period] = s;
+            (byClass[cn][s.period] = byClass[cn][s.period] || []).push(s);
         });
     });
 
@@ -5794,12 +5827,19 @@ ABS.renderTempDaily = function(slots) {
         return `<tr>
             <td style="font-weight:700; background:var(--slate-50); border-right:2px solid var(--slate-200);">${cn}</td>
             ${P.map(p => {
-                const s = byClass[cn] ? byClass[cn][p] : null;
-                const cellHtml = s ? ABS.renderSlotCell(s) : '<div class="period-free" style="cursor:default;">Free</div>';
+                const list = byClass[cn] ? (byClass[cn][p] || []) : [];
+                const cellHtml = list.length ? ABS.renderCellList(list) : '<div class="period-free" style="cursor:default;">Free</div>';
                 return `<td>${cellHtml}</td>` + (p === breakAfter ? '<td class="break-cell">BREAK</td>' : '');
             }).join('')}
         </tr>`;
     }).join('');
+};
+
+ABS.renderCellList = function(list) {
+    if (list.length === 1) return ABS.renderSlotCell(list[0]);
+    return `<div style="outline:2px solid #dc2626; border-radius:6px; padding:2px;">
+        <div style="color:#dc2626; font-size:10px; font-weight:700; text-align:center;">⚠ CLASH</div>
+        ${list.map(ABS.renderSlotCell).join('')}</div>`;
 };
 
 ABS.renderSlotCell = function(s) {
@@ -5839,7 +5879,7 @@ ABS.renderTempByTeacher = function(slots) {
     const byTeacher = {};
     slots.filter(s => s.teacher_name).forEach(s => {
         byTeacher[s.teacher_name] = byTeacher[s.teacher_name] || {};
-        byTeacher[s.teacher_name][s.period] = s;
+        (byTeacher[s.teacher_name][s.period] = byTeacher[s.teacher_name][s.period] || []).push(s);
     });
 
     const teacherNames = Object.keys(byTeacher).sort();
@@ -5852,8 +5892,8 @@ ABS.renderTempByTeacher = function(slots) {
         return `<tr>
             <td style="font-weight:700; background:var(--slate-50);">${tn}</td>
             ${P.map(p => {
-                const s = byTeacher[tn][p];
-                const cellHtml = s ? ABS.renderSlotCell(s) : '<div class="period-free" style="cursor:default;">Free</div>';
+                const list = byTeacher[tn][p] || [];
+                const cellHtml = list.length ? ABS.renderCellList(list) : '<div class="period-free" style="cursor:default;">Free</div>';
                 return `<td>${cellHtml}</td>` + (p === breakAfter ? '<td class="break-cell">BREAK</td>' : '');
             }).join('')}
         </tr>`;

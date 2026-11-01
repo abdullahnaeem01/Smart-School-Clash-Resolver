@@ -2379,161 +2379,309 @@
         return affected;
     };
 
-    // 11. findCommonPeriod
-    DB.findCommonPeriod = async function(classId1, classId2, conductorTeacherId, dayOfWeek, periodsPerDay) {
-        periodsPerDay = parseInt(periodsPerDay) || 7;
-        var busy = new Set();
+    // =========================================================================
+    // CLASH-FREE TEMP TIMETABLE ENGINE
+    // The temp timetable is built on top of the FULL permanent timetable, so
+    // every check (class busy / teacher busy) is made against real lessons.
+    // =========================================================================
+    var permGridCache = { t: 0, v: null };
 
-        var classes = await this.getClasses();
-        var teachers = await this.getTeachers();
-        var cMap = {}, tMap = {};
+    // Loads the whole permanent timetable (all classes, paged past the 1000-row cap)
+    // and normalises class / teacher / subject to their ids.
+    async function loadPermGrid(self, maxAgeMs) {
+        if (maxAgeMs && permGridCache.v && (Date.now() - permGridCache.t) < maxAgeMs) return permGridCache.v;
+
+        var classes = await self.getClasses();
+        var teachers = await self.getTeachers();
+        var subjects = await self.getSubjects();
+        var cMap = {}, tMap = {}, sMap = {};
         classes.forEach(function(c) { cMap[c.id] = c; cMap[c.name] = c; });
         teachers.forEach(function(t) { tMap[t.id] = t; tMap[t.name] = t; });
+        subjects.forEach(function(s) { sMap[s.id] = s; sMap[s.name] = s; });
 
-        var c1 = cMap[classId1] || { id: classId1, name: classId1 };
-        var c2 = cMap[classId2] || { id: classId2, name: classId2 };
-        var ct = tMap[conductorTeacherId] || { id: conductorTeacherId, name: conductorTeacherId };
-
+        var rows = [];
         if (isConnected && supabaseClient) {
             try {
-                var orFilter = [];
-                if (c1.id) orFilter.push("class_id.eq." + c1.id);
-                if (c2.id) orFilter.push("class_id.eq." + c2.id);
-                if (ct.id) orFilter.push("teacher_id.eq." + ct.id);
-
-                if (orFilter.length > 0) {
-                    var res = await supabaseClient.from("timetable_slots").select("period, class_id, teacher_id").eq("day", dayOfWeek).or(orFilter.join(","));
-                    if (!res.error && res.data) {
-                        res.data.forEach(function(r) { busy.add(parseInt(r.period)); });
+                var res = await fetchAll(function() {
+                    return supabaseClient.from("timetable_slots").select("*").order("id");
+                });
+                if (!res.error && res.data) rows = res.data;
+            } catch (e) { self._fail("loadPermGrid", e); }
+        }
+        if (rows.length === 0) {
+            var sch = {};
+            try { sch = JSON.parse(localStorage.getItem("SCH_ACTIVE_TIMETABLE") || "{}"); } catch (e) {}
+            for (var cl in sch) {
+                var cObj = cMap[cl] || { id: cl, name: cl };
+                for (var day in sch[cl]) {
+                    for (var p in sch[cl][day]) {
+                        var cell = sch[cl][day][p];
+                        if (cell && (cell.teacher || cell.subject)) {
+                            rows.push({ class_id: cObj.id, day: day, period: parseInt(p), teacher_id: cell.teacher, subject_id: cell.subject });
+                        }
                     }
                 }
-            } catch (e) {
-                this._fail("findCommonPeriod", e);
             }
         }
 
-        var sch = {};
-        try { sch = JSON.parse(localStorage.getItem("SCH_ACTIVE_TIMETABLE") || "{}"); } catch (e) {}
-        [c1.name, c2.name].forEach(function(cn) {
-            if (sch[cn] && sch[cn][dayOfWeek]) {
-                for (var p in sch[cn][dayOfWeek]) {
-                    if (sch[cn][dayOfWeek][p]) busy.add(parseInt(p));
-                }
-            }
+        var slots = [], byKey = {};
+        rows.forEach(function(r) {
+            var c = cMap[r.class_id] || {};
+            var t = tMap[r.teacher_id];
+            var s = sMap[r.subject_id];
+            var slot = {
+                class_id: c.id || r.class_id,
+                class_name: c.name || String(r.class_id),
+                day: r.day,
+                period: parseInt(r.period),
+                teacher_id: t ? t.id : (r.teacher_id || null),
+                teacher_name: t ? t.name : (r.teacher_id || ""),
+                subject_id: s ? s.id : (r.subject_id || null),
+                subject_name: s ? s.name : (r.subject_id || "")
+            };
+            slots.push(slot);
+            byKey[slot.class_id + "|" + slot.day + "|" + slot.period] = slot;
         });
-        for (var cn in sch) {
-            if (sch[cn] && sch[cn][dayOfWeek]) {
-                for (var p in sch[cn][dayOfWeek]) {
-                    var cell = sch[cn][dayOfWeek][p];
-                    if (cell && (cell.teacher === ct.name || cell.teacher === ct.id)) {
-                        busy.add(parseInt(p));
-                    }
-                }
-            }
+
+        var grid = { slots: slots, byKey: byKey, cMap: cMap, tMap: tMap, sMap: sMap };
+        permGridCache = { t: Date.now(), v: grid };
+        return grid;
+    }
+
+    function isPESubject(name) { return name === "P.E" || name === "PE"; }
+
+    function dayNameOf(dateStr) {
+        var names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        return names[new Date(dateStr + "T00:00:00").getDay()];
+    }
+
+    // Dates (inside the absence) on which an arrangement applies
+    function arrangementDates(arr, weekdays) {
+        var out = [];
+        if (arr.recurrence === "all") {
+            weekdays.forEach(function(w) {
+                if (!arr.day_of_week || arr.day_of_week === w.day) out.push(w);
+            });
+        } else {
+            (arr.dates || []).forEach(function(d) {
+                if (d.applies === false) return;
+                var m = weekdays.filter(function(w) { return w.date === d.date; })[0];
+                out.push(m || { date: d.date, day: dayNameOf(d.date), outside: true });
+            });
         }
+        return out;
+    }
+
+    function groupArrangementsByDate(arrangements, weekdays) {
+        var byDate = {};
+        arrangements.forEach(function(arr) {
+            arrangementDates(arr, weekdays).forEach(function(w) {
+                (byDate[w.date] = byDate[w.date] || { day: w.day, outside: !!w.outside, list: [] }).list.push(arr);
+            });
+        });
+        return byDate;
+    }
+
+    // For one date: which permanent lesson does each arrangement section replace,
+    // and which class/period cells stop being "regular" lessons.
+    function planDate(grid, arrs, day, absentId) {
+        var claimed = {};
+        var plans = arrs.map(function(arr) {
+            var P = parseInt(arr.period);
+            var secs = (arr.sections || []).map(function(s) {
+                var cands = grid.slots.filter(function(c) {
+                    return c.class_id === s.class_id && c.day === day &&
+                           c.subject_id === arr.subject_id && !claimed[c.class_id + "|" + c.period];
+                });
+                cands.sort(function(a, b) {
+                    var aa = a.teacher_id === absentId ? 0 : 1;
+                    var bb = b.teacher_id === absentId ? 0 : 1;
+                    if (aa !== bb) return aa - bb;
+                    return Math.abs(a.period - P) - Math.abs(b.period - P);
+                });
+                var pick = cands[0] || null;
+                if (pick) claimed[pick.class_id + "|" + pick.period] = true;
+                return {
+                    class_id: s.class_id,
+                    class_name: s.class_name || (grid.cMap[s.class_id] || {}).name || s.class_id,
+                    orig: pick
+                };
+            });
+            return { arr: arr, period: P, secs: secs };
+        });
+
+        var freed = {};
+        grid.slots.forEach(function(c) {
+            if (c.day === day && c.teacher_id === absentId) freed[c.class_id + "|" + c.period] = true;
+        });
+        plans.forEach(function(pl) {
+            pl.secs.forEach(function(s) {
+                if (s.orig) freed[s.class_id + "|" + s.orig.period] = true;
+            });
+        });
+        return { plans: plans, freed: freed };
+    }
+
+    function resolveAbsentId(grid, absence) {
+        var t = grid.tMap[absence.teacher_id] || grid.tMap[absence.teacher_name];
+        return t ? t.id : absence.teacher_id;
+    }
+
+    // 11. findCommonPeriod
+    // Periods where BOTH classes and the conducting teacher are free.
+    // The absent teacher's lessons count as free; so do lessons of `subjectId`
+    // in the two classes (they are the ones being replaced by the combined lesson).
+    DB.findCommonPeriod = async function(classId1, classId2, conductorTeacherId, dayOfWeek, periodsPerDay, absentTeacherId, subjectId) {
+        periodsPerDay = parseInt(periodsPerDay) || 7;
+        var grid = await loadPermGrid(this, 15000);
+        var absentId = absentTeacherId ? ((grid.tMap[absentTeacherId] || {}).id || absentTeacherId) : null;
+        var c1 = (grid.cMap[classId1] || {}).id || classId1;
+        var c2 = (grid.cMap[classId2] || {}).id || classId2;
+        var cond = (grid.tMap[conductorTeacherId] || {}).id || conductorTeacherId;
+        var pair = {}; pair[c1] = true; pair[c2] = true;
+
+        function replaceable(c) {
+            return (absentId && c.teacher_id === absentId) || (subjectId && c.subject_id === subjectId);
+        }
+
+        var busy = new Set();
+        grid.slots.forEach(function(c) {
+            if (c.day !== dayOfWeek) return;
+            if (pair[c.class_id] && !replaceable(c)) busy.add(c.period);          // class has another lesson
+            if (c.teacher_id === cond && !(pair[c.class_id] && replaceable(c))) busy.add(c.period); // conductor teaching
+        });
 
         var common = [];
         for (var p = 1; p <= periodsPerDay; p++) {
             if (!busy.has(p)) common.push(p);
         }
-        common.sort(function(a, b) { return a - b; });
         return common;
+    };
+
+    // Teachers who already teach at (day, period). Lessons of `subjectId` in `ignoreClassIds`
+    // are treated as free because the arrangement replaces them.
+    DB.getBusyTeachers = async function(day, period, ignoreClassIds, absentTeacherId, subjectId) {
+        var grid = await loadPermGrid(this, 15000);
+        var ignore = {};
+        (ignoreClassIds || []).forEach(function(id) { ignore[(grid.cMap[id] || {}).id || id] = true; });
+        var absentId = absentTeacherId ? ((grid.tMap[absentTeacherId] || {}).id || absentTeacherId) : null;
+        var busy = {};
+        grid.slots.forEach(function(c) {
+            if (c.day !== day || c.period !== parseInt(period) || !c.teacher_id) return;
+            if (absentId && c.teacher_id === absentId) return;
+            if (ignore[c.class_id] && subjectId && c.subject_id === subjectId) return;
+            busy[c.teacher_id] = c.class_name + " " + c.subject_name;
+        });
+        return busy;
     };
 
     // 12. validateArrangements
     DB.validateArrangements = async function(absenceId) {
-        var errors = [];
-        var warnings = [];
+        var errMap = {}, warnMap = {};
+        function add(map, msg, date) { (map[msg] = map[msg] || []).push(date); }
+        function flush(map) {
+            return Object.keys(map).map(function(m) {
+                var ds = map[m];
+                return m + " [" + ds.slice(0, 3).join(", ") + (ds.length > 3 ? " +" + (ds.length - 3) + " more" : "") + "]";
+            });
+        }
+
         var absence = await this.getAbsence(absenceId);
         if (!absence) return { valid: false, errors: ["Absence record not found."], warnings: [] };
 
         var arrangements = await this.getArrangements(absenceId);
         var affectedLessons = await this.getAffectedLessons(absenceId);
-
-        var teacherSlots = {};
-        var sectionSlots = {};
-
+        var grid = await loadPermGrid(this);
+        var absentId = resolveAbsentId(grid, absence);
         var weekdays = getWeekdaysBetween(absence.start_date, absence.end_date);
-        var weekdaySet = new Set(weekdays.map(function(w) { return w.date; }));
 
+        var otherAbsences = [];
+        try {
+            otherAbsences = ((await this.getAbsences("active")) || []).filter(function(a) { return a.id !== absenceId; });
+        } catch (e) {}
+
+        var staticErrors = [];
         arrangements.forEach(function(arr) {
-            if (!arr.conducting_teacher_id) {
-                errors.push("Arrangement #" + arr.id.slice(0, 6) + " has no conducting/substitute teacher assigned.");
+            var tag = "Arrangement #" + String(arr.id).slice(0, 6);
+            if (!arr.conducting_teacher_id) staticErrors.push(tag + " has no conducting/substitute teacher assigned.");
+            if (!arr.period) staticErrors.push(tag + " has no period specified.");
+            var n = arr.sections ? arr.sections.length : 0;
+            if (arr.arrangement_type === "combine" && (n > 2 || n < 2)) {
+                staticErrors.push("Combined arrangement #" + String(arr.id).slice(0, 6) + " must combine exactly 2 sections (found " + n + ").");
             }
-            if (!arr.period) {
-                errors.push("Arrangement #" + arr.id.slice(0, 6) + " has no period specified.");
-            }
-            if (arr.arrangement_type === "combine" && (!arr.sections || arr.sections.length > 2)) {
-                errors.push("Combined arrangement #" + arr.id.slice(0, 6) + " must combine at most 2 sections (found " + (arr.sections ? arr.sections.length : 0) + ").");
-            }
+        });
 
-            var appDates = [];
-            if (arr.recurrence === "all") {
-                weekdays.forEach(function(w) {
-                    if (!arr.day_of_week || arr.day_of_week === w.day) appDates.push(w.date);
+        var byDate = groupArrangementsByDate(arrangements, weekdays);
+        var coveredLessons = {};
+
+        Object.keys(byDate).sort().forEach(function(date) {
+            var info = byDate[date];
+            if (info.outside) {
+                add(warnMap, "Arrangement applies to a date outside the absence period.", date);
+                return;
+            }
+            var day = info.day;
+            var plan = planDate(grid, info.list, day, absentId);
+            var teacherBook = {}, classBook = {};
+
+            plan.plans.forEach(function(pl) {
+                var arr = pl.arr, P = pl.period;
+                var cond = arr.conducting_teacher_id;
+                var cname = arr.conducting_teacher_name || (grid.tMap[cond] || {}).name || "Conducting teacher";
+
+                pl.secs.forEach(function(s) {
+                    if (s.orig) coveredLessons[date + "|" + s.class_id + "|" + s.orig.period] = true;
                 });
-            } else if (arr.dates && arr.dates.length > 0) {
-                arr.dates.forEach(function(d) {
-                    if (d.applies !== false) appDates.push(d.date);
+                if (!cond || !P) return;
+
+                if (cond === absentId) add(errMap, cname + " is the absent teacher and cannot cover the lesson.", date);
+
+                otherAbsences.forEach(function(a) {
+                    if (a.teacher_id === cond && a.start_date <= date && date <= a.end_date) {
+                        add(errMap, cname + " is also on leave on this date and cannot cover.", date);
+                    }
                 });
-            }
 
-            appDates.forEach(function(dStr) {
-                if (!weekdaySet.has(dStr)) {
-                    warnings.push("Arrangement applies to " + dStr + ", which is outside the active absence dates.");
-                }
-
-                if (arr.conducting_teacher_id) {
-                    var tKey = dStr + "|" + arr.period + "|" + arr.conducting_teacher_id;
-                    teacherSlots[tKey] = (teacherSlots[tKey] || []);
-                    teacherSlots[tKey].push(arr);
-                    if (teacherSlots[tKey].length === 2) {
-                        errors.push(arr.conducting_teacher_name + " is double-booked on " + dStr + " Period " + arr.period + " across multiple arrangements.");
+                // Conducting teacher must be free in the PERMANENT timetable
+                grid.slots.forEach(function(c) {
+                    if (c.day === day && c.period === P && c.teacher_id === cond && !plan.freed[c.class_id + "|" + c.period]) {
+                        add(errMap, cname + " already teaches " + c.class_name + " (" + c.subject_name + ") in Period " + P + " on " + day + "s.", date);
                     }
-                }
+                });
 
-                (arr.sections || []).forEach(function(s) {
-                    var sKey = dStr + "|" + arr.period + "|" + s.class_id;
-                    sectionSlots[sKey] = (sectionSlots[sKey] || []);
-                    sectionSlots[sKey].push(arr);
-                    if (sectionSlots[sKey].length === 2) {
-                        errors.push("Section " + (s.class_name || s.class_id) + " is double-booked on " + dStr + " Period " + arr.period + ".");
+                // Classes must be free (or hold the absent teacher's / replaced lesson) at that period
+                pl.secs.forEach(function(s) {
+                    var cell = grid.byKey[s.class_id + "|" + day + "|" + P];
+                    if (cell && !plan.freed[s.class_id + "|" + P]) {
+                        add(errMap, s.class_name + " already has " + cell.subject_name + " with " + cell.teacher_name + " in Period " + P + " on " + day + "s.", date);
+                    } else if (cell && cell.teacher_id === absentId && !(s.orig && s.orig.period === P)) {
+                        add(warnMap, s.class_name + ": the absent teacher's " + cell.subject_name + " lesson in Period " + P + " is displaced by this arrangement and will not be covered.", date);
                     }
+                });
+
+                // Double booking between arrangements
+                var tKey = P + "|" + cond;
+                if (teacherBook[tKey]) add(errMap, cname + " is double-booked in Period " + P + " on " + day + "s across multiple arrangements.", date);
+                teacherBook[tKey] = true;
+                pl.secs.forEach(function(s) {
+                    var cKey = P + "|" + s.class_id;
+                    if (classBook[cKey]) add(errMap, "Section " + s.class_name + " is double-booked in Period " + P + " on " + day + "s.", date);
+                    classBook[cKey] = true;
                 });
             });
         });
 
-        var arrangedLessonKeys = new Set();
-        arrangements.forEach(function(arr) {
-            var appDates = [];
-            if (arr.recurrence === "all") {
-                weekdays.forEach(function(w) { if (!arr.day_of_week || arr.day_of_week === w.day) appDates.push(w.date); });
-            } else if (arr.dates) {
-                arr.dates.forEach(function(d) { if (d.applies !== false) appDates.push(d.date); });
-            }
-            appDates.forEach(function(dStr) {
-                (arr.sections || []).forEach(function(s) {
-                    arrangedLessonKeys.add(dStr + "|" + s.class_id);
-                });
-            });
-        });
-
-        var unarrangedCount = 0;
+        var unarranged = 0;
         affectedLessons.forEach(function(l) {
-            if (!arrangedLessonKeys.has(l.date + "|" + l.class_id)) {
-                unarrangedCount++;
-            }
+            if (!coveredLessons[l.date + "|" + l.class_id + "|" + l.period]) unarranged++;
         });
+        var warnings = flush(warnMap);
+        var notApproved = arrangements.filter(function(a) { return !a.approved; }).length;
+        if (notApproved > 0) warnings.push(notApproved + " arrangement(s) are not approved yet; their lessons stay 'Unresolved' in the temp timetable until approved.");
+        if (unarranged > 0) warnings.push(unarranged + " affected lesson(s) have no arrangement assigned and will appear as 'Unresolved'.");
 
-        if (unarrangedCount > 0) {
-            warnings.push(unarrangedCount + " affected lesson(s) have no arrangement assigned and will appear as 'Unresolved'.");
-        }
-
-        return {
-            valid: errors.length === 0,
-            errors: errors,
-            warnings: warnings
-        };
+        var errors = staticErrors.concat(flush(errMap));
+        return { valid: errors.length === 0, errors: errors, warnings: warnings };
     };
 
     // 13. generateTempTimetable
@@ -2544,160 +2692,133 @@
         await this.clearTempTimetable(absenceId);
 
         var validation = await this.validateArrangements(absenceId);
-        var arrangements = await this.getArrangements(absenceId);
-        var approvedArr = arrangements.filter(function(a) { return a.approved; });
-        var affectedLessons = await this.getAffectedLessons(absenceId);
-
+        var approvedArr = (await this.getArrangements(absenceId)).filter(function(a) { return a.approved; });
+        var grid = await loadPermGrid(this);
+        var absentId = resolveAbsentId(grid, absence);
         var weekdays = getWeekdaysBetween(absence.start_date, absence.end_date);
-        var classes = await this.getClasses();
-        var cMap = {}, cNameMap = {};
-        classes.forEach(function(c) { cMap[c.id] = c; cNameMap[c.name] = c; });
+        var byDate = groupArrangementsByDate(approvedArr, weekdays);
 
-        var permSlots = [];
-        if (isConnected && supabaseClient) {
-            try {
-                var res = await supabaseClient.from("timetable_slots").select("*");
-                if (!res.error && res.data) permSlots = res.data;
-            } catch (e) {}
-        }
-        if (permSlots.length === 0) {
-            var sch = {};
-            try { sch = JSON.parse(localStorage.getItem("SCH_ACTIVE_TIMETABLE") || "{}"); } catch (e) {}
-            for (var cl in sch) {
-                var cObj = cNameMap[cl] || { id: cl, name: cl };
-                for (var day in sch[cl]) {
-                    for (var p in sch[cl][day]) {
-                        var cell = sch[cl][day][p];
-                        if (cell) {
-                            permSlots.push({
-                                class_id: cObj.id,
-                                day: day,
-                                period: parseInt(p),
-                                teacher_id: cell.teacher,
-                                subject_id: cell.subject,
-                                _teacherName: cell.teacher,
-                                _subjectName: cell.subject
-                            });
-                        }
-                    }
-                }
-            }
-        }
-
-        var affectedClassIds = new Set(affectedLessons.map(function(l) { return l.class_id; }));
-
-        var generatedSlots = [];
+        var generated = [];
+        var conflicts = validation.errors.slice();
         var unresolvedCount = 0;
+        var nowIso = new Date().toISOString();
+
+        function mk(date, extra) {
+            return Object.assign({
+                id: genUUID(),
+                absence_id: absenceId,
+                arrangement_id: null,
+                date: date,
+                original_teacher_id: absentId,
+                published: false,
+                created_at: nowIso,
+                updated_at: nowIso
+            }, extra);
+        }
 
         weekdays.forEach(function(w) {
-            var dateStr = w.date;
-            var dayStr = w.day;
+            var date = w.date, day = w.day;
+            var info = byDate[date] || { list: [] };
+            var plan = planDate(grid, info.list, day, absentId);
 
-            var dayArrangements = approvedArr.filter(function(arr) {
-                if (arr.recurrence === "all") {
-                    return !arr.day_of_week || arr.day_of_week === dayStr;
-                }
-                return (arr.dates || []).some(function(d) { return d.date === dateStr && d.applies !== false; });
-            });
+            var daySlots = [];
+            var occupied = {};   // class|period -> slot already placed
+            var involved = {};   // classes shown in the temp timetable today
+            var replaced = {};   // class|period regular lessons that are moved into an arrangement
 
-            var coveredSectionKeys = new Set();
-
-            dayArrangements.forEach(function(arr) {
-                var secIds = (arr.sections || []).map(function(s) {
-                    coveredSectionKeys.add(s.class_id);
-                    return s.class_id;
-                });
-
-                if (arr.arrangement_type === "combine") {
-                    generatedSlots.push({
-                        id: genUUID(),
-                        absence_id: absenceId,
-                        arrangement_id: arr.id,
-                        date: dateStr,
-                        period: arr.period,
-                        class_ids: secIds,
-                        subject_id: arr.subject_id,
-                        teacher_id: arr.conducting_teacher_id,
-                        original_teacher_id: absence.teacher_id,
-                        slot_type: "combined",
-                        change_reason: "Combined 2 sections with " + (arr.conducting_teacher_name || "conducting teacher"),
-                        published: false,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    });
-                } else {
-                    generatedSlots.push({
-                        id: genUUID(),
-                        absence_id: absenceId,
-                        arrangement_id: arr.id,
-                        date: dateStr,
-                        period: arr.period,
-                        class_ids: secIds,
-                        subject_id: arr.subject_id,
-                        teacher_id: arr.conducting_teacher_id,
-                        original_teacher_id: absence.teacher_id,
-                        slot_type: "substitute",
-                        change_reason: "Substitute cover: " + (arr.conducting_teacher_name || "covering teacher"),
-                        published: false,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    });
-                }
-            });
-
-            var dayAffected = affectedLessons.filter(function(l) { return l.date === dateStr; });
-            dayAffected.forEach(function(l) {
-                if (!coveredSectionKeys.has(l.class_id)) {
-                    unresolvedCount++;
-                    generatedSlots.push({
-                        id: genUUID(),
-                        absence_id: absenceId,
-                        arrangement_id: null,
-                        date: dateStr,
-                        period: l.period,
-                        class_ids: [l.class_id],
-                        subject_id: l.subject_id,
-                        teacher_id: null,
-                        original_teacher_id: absence.teacher_id,
-                        slot_type: "unresolved",
-                        change_reason: "Absent teacher - no arrangement assigned",
-                        published: false,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    });
-                }
-            });
-
-            permSlots.filter(function(ps) {
-                return ps.day === dayStr && affectedClassIds.has(ps.class_id);
-            }).forEach(function(ps) {
-                var isAbsentSlot = (ps.teacher_id === absence.teacher_id || ps._teacherName === absence.teacher_name);
-                if (isAbsentSlot) return;
-
-                var isPE = (ps._subjectName === "P.E" || ps._subjectName === "PE");
-                generatedSlots.push({
-                    id: genUUID(),
-                    absence_id: absenceId,
-                    arrangement_id: null,
-                    date: dateStr,
-                    period: ps.period,
-                    class_ids: [ps.class_id],
-                    subject_id: ps.subject_id,
-                    teacher_id: ps.teacher_id,
-                    original_teacher_id: ps.teacher_id,
-                    slot_type: isPE ? "pe" : "unchanged",
-                    change_reason: isPE ? "P.E. kept as-is" : "Regular schedule maintained",
-                    published: false,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
+            plan.plans.forEach(function(pl) {
+                pl.secs.forEach(function(s) {
+                    involved[s.class_id] = true;
+                    if (s.orig) replaced[s.class_id + "|" + s.orig.period] = true;
                 });
             });
+            grid.slots.forEach(function(c) {
+                if (c.day === day && c.teacher_id === absentId) involved[c.class_id] = true;
+            });
+
+            // 1. Arrangement lessons take priority over everything else
+            plan.plans.forEach(function(pl) {
+                var arr = pl.arr;
+                var ids = pl.secs.map(function(s) { return s.class_id; });
+                var slot = mk(date, {
+                    arrangement_id: arr.id,
+                    period: pl.period,
+                    class_ids: ids,
+                    subject_id: arr.subject_id,
+                    teacher_id: arr.conducting_teacher_id,
+                    slot_type: arr.arrangement_type === "combine" ? "combined" : "substitute",
+                    change_reason: arr.arrangement_type === "combine"
+                        ? "Combined 2 sections with " + (arr.conducting_teacher_name || "conducting teacher")
+                        : "Substitute cover: " + (arr.conducting_teacher_name || "covering teacher")
+                });
+                ids.forEach(function(id) { occupied[id + "|" + pl.period] = slot; });
+                daySlots.push(slot);
+            });
+
+            // 2. Every other lesson of the involved classes (so the day is complete)
+            grid.slots.filter(function(c) { return c.day === day && involved[c.class_id]; })
+                .sort(function(a, b) { return a.period - b.period; })
+                .forEach(function(c) {
+                    var key = c.class_id + "|" + c.period;
+                    if (replaced[key]) return;                       // moved into a combined/substitute lesson
+                    var isAbsentLesson = (c.teacher_id === absentId);
+                    var pe = isPESubject(c.subject_name);
+
+                    if (occupied[key]) {                             // slot taken by an arrangement
+                        if (!isAbsentLesson) {
+                            conflicts.push(c.class_name + ": " + c.subject_name + " (" + c.teacher_name + ") in Period " + c.period +
+                                " on " + date + " was displaced by an arrangement.");
+                        }
+                        return;
+                    }
+                    if (isAbsentLesson) {
+                        if (pe) {
+                            generated.push(mk(date, { period: c.period, class_ids: [c.class_id], subject_id: c.subject_id,
+                                teacher_id: null, slot_type: "pe", change_reason: "P.E. - teacher absent, no cover required" }));
+                        } else {
+                            unresolvedCount++;
+                            daySlots.push(mk(date, { period: c.period, class_ids: [c.class_id], subject_id: c.subject_id,
+                                teacher_id: null, slot_type: "unresolved", change_reason: "Absent teacher - no arrangement assigned" }));
+                        }
+                        occupied[key] = true;
+                        return;
+                    }
+                    daySlots.push(mk(date, { period: c.period, class_ids: [c.class_id], subject_id: c.subject_id,
+                        teacher_id: c.teacher_id, original_teacher_id: c.teacher_id,
+                        slot_type: pe ? "pe" : "unchanged",
+                        change_reason: pe ? "P.E. kept as-is" : "Regular schedule maintained" }));
+                    occupied[key] = true;
+                });
+
+            // 3. Self-check: nobody may teach twice in the same period, in or outside the temp timetable
+            var teacherBook = {};
+            daySlots.forEach(function(s) {
+                if (!s.teacher_id || s.slot_type === "unresolved") return;
+                var k = s.period + "|" + s.teacher_id;
+                if (teacherBook[k]) {
+                    conflicts.push(((grid.tMap[s.teacher_id] || {}).name || "A teacher") + " is double-booked in Period " + s.period + " on " + date + ".");
+                }
+                teacherBook[k] = s;
+            });
+            grid.slots.forEach(function(c) {
+                if (c.day !== day || !c.teacher_id || involved[c.class_id]) return;
+                if (teacherBook[c.period + "|" + c.teacher_id]) {
+                    conflicts.push(c.teacher_name + " is covering a lesson in Period " + c.period + " on " + date +
+                        " but also teaches " + c.class_name + " (" + c.subject_name + ") then.");
+                }
+            });
+
+            daySlots.forEach(function(s) { generated.push(s); });
         });
+
+        // de-duplicate messages
+        var seen = {};
+        conflicts = conflicts.filter(function(m) { if (seen[m]) return false; seen[m] = true; return true; });
 
         if (isConnected && supabaseClient) {
             try {
-                for (var i = 0; i < generatedSlots.length; i += 200) {
-                    var chunk = generatedSlots.slice(i, i + 200);
+                for (var i = 0; i < generated.length; i += 200) {
+                    var chunk = generated.slice(i, i + 200);
                     var ins = await supabaseClient.from("temp_timetable_slots").insert(chunk);
                     if (ins.error) this._fail("generateTempTimetable (save)", ins.error);
                 }
@@ -2707,13 +2828,13 @@
         }
 
         var rawSlots = JSON.parse(localStorage.getItem("SCH_TEMP_SLOTS") || "[]");
-        rawSlots = rawSlots.filter(function(s) { return s.absence_id !== absenceId; }).concat(generatedSlots);
+        rawSlots = rawSlots.filter(function(s) { return s.absence_id !== absenceId; }).concat(generated);
         localStorage.setItem("SCH_TEMP_SLOTS", JSON.stringify(rawSlots));
 
         return {
-            generated: generatedSlots.length,
+            generated: generated.length,
             unresolved: unresolvedCount,
-            conflicts: validation.errors
+            conflicts: conflicts
         };
     };
 
