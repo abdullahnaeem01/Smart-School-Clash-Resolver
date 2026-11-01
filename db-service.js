@@ -1817,12 +1817,1074 @@
             localStorage.removeItem("SCH_TEACHERS");
             localStorage.removeItem("SCH_SUBJECTS");
             localStorage.removeItem("SCH_CLASSES");
-            localStorage.removeItem("SCH_ALLOCATIONS");
-            localStorage.removeItem("SCH_CURRICULUM");
-            localStorage.removeItem("SCH_SETTINGS");
             localStorage.removeItem("SCH_SUBSTITUTIONS");
             localStorage.removeItem("SCH_ACTIVE_TIMETABLE");
+            localStorage.removeItem("SCH_ABSENCES");
+            localStorage.removeItem("SCH_ARRANGEMENTS");
+            localStorage.removeItem("SCH_ARR_SECTIONS");
+            localStorage.removeItem("SCH_ARR_DATES");
+            localStorage.removeItem("SCH_TEMP_SLOTS");
+            localStorage.removeItem("SCH_APPROVAL_LOG");
             initLocalStorage();
         }
+    };
+
+    // =========================================================================
+    // TEACHER ABSENCE & TEMPORARY TIMETABLE MANAGEMENT (DB EXTENSION)
+    // =========================================================================
+
+    function genUUID() {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    function getWeekdaysBetween(startStr, endStr) {
+        var days = [];
+        if (!startStr || !endStr) return days;
+        var cur = new Date(startStr + "T00:00:00");
+        var end = new Date(endStr + "T00:00:00");
+        var dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        while (cur <= end) {
+            var dayNum = cur.getDay();
+            if (dayNum >= 1 && dayNum <= 5) {
+                var y = cur.getFullYear();
+                var m = String(cur.getMonth() + 1).padStart(2, '0');
+                var d = String(cur.getDate()).padStart(2, '0');
+                days.push({
+                    date: y + '-' + m + '-' + d,
+                    day: dayNames[dayNum]
+                });
+            }
+            cur.setDate(cur.getDate() + 1);
+        }
+        return days;
+    }
+
+    var DB = window.DB;
+
+    // 1. getAbsences
+    DB.getAbsences = async function(status) {
+        var list = [];
+        if (isConnected && supabaseClient) {
+            try {
+                var query = supabaseClient.from("teacher_absences").select("*, teachers(id, name, department)").order("created_at", { ascending: false });
+                if (status) query = query.eq("status", status);
+                var res = await query;
+                if (!res.error && res.data) {
+                    list = res.data.map(function(r) {
+                        return {
+                            id: r.id,
+                            teacher_id: r.teacher_id,
+                            teacher_name: (r.teachers && r.teachers.name) || "Unknown",
+                            department: (r.teachers && r.teachers.department) || "",
+                            start_date: r.start_date,
+                            end_date: r.end_date,
+                            reason: r.reason || "",
+                            notes: r.notes || "",
+                            status: r.status,
+                            created_at: r.created_at,
+                            updated_at: r.updated_at
+                        };
+                    });
+                    try { localStorage.setItem("SCH_ABSENCES", JSON.stringify(list)); } catch (e) {}
+                    return list;
+                }
+                if (res.error) this._fail("getAbsences", res.error);
+            } catch (e) {
+                this._fail("getAbsences", e);
+            }
+        }
+        try {
+            list = JSON.parse(localStorage.getItem("SCH_ABSENCES") || "[]");
+            if (status) list = list.filter(function(a) { return a.status === status; });
+            var teachers = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
+            var tMap = {};
+            teachers.forEach(function(t) { tMap[t.id] = t; tMap[t.name] = t; });
+            list.forEach(function(a) {
+                var t = tMap[a.teacher_id] || tMap[a.teacher_name];
+                if (t) {
+                    a.teacher_name = t.name;
+                    a.department = t.department || "";
+                }
+            });
+        } catch (e) { list = []; }
+        return list;
+    };
+
+    // 2. getAbsence
+    DB.getAbsence = async function(id) {
+        if (isConnected && supabaseClient) {
+            try {
+                var res = await supabaseClient.from("teacher_absences").select("*, teachers(id, name, department)").eq("id", id).maybeSingle();
+                if (!res.error && res.data) {
+                    var r = res.data;
+                    return {
+                        id: r.id,
+                        teacher_id: r.teacher_id,
+                        teacher_name: (r.teachers && r.teachers.name) || "Unknown",
+                        department: (r.teachers && r.teachers.department) || "",
+                        start_date: r.start_date,
+                        end_date: r.end_date,
+                        reason: r.reason || "",
+                        notes: r.notes || "",
+                        status: r.status,
+                        created_at: r.created_at,
+                        updated_at: r.updated_at
+                    };
+                }
+            } catch (e) {
+                this._fail("getAbsence", e);
+            }
+        }
+        var all = await this.getAbsences();
+        return all.find(function(a) { return a.id === id; }) || null;
+    };
+
+    // 3. saveAbsence
+    DB.saveAbsence = async function(data) {
+        var newAbs = {
+            id: data.id || genUUID(),
+            teacher_id: data.teacher_id,
+            start_date: data.start_date,
+            end_date: data.end_date,
+            reason: data.reason || "",
+            notes: data.notes || "",
+            status: data.status || "active",
+            created_at: data.created_at || new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        if (isConnected && supabaseClient) {
+            try {
+                var payload = {
+                    teacher_id: newAbs.teacher_id,
+                    start_date: newAbs.start_date,
+                    end_date: newAbs.end_date,
+                    reason: newAbs.reason,
+                    notes: newAbs.notes,
+                    status: newAbs.status
+                };
+                if (data.id) payload.id = data.id;
+                var res = await supabaseClient.from("teacher_absences").insert([payload]).select("*, teachers(id, name, department)").single();
+                if (!res.error && res.data) {
+                    newAbs.id = res.data.id;
+                    newAbs.teacher_name = (res.data.teachers && res.data.teachers.name) || "";
+                } else if (res.error) {
+                    this._fail("saveAbsence", res.error);
+                }
+            } catch (e) {
+                this._fail("saveAbsence", e);
+            }
+        }
+
+        var list = JSON.parse(localStorage.getItem("SCH_ABSENCES") || "[]");
+        var idx = list.findIndex(function(x) { return x.id === newAbs.id; });
+        if (idx >= 0) list[idx] = newAbs; else list.unshift(newAbs);
+        localStorage.setItem("SCH_ABSENCES", JSON.stringify(list));
+        return newAbs;
+    };
+
+    // 4. updateAbsence
+    DB.updateAbsence = async function(id, updates) {
+        updates = Object.assign({}, updates, { updated_at: new Date().toISOString() });
+        if (isConnected && supabaseClient) {
+            try {
+                var res = await supabaseClient.from("teacher_absences").update(updates).eq("id", id).select().maybeSingle();
+                if (res.error) this._fail("updateAbsence", res.error);
+            } catch (e) {
+                this._fail("updateAbsence", e);
+            }
+        }
+        var list = JSON.parse(localStorage.getItem("SCH_ABSENCES") || "[]");
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id === id) {
+                Object.assign(list[i], updates);
+                break;
+            }
+        }
+        localStorage.setItem("SCH_ABSENCES", JSON.stringify(list));
+        return updates;
+    };
+
+    // 5. getArrangements
+    DB.getArrangements = async function(absenceId) {
+        var arrangements = [];
+        if (isConnected && supabaseClient) {
+            try {
+                var arrRes = await supabaseClient.from("absence_arrangements").select("*, conducting_teacher:teachers!absence_arrangements_conducting_teacher_id_fkey(id, name), subjects(id, name, color_accent)").eq("absence_id", absenceId).order("created_at");
+                if (arrRes.error) {
+                    arrRes = await supabaseClient.from("absence_arrangements").select("*").eq("absence_id", absenceId).order("created_at");
+                }
+                if (!arrRes.error && arrRes.data) {
+                    arrangements = arrRes.data;
+                    var arrIds = arrangements.map(function(a) { return a.id; });
+                    var secMap = {}, dateMap = {};
+                    if (arrIds.length > 0) {
+                        var secRes = await supabaseClient.from("absence_arrangement_sections").select("*, classes(id, name, grade, section)").in("arrangement_id", arrIds);
+                        if (!secRes.error && secRes.data) {
+                            secRes.data.forEach(function(s) {
+                                (secMap[s.arrangement_id] = secMap[s.arrangement_id] || []).push({
+                                    id: s.id,
+                                    arrangement_id: s.arrangement_id,
+                                    class_id: s.class_id,
+                                    class_name: (s.classes && s.classes.name) || "",
+                                    grade: (s.classes && s.classes.grade) || null,
+                                    section: (s.classes && s.classes.section) || "",
+                                    original_period: s.original_period
+                                });
+                            });
+                        }
+                        var dRes = await supabaseClient.from("absence_arrangement_dates").select("*").in("arrangement_id", arrIds);
+                        if (!dRes.error && dRes.data) {
+                            dRes.data.forEach(function(d) {
+                                (dateMap[d.arrangement_id] = dateMap[d.arrangement_id] || []).push({
+                                    id: d.id,
+                                    arrangement_id: d.arrangement_id,
+                                    date: d.date,
+                                    applies: d.applies !== false
+                                });
+                            });
+                        }
+                    }
+
+                    var tMap = {}, sMap = {};
+                    var teachers = await this.getTeachers();
+                    teachers.forEach(function(t) { tMap[t.id] = t; });
+                    var subjects = await this.getSubjects();
+                    subjects.forEach(function(s) { sMap[s.id] = s; });
+
+                    arrangements.forEach(function(a) {
+                        a.sections = secMap[a.id] || [];
+                        a.dates = dateMap[a.id] || [];
+                        var condTeacher = a.conducting_teacher || tMap[a.conducting_teacher_id];
+                        a.conducting_teacher_name = condTeacher ? condTeacher.name : "";
+                        var subj = a.subjects || sMap[a.subject_id];
+                        a.subject_name = subj ? subj.name : "";
+                        a.subject_color = subj ? (subj.color_accent || "#3b82f6") : "#3b82f6";
+                    });
+
+                    return arrangements;
+                }
+            } catch (e) {
+                this._fail("getArrangements", e);
+            }
+        }
+
+        try {
+            var rawArr = JSON.parse(localStorage.getItem("SCH_ARRANGEMENTS") || "[]");
+            arrangements = rawArr.filter(function(a) { return a.absence_id === absenceId; });
+            var rawSec = JSON.parse(localStorage.getItem("SCH_ARR_SECTIONS") || "[]");
+            var rawDates = JSON.parse(localStorage.getItem("SCH_ARR_DATES") || "[]");
+            var teachersL = JSON.parse(localStorage.getItem("SCH_TEACHERS") || "[]");
+            var subjectsL = JSON.parse(localStorage.getItem("SCH_SUBJECTS") || "[]");
+            var classesL = JSON.parse(localStorage.getItem("SCH_CLASSES") || "[]");
+            var tMapL = {}, sMapL = {}, cMapL = {};
+            teachersL.forEach(function(t) { tMapL[t.id] = t; tMapL[t.name] = t; });
+            subjectsL.forEach(function(s) { sMapL[s.id] = s; sMapL[s.name] = s; });
+            classesL.forEach(function(c) { cMapL[c.id] = c; cMapL[c.name] = c; });
+
+            arrangements.forEach(function(a) {
+                a.sections = rawSec.filter(function(s) { return s.arrangement_id === a.id; }).map(function(s) {
+                    var c = cMapL[s.class_id] || {};
+                    return {
+                        id: s.id,
+                        arrangement_id: s.arrangement_id,
+                        class_id: s.class_id,
+                        class_name: c.name || s.class_name || "",
+                        grade: c.grade || null,
+                        section: c.section || "",
+                        original_period: s.original_period
+                    };
+                });
+                a.dates = rawDates.filter(function(d) { return d.arrangement_id === a.id; });
+                var t = tMapL[a.conducting_teacher_id];
+                a.conducting_teacher_name = t ? t.name : "";
+                var s = sMapL[a.subject_id];
+                a.subject_name = s ? s.name : "";
+                a.subject_color = s ? (s.color_accent || "#3b82f6") : "#3b82f6";
+            });
+        } catch (e) { arrangements = []; }
+        return arrangements;
+    };
+
+    // 6. saveArrangement
+    DB.saveArrangement = async function(data) {
+        var arrId = data.id || genUUID();
+        var arrRow = {
+            id: arrId,
+            absence_id: data.absence_id,
+            arrangement_type: data.arrangement_type,
+            subject_id: data.subject_id || null,
+            conducting_teacher_id: data.conducting_teacher_id || null,
+            period: parseInt(data.period) || null,
+            day_of_week: data.day_of_week || null,
+            recurrence: data.recurrence || "all",
+            notes: data.notes || "",
+            approved: data.approved === true,
+            approved_by: data.approved_by || null,
+            approved_at: data.approved ? (data.approved_at || new Date().toISOString()) : null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        var sections = (data.sections || []).map(function(s) {
+            return {
+                id: s.id || genUUID(),
+                arrangement_id: arrId,
+                class_id: s.class_id,
+                original_period: parseInt(s.original_period) || null
+            };
+        });
+
+        var dates = (data.dates || []).map(function(d) {
+            return {
+                id: d.id || genUUID(),
+                arrangement_id: arrId,
+                date: d.date,
+                applies: d.applies !== false
+            };
+        });
+
+        if (isConnected && supabaseClient) {
+            try {
+                var insArr = await supabaseClient.from("absence_arrangements").insert([arrRow]).select().single();
+                if (!insArr.error && insArr.data) {
+                    arrId = insArr.data.id;
+                    sections.forEach(function(s) { s.arrangement_id = arrId; });
+                    dates.forEach(function(d) { d.arrangement_id = arrId; });
+                } else if (insArr.error) {
+                    this._fail("saveArrangement", insArr.error);
+                }
+
+                if (sections.length > 0) {
+                    var insSec = await supabaseClient.from("absence_arrangement_sections").insert(sections);
+                    if (insSec.error) this._fail("saveArrangement (sections)", insSec.error);
+                }
+
+                if (dates.length > 0) {
+                    var insDates = await supabaseClient.from("absence_arrangement_dates").insert(dates);
+                    if (insDates.error) this._fail("saveArrangement (dates)", insDates.error);
+                }
+            } catch (e) {
+                this._fail("saveArrangement", e);
+            }
+        }
+
+        var rawArr = JSON.parse(localStorage.getItem("SCH_ARRANGEMENTS") || "[]");
+        var rawSec = JSON.parse(localStorage.getItem("SCH_ARR_SECTIONS") || "[]");
+        var rawDates = JSON.parse(localStorage.getItem("SCH_ARR_DATES") || "[]");
+
+        var idx = rawArr.findIndex(function(a) { return a.id === arrId; });
+        if (idx >= 0) rawArr[idx] = arrRow; else rawArr.push(arrRow);
+        localStorage.setItem("SCH_ARRANGEMENTS", JSON.stringify(rawArr));
+
+        rawSec = rawSec.filter(function(s) { return s.arrangement_id !== arrId; }).concat(sections);
+        localStorage.setItem("SCH_ARR_SECTIONS", JSON.stringify(rawSec));
+
+        rawDates = rawDates.filter(function(d) { return d.arrangement_id !== arrId; }).concat(dates);
+        localStorage.setItem("SCH_ARR_DATES", JSON.stringify(rawDates));
+
+        arrRow.sections = sections;
+        arrRow.dates = dates;
+        return arrRow;
+    };
+
+    // 7. updateArrangement
+    DB.updateArrangement = async function(id, updates) {
+        updates = Object.assign({}, updates, { updated_at: new Date().toISOString() });
+        var secUpdates = updates.sections;
+        var dateUpdates = updates.dates;
+        var cleanUpdates = Object.assign({}, updates);
+        delete cleanUpdates.sections;
+        delete cleanUpdates.dates;
+
+        if (isConnected && supabaseClient) {
+            try {
+                if (Object.keys(cleanUpdates).length > 0) {
+                    var r = await supabaseClient.from("absence_arrangements").update(cleanUpdates).eq("id", id);
+                    if (r.error) this._fail("updateArrangement", r.error);
+                }
+                if (secUpdates) {
+                    await supabaseClient.from("absence_arrangement_sections").delete().eq("arrangement_id", id);
+                    if (secUpdates.length > 0) {
+                        var secRows = secUpdates.map(function(s) {
+                            return { id: s.id || genUUID(), arrangement_id: id, class_id: s.class_id, original_period: parseInt(s.original_period) || null };
+                        });
+                        await supabaseClient.from("absence_arrangement_sections").insert(secRows);
+                    }
+                }
+                if (dateUpdates) {
+                    await supabaseClient.from("absence_arrangement_dates").delete().eq("arrangement_id", id);
+                    if (dateUpdates.length > 0) {
+                        var dateRows = dateUpdates.map(function(d) {
+                            return { id: d.id || genUUID(), arrangement_id: id, date: d.date, applies: d.applies !== false };
+                        });
+                        await supabaseClient.from("absence_arrangement_dates").insert(dateRows);
+                    }
+                }
+            } catch (e) {
+                this._fail("updateArrangement", e);
+            }
+        }
+
+        var rawArr = JSON.parse(localStorage.getItem("SCH_ARRANGEMENTS") || "[]");
+        for (var i = 0; i < rawArr.length; i++) {
+            if (rawArr[i].id === id) {
+                Object.assign(rawArr[i], cleanUpdates);
+                break;
+            }
+        }
+        localStorage.setItem("SCH_ARRANGEMENTS", JSON.stringify(rawArr));
+
+        if (secUpdates) {
+            var rawSec = JSON.parse(localStorage.getItem("SCH_ARR_SECTIONS") || "[]");
+            rawSec = rawSec.filter(function(s) { return s.arrangement_id !== id; });
+            secUpdates.forEach(function(s) {
+                rawSec.push({ id: s.id || genUUID(), arrangement_id: id, class_id: s.class_id, original_period: parseInt(s.original_period) || null });
+            });
+            localStorage.setItem("SCH_ARR_SECTIONS", JSON.stringify(rawSec));
+        }
+
+        if (dateUpdates) {
+            var rawDates = JSON.parse(localStorage.getItem("SCH_ARR_DATES") || "[]");
+            rawDates = rawDates.filter(function(d) { return d.arrangement_id !== id; });
+            dateUpdates.forEach(function(d) {
+                rawDates.push({ id: d.id || genUUID(), arrangement_id: id, date: d.date, applies: d.applies !== false });
+            });
+            localStorage.setItem("SCH_ARR_DATES", JSON.stringify(rawDates));
+        }
+
+        return updates;
+    };
+
+    // 8. deleteArrangement
+    DB.deleteArrangement = async function(id) {
+        if (isConnected && supabaseClient) {
+            try {
+                var r = await supabaseClient.from("absence_arrangements").delete().eq("id", id);
+                if (r.error) this._fail("deleteArrangement", r.error);
+            } catch (e) {
+                this._fail("deleteArrangement", e);
+            }
+        }
+        var rawArr = JSON.parse(localStorage.getItem("SCH_ARRANGEMENTS") || "[]").filter(function(a) { return a.id !== id; });
+        localStorage.setItem("SCH_ARRANGEMENTS", JSON.stringify(rawArr));
+        var rawSec = JSON.parse(localStorage.getItem("SCH_ARR_SECTIONS") || "[]").filter(function(s) { return s.arrangement_id !== id; });
+        localStorage.setItem("SCH_ARR_SECTIONS", JSON.stringify(rawSec));
+        var rawDates = JSON.parse(localStorage.getItem("SCH_ARR_DATES") || "[]").filter(function(d) { return d.arrangement_id !== id; });
+        localStorage.setItem("SCH_ARR_DATES", JSON.stringify(rawDates));
+        return true;
+    };
+
+    // 9. approveArrangement
+    DB.approveArrangement = async function(id, approvedBy) {
+        return await this.updateArrangement(id, {
+            approved: true,
+            approved_by: approvedBy || "Admin",
+            approved_at: new Date().toISOString()
+        });
+    };
+
+    // 10. getAffectedLessons
+    DB.getAffectedLessons = async function(absenceId) {
+        var absence = await this.getAbsence(absenceId);
+        if (!absence) return [];
+
+        var dates = getWeekdaysBetween(absence.start_date, absence.end_date);
+        if (dates.length === 0) return [];
+
+        var permSlots = [];
+        var classes = await this.getClasses();
+        var subjects = await this.getSubjects();
+        var cMap = {}, sMap = {}, cNameMap = {}, sNameMap = {};
+        classes.forEach(function(c) { cMap[c.id] = c; cNameMap[c.name] = c; });
+        subjects.forEach(function(s) { sMap[s.id] = s; sNameMap[s.name] = s; });
+
+        if (isConnected && supabaseClient) {
+            try {
+                var res = await supabaseClient.from("timetable_slots").select("*").eq("teacher_id", absence.teacher_id);
+                if (!res.error && res.data && res.data.length > 0) {
+                    permSlots = res.data;
+                }
+            } catch (e) {
+                this._fail("getAffectedLessons", e);
+            }
+        }
+
+        if (permSlots.length === 0) {
+            var sch = {};
+            try { sch = JSON.parse(localStorage.getItem("SCH_ACTIVE_TIMETABLE") || "{}"); } catch (e) {}
+            for (var cl in sch) {
+                var cObj = cNameMap[cl] || { id: cl, name: cl, grade: parseInt(cl) || 1, section: "" };
+                for (var day in sch[cl]) {
+                    for (var p in sch[cl][day]) {
+                        var cell = sch[cl][day][p];
+                        if (cell && (cell.teacher === absence.teacher_name || cell.teacher === absence.teacher_id)) {
+                            var sObj = sNameMap[cell.subject] || { id: cell.subject, name: cell.subject };
+                            permSlots.push({
+                                class_id: cObj.id,
+                                day: day,
+                                period: parseInt(p),
+                                teacher_id: absence.teacher_id,
+                                subject_id: sObj.id,
+                                _className: cObj.name,
+                                _subjectName: sObj.name,
+                                _grade: cObj.grade,
+                                _section: cObj.section
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        var affected = [];
+        dates.forEach(function(d) {
+            var matchingSlots = permSlots.filter(function(slot) {
+                return slot.day === d.day;
+            });
+
+            matchingSlots.forEach(function(slot) {
+                var c = cMap[slot.class_id] || cNameMap[slot._className] || { name: slot._className || "Class", grade: slot._grade || 1, section: slot._section || "" };
+                var s = sMap[slot.subject_id] || sNameMap[slot._subjectName] || { name: slot._subjectName || "Subject" };
+
+                if (s.name === "P.E" || s.name === "PE") return;
+
+                affected.push({
+                    absence_id: absenceId,
+                    date: d.date,
+                    day: d.day,
+                    period: parseInt(slot.period),
+                    class_id: slot.class_id || c.id,
+                    class_name: c.name,
+                    grade: c.grade,
+                    section: c.section,
+                    subject_id: slot.subject_id || s.id,
+                    subject_name: s.name,
+                    original_teacher_id: absence.teacher_id,
+                    original_teacher_name: absence.teacher_name
+                });
+            });
+        });
+
+        affected.sort(function(a, b) {
+            if (a.date !== b.date) return a.date.localeCompare(b.date);
+            if (a.period !== b.period) return a.period - b.period;
+            return a.class_name.localeCompare(b.class_name);
+        });
+
+        return affected;
+    };
+
+    // 11. findCommonPeriod
+    DB.findCommonPeriod = async function(classId1, classId2, conductorTeacherId, dayOfWeek, periodsPerDay) {
+        periodsPerDay = parseInt(periodsPerDay) || 7;
+        var busy = new Set();
+
+        var classes = await this.getClasses();
+        var teachers = await this.getTeachers();
+        var cMap = {}, tMap = {};
+        classes.forEach(function(c) { cMap[c.id] = c; cMap[c.name] = c; });
+        teachers.forEach(function(t) { tMap[t.id] = t; tMap[t.name] = t; });
+
+        var c1 = cMap[classId1] || { id: classId1, name: classId1 };
+        var c2 = cMap[classId2] || { id: classId2, name: classId2 };
+        var ct = tMap[conductorTeacherId] || { id: conductorTeacherId, name: conductorTeacherId };
+
+        if (isConnected && supabaseClient) {
+            try {
+                var orFilter = [];
+                if (c1.id) orFilter.push("class_id.eq." + c1.id);
+                if (c2.id) orFilter.push("class_id.eq." + c2.id);
+                if (ct.id) orFilter.push("teacher_id.eq." + ct.id);
+
+                if (orFilter.length > 0) {
+                    var res = await supabaseClient.from("timetable_slots").select("period, class_id, teacher_id").eq("day", dayOfWeek).or(orFilter.join(","));
+                    if (!res.error && res.data) {
+                        res.data.forEach(function(r) { busy.add(parseInt(r.period)); });
+                    }
+                }
+            } catch (e) {
+                this._fail("findCommonPeriod", e);
+            }
+        }
+
+        var sch = {};
+        try { sch = JSON.parse(localStorage.getItem("SCH_ACTIVE_TIMETABLE") || "{}"); } catch (e) {}
+        [c1.name, c2.name].forEach(function(cn) {
+            if (sch[cn] && sch[cn][dayOfWeek]) {
+                for (var p in sch[cn][dayOfWeek]) {
+                    if (sch[cn][dayOfWeek][p]) busy.add(parseInt(p));
+                }
+            }
+        });
+        for (var cn in sch) {
+            if (sch[cn] && sch[cn][dayOfWeek]) {
+                for (var p in sch[cn][dayOfWeek]) {
+                    var cell = sch[cn][dayOfWeek][p];
+                    if (cell && (cell.teacher === ct.name || cell.teacher === ct.id)) {
+                        busy.add(parseInt(p));
+                    }
+                }
+            }
+        }
+
+        var common = [];
+        for (var p = 1; p <= periodsPerDay; p++) {
+            if (!busy.has(p)) common.push(p);
+        }
+        common.sort(function(a, b) { return a - b; });
+        return common;
+    };
+
+    // 12. validateArrangements
+    DB.validateArrangements = async function(absenceId) {
+        var errors = [];
+        var warnings = [];
+        var absence = await this.getAbsence(absenceId);
+        if (!absence) return { valid: false, errors: ["Absence record not found."], warnings: [] };
+
+        var arrangements = await this.getArrangements(absenceId);
+        var affectedLessons = await this.getAffectedLessons(absenceId);
+
+        var teacherSlots = {};
+        var sectionSlots = {};
+
+        var weekdays = getWeekdaysBetween(absence.start_date, absence.end_date);
+        var weekdaySet = new Set(weekdays.map(function(w) { return w.date; }));
+
+        arrangements.forEach(function(arr) {
+            if (!arr.conducting_teacher_id) {
+                errors.push("Arrangement #" + arr.id.slice(0, 6) + " has no conducting/substitute teacher assigned.");
+            }
+            if (!arr.period) {
+                errors.push("Arrangement #" + arr.id.slice(0, 6) + " has no period specified.");
+            }
+            if (arr.arrangement_type === "combine" && (!arr.sections || arr.sections.length > 2)) {
+                errors.push("Combined arrangement #" + arr.id.slice(0, 6) + " must combine at most 2 sections (found " + (arr.sections ? arr.sections.length : 0) + ").");
+            }
+
+            var appDates = [];
+            if (arr.recurrence === "all") {
+                weekdays.forEach(function(w) {
+                    if (!arr.day_of_week || arr.day_of_week === w.day) appDates.push(w.date);
+                });
+            } else if (arr.dates && arr.dates.length > 0) {
+                arr.dates.forEach(function(d) {
+                    if (d.applies !== false) appDates.push(d.date);
+                });
+            }
+
+            appDates.forEach(function(dStr) {
+                if (!weekdaySet.has(dStr)) {
+                    warnings.push("Arrangement applies to " + dStr + ", which is outside the active absence dates.");
+                }
+
+                if (arr.conducting_teacher_id) {
+                    var tKey = dStr + "|" + arr.period + "|" + arr.conducting_teacher_id;
+                    teacherSlots[tKey] = (teacherSlots[tKey] || []);
+                    teacherSlots[tKey].push(arr);
+                    if (teacherSlots[tKey].length === 2) {
+                        errors.push(arr.conducting_teacher_name + " is double-booked on " + dStr + " Period " + arr.period + " across multiple arrangements.");
+                    }
+                }
+
+                (arr.sections || []).forEach(function(s) {
+                    var sKey = dStr + "|" + arr.period + "|" + s.class_id;
+                    sectionSlots[sKey] = (sectionSlots[sKey] || []);
+                    sectionSlots[sKey].push(arr);
+                    if (sectionSlots[sKey].length === 2) {
+                        errors.push("Section " + (s.class_name || s.class_id) + " is double-booked on " + dStr + " Period " + arr.period + ".");
+                    }
+                });
+            });
+        });
+
+        var arrangedLessonKeys = new Set();
+        arrangements.forEach(function(arr) {
+            var appDates = [];
+            if (arr.recurrence === "all") {
+                weekdays.forEach(function(w) { if (!arr.day_of_week || arr.day_of_week === w.day) appDates.push(w.date); });
+            } else if (arr.dates) {
+                arr.dates.forEach(function(d) { if (d.applies !== false) appDates.push(d.date); });
+            }
+            appDates.forEach(function(dStr) {
+                (arr.sections || []).forEach(function(s) {
+                    arrangedLessonKeys.add(dStr + "|" + s.class_id);
+                });
+            });
+        });
+
+        var unarrangedCount = 0;
+        affectedLessons.forEach(function(l) {
+            if (!arrangedLessonKeys.has(l.date + "|" + l.class_id)) {
+                unarrangedCount++;
+            }
+        });
+
+        if (unarrangedCount > 0) {
+            warnings.push(unarrangedCount + " affected lesson(s) have no arrangement assigned and will appear as 'Unresolved'.");
+        }
+
+        return {
+            valid: errors.length === 0,
+            errors: errors,
+            warnings: warnings
+        };
+    };
+
+    // 13. generateTempTimetable
+    DB.generateTempTimetable = async function(absenceId) {
+        var absence = await this.getAbsence(absenceId);
+        if (!absence) throw new Error("Absence not found.");
+
+        await this.clearTempTimetable(absenceId);
+
+        var validation = await this.validateArrangements(absenceId);
+        var arrangements = await this.getArrangements(absenceId);
+        var approvedArr = arrangements.filter(function(a) { return a.approved; });
+        var affectedLessons = await this.getAffectedLessons(absenceId);
+
+        var weekdays = getWeekdaysBetween(absence.start_date, absence.end_date);
+        var classes = await this.getClasses();
+        var cMap = {}, cNameMap = {};
+        classes.forEach(function(c) { cMap[c.id] = c; cNameMap[c.name] = c; });
+
+        var permSlots = [];
+        if (isConnected && supabaseClient) {
+            try {
+                var res = await supabaseClient.from("timetable_slots").select("*");
+                if (!res.error && res.data) permSlots = res.data;
+            } catch (e) {}
+        }
+        if (permSlots.length === 0) {
+            var sch = {};
+            try { sch = JSON.parse(localStorage.getItem("SCH_ACTIVE_TIMETABLE") || "{}"); } catch (e) {}
+            for (var cl in sch) {
+                var cObj = cNameMap[cl] || { id: cl, name: cl };
+                for (var day in sch[cl]) {
+                    for (var p in sch[cl][day]) {
+                        var cell = sch[cl][day][p];
+                        if (cell) {
+                            permSlots.push({
+                                class_id: cObj.id,
+                                day: day,
+                                period: parseInt(p),
+                                teacher_id: cell.teacher,
+                                subject_id: cell.subject,
+                                _teacherName: cell.teacher,
+                                _subjectName: cell.subject
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        var affectedClassIds = new Set(affectedLessons.map(function(l) { return l.class_id; }));
+
+        var generatedSlots = [];
+        var unresolvedCount = 0;
+
+        weekdays.forEach(function(w) {
+            var dateStr = w.date;
+            var dayStr = w.day;
+
+            var dayArrangements = approvedArr.filter(function(arr) {
+                if (arr.recurrence === "all") {
+                    return !arr.day_of_week || arr.day_of_week === dayStr;
+                }
+                return (arr.dates || []).some(function(d) { return d.date === dateStr && d.applies !== false; });
+            });
+
+            var coveredSectionKeys = new Set();
+
+            dayArrangements.forEach(function(arr) {
+                var secIds = (arr.sections || []).map(function(s) {
+                    coveredSectionKeys.add(s.class_id);
+                    return s.class_id;
+                });
+
+                if (arr.arrangement_type === "combine") {
+                    generatedSlots.push({
+                        id: genUUID(),
+                        absence_id: absenceId,
+                        arrangement_id: arr.id,
+                        date: dateStr,
+                        period: arr.period,
+                        class_ids: secIds,
+                        subject_id: arr.subject_id,
+                        teacher_id: arr.conducting_teacher_id,
+                        original_teacher_id: absence.teacher_id,
+                        slot_type: "combined",
+                        change_reason: "Combined 2 sections with " + (arr.conducting_teacher_name || "conducting teacher"),
+                        published: false,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    });
+                } else {
+                    generatedSlots.push({
+                        id: genUUID(),
+                        absence_id: absenceId,
+                        arrangement_id: arr.id,
+                        date: dateStr,
+                        period: arr.period,
+                        class_ids: secIds,
+                        subject_id: arr.subject_id,
+                        teacher_id: arr.conducting_teacher_id,
+                        original_teacher_id: absence.teacher_id,
+                        slot_type: "substitute",
+                        change_reason: "Substitute cover: " + (arr.conducting_teacher_name || "covering teacher"),
+                        published: false,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    });
+                }
+            });
+
+            var dayAffected = affectedLessons.filter(function(l) { return l.date === dateStr; });
+            dayAffected.forEach(function(l) {
+                if (!coveredSectionKeys.has(l.class_id)) {
+                    unresolvedCount++;
+                    generatedSlots.push({
+                        id: genUUID(),
+                        absence_id: absenceId,
+                        arrangement_id: null,
+                        date: dateStr,
+                        period: l.period,
+                        class_ids: [l.class_id],
+                        subject_id: l.subject_id,
+                        teacher_id: null,
+                        original_teacher_id: absence.teacher_id,
+                        slot_type: "unresolved",
+                        change_reason: "Absent teacher - no arrangement assigned",
+                        published: false,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    });
+                }
+            });
+
+            permSlots.filter(function(ps) {
+                return ps.day === dayStr && affectedClassIds.has(ps.class_id);
+            }).forEach(function(ps) {
+                var isAbsentSlot = (ps.teacher_id === absence.teacher_id || ps._teacherName === absence.teacher_name);
+                if (isAbsentSlot) return;
+
+                var isPE = (ps._subjectName === "P.E" || ps._subjectName === "PE");
+                generatedSlots.push({
+                    id: genUUID(),
+                    absence_id: absenceId,
+                    arrangement_id: null,
+                    date: dateStr,
+                    period: ps.period,
+                    class_ids: [ps.class_id],
+                    subject_id: ps.subject_id,
+                    teacher_id: ps.teacher_id,
+                    original_teacher_id: ps.teacher_id,
+                    slot_type: isPE ? "pe" : "unchanged",
+                    change_reason: isPE ? "P.E. kept as-is" : "Regular schedule maintained",
+                    published: false,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                });
+            });
+        });
+
+        if (isConnected && supabaseClient) {
+            try {
+                for (var i = 0; i < generatedSlots.length; i += 200) {
+                    var chunk = generatedSlots.slice(i, i + 200);
+                    var ins = await supabaseClient.from("temp_timetable_slots").insert(chunk);
+                    if (ins.error) this._fail("generateTempTimetable (save)", ins.error);
+                }
+            } catch (e) {
+                this._fail("generateTempTimetable", e);
+            }
+        }
+
+        var rawSlots = JSON.parse(localStorage.getItem("SCH_TEMP_SLOTS") || "[]");
+        rawSlots = rawSlots.filter(function(s) { return s.absence_id !== absenceId; }).concat(generatedSlots);
+        localStorage.setItem("SCH_TEMP_SLOTS", JSON.stringify(rawSlots));
+
+        return {
+            generated: generatedSlots.length,
+            unresolved: unresolvedCount,
+            conflicts: validation.errors
+        };
+    };
+
+    // 14. getTempTimetable
+    DB.getTempTimetable = async function(absenceId, date) {
+        var slots = [];
+        if (isConnected && supabaseClient) {
+            try {
+                var query = supabaseClient.from("temp_timetable_slots").select("*, teachers!temp_timetable_slots_teacher_id_fkey(name), original_teacher:teachers!temp_timetable_slots_original_teacher_id_fkey(name), subjects(name, color_accent)").eq("absence_id", absenceId);
+                if (date) query = query.eq("date", date);
+                var res = await query.order("period");
+                if (res.error) {
+                    query = supabaseClient.from("temp_timetable_slots").select("*").eq("absence_id", absenceId);
+                    if (date) query = query.eq("date", date);
+                    res = await query.order("period");
+                }
+                if (!res.error && res.data) {
+                    slots = res.data;
+                }
+            } catch (e) {
+                this._fail("getTempTimetable", e);
+            }
+        }
+
+        if (slots.length === 0) {
+            var raw = JSON.parse(localStorage.getItem("SCH_TEMP_SLOTS") || "[]");
+            slots = raw.filter(function(s) {
+                return s.absence_id === absenceId && (!date || s.date === date);
+            });
+        }
+
+        var classes = await this.getClasses();
+        var teachers = await this.getTeachers();
+        var subjects = await this.getSubjects();
+        var cMap = {}, tMap = {}, sMap = {};
+        classes.forEach(function(c) { cMap[c.id] = c; cMap[c.name] = c; });
+        teachers.forEach(function(t) { tMap[t.id] = t; tMap[t.name] = t; });
+        subjects.forEach(function(s) { sMap[s.id] = s; sMap[s.name] = s; });
+
+        slots.forEach(function(s) {
+            var cIds = Array.isArray(s.class_ids) ? s.class_ids : (typeof s.class_ids === 'string' ? JSON.parse(s.class_ids || "[]") : []);
+            s.class_names = cIds.map(function(cid) { return (cMap[cid] && cMap[cid].name) || cid; });
+            s.class_name = s.class_names.join(" + ");
+
+            var t = (s.teachers && s.teachers.name) ? s.teachers : tMap[s.teacher_id];
+            s.teacher_name = t ? t.name : "";
+            var ot = (s.original_teacher && s.original_teacher.name) ? s.original_teacher : tMap[s.original_teacher_id];
+            s.original_teacher_name = ot ? ot.name : "";
+
+            var subj = (s.subjects && s.subjects.name) ? s.subjects : sMap[s.subject_id];
+            s.subject_name = subj ? subj.name : "";
+            s.subject_color = subj ? (subj.color_accent || "#3b82f6") : "#3b82f6";
+        });
+
+        slots.sort(function(a, b) {
+            if (a.date !== b.date) return a.date.localeCompare(b.date);
+            if (a.period !== b.period) return a.period - b.period;
+            return (a.class_name || "").localeCompare(b.class_name || "");
+        });
+
+        return slots;
+    };
+
+    // 15. publishTempTimetable
+    DB.publishTempTimetable = async function(absenceId, approvedBy) {
+        approvedBy = approvedBy || "Admin";
+        var snapshot = {
+            published_at: new Date().toISOString(),
+            approved_by: approvedBy
+        };
+
+        if (isConnected && supabaseClient) {
+            try {
+                var r1 = await supabaseClient.from("temp_timetable_slots").update({ published: true, updated_at: new Date().toISOString() }).eq("absence_id", absenceId);
+                if (r1.error) this._fail("publishTempTimetable (update)", r1.error);
+
+                var r2 = await supabaseClient.from("absence_approval_log").insert([{
+                    absence_id: absenceId,
+                    action: "published",
+                    acted_by: approvedBy,
+                    notes: "Temporary timetable published",
+                    snapshot: snapshot,
+                    acted_at: new Date().toISOString()
+                }]);
+                if (r2.error) this._fail("publishTempTimetable (log)", r2.error);
+            } catch (e) {
+                this._fail("publishTempTimetable", e);
+            }
+        }
+
+        var rawSlots = JSON.parse(localStorage.getItem("SCH_TEMP_SLOTS") || "[]");
+        rawSlots.forEach(function(s) {
+            if (s.absence_id === absenceId) {
+                s.published = true;
+                s.updated_at = new Date().toISOString();
+            }
+        });
+        localStorage.setItem("SCH_TEMP_SLOTS", JSON.stringify(rawSlots));
+
+        var rawLog = JSON.parse(localStorage.getItem("SCH_APPROVAL_LOG") || "[]");
+        rawLog.push({
+            id: genUUID(),
+            absence_id: absenceId,
+            action: "published",
+            acted_by: approvedBy,
+            notes: "Temporary timetable published",
+            snapshot: snapshot,
+            acted_at: new Date().toISOString()
+        });
+        localStorage.setItem("SCH_APPROVAL_LOG", JSON.stringify(rawLog));
+
+        return { success: true };
+    };
+
+    // 16. clearTempTimetable
+    DB.clearTempTimetable = async function(absenceId) {
+        if (isConnected && supabaseClient) {
+            try {
+                var r = await supabaseClient.from("temp_timetable_slots").delete().eq("absence_id", absenceId);
+                if (r.error) this._fail("clearTempTimetable", r.error);
+            } catch (e) {
+                this._fail("clearTempTimetable", e);
+            }
+        }
+        var rawSlots = JSON.parse(localStorage.getItem("SCH_TEMP_SLOTS") || "[]");
+        rawSlots = rawSlots.filter(function(s) { return s.absence_id !== absenceId; });
+        localStorage.setItem("SCH_TEMP_SLOTS", JSON.stringify(rawSlots));
+        return { success: true };
+    };
+
+    // 17. getApprovalLog
+    DB.getApprovalLog = async function(absenceId) {
+        var logs = [];
+        if (isConnected && supabaseClient) {
+            try {
+                var res = await supabaseClient.from("absence_approval_log").select("*").eq("absence_id", absenceId).order("acted_at", { ascending: false });
+                if (!res.error && res.data) return res.data;
+            } catch (e) {}
+        }
+        var rawLog = JSON.parse(localStorage.getItem("SCH_APPROVAL_LOG") || "[]");
+        return rawLog.filter(function(l) { return l.absence_id === absenceId; }).sort(function(a, b) {
+            return new Date(b.acted_at) - new Date(a.acted_at);
+        });
+    };
+
+    // 18. compareWithPermanent
+    DB.compareWithPermanent = async function(absenceId) {
+        var tempSlots = await this.getTempTimetable(absenceId);
+        var res = {
+            unchanged: [],
+            modified: [],
+            combined: [],
+            substitute: [],
+            unresolved: []
+        };
+
+        tempSlots.forEach(function(s) {
+            if (s.slot_type === "combined") {
+                res.combined.push(s);
+                res.modified.push(s);
+            } else if (s.slot_type === "substitute") {
+                res.substitute.push(s);
+                res.modified.push(s);
+            } else if (s.slot_type === "unresolved") {
+                res.unresolved.push(s);
+                res.modified.push(s);
+            } else {
+                res.unchanged.push(s);
+            }
+        });
+
+        return res;
     };
 })();

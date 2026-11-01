@@ -698,6 +698,173 @@
         flex: 1;
       }
     }
+
+    /* =========================================================================
+       TEACHER ABSENCE & TEMPORARY TIMETABLE MANAGEMENT - STYLES
+       ========================================================================= */
+    .slot-unchanged {
+      background: #f0fdf4 !important;
+      border-left: 4px solid #22c55e !important;
+    }
+    .slot-combined {
+      background: #eff6ff !important;
+      border-left: 4px solid #3b82f6 !important;
+    }
+    .slot-substitute {
+      background: #fefce8 !important;
+      border-left: 4px solid #eab308 !important;
+    }
+    .slot-unresolved {
+      background: #fef2f2 !important;
+      border-left: 4px solid #ef4444 !important;
+    }
+    .slot-pe {
+      background: #f8fafc !important;
+      border-left: 4px solid #94a3b8 !important;
+    }
+
+    .absence-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: capitalize;
+    }
+    .absence-badge.active {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+    .absence-badge.inactive {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+    .absence-badge.closed {
+      background: #e2e8f0;
+      color: #64748b;
+      border: 1px solid #94a3b8;
+    }
+
+    .abs-dashboard-card {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+      min-width: 220px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .abs-dashboard-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .abs-dashboard-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .abs-dashboard-num {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--slate-900);
+      line-height: 1.1;
+    }
+    .abs-dashboard-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--slate-500);
+    }
+
+    .arr-card {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      transition: all 0.15s ease;
+    }
+    .arr-card:hover {
+      border-color: var(--primary-light);
+      box-shadow: var(--shadow-sm);
+    }
+    .arr-card.combine {
+      border-left: 4px solid #3b82f6;
+    }
+    .arr-card.substitute {
+      border-left: 4px solid #eab308;
+    }
+
+    .lesson-row {
+      transition: background-color 0.15s ease;
+    }
+    .lesson-row:hover {
+      background-color: var(--slate-50);
+    }
+    .lesson-row.arranged {
+      background-color: #f0fdf4;
+    }
+
+    .compare-row-unchanged {
+      background-color: white;
+    }
+    .compare-row-combined {
+      background-color: #eff6ff;
+    }
+    .compare-row-substitute {
+      background-color: #fefce8;
+    }
+    .compare-row-unresolved {
+      background-color: #fef2f2;
+    }
+
+    .period-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--slate-100);
+      color: var(--slate-700);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--slate-300);
+      transition: all 0.15s ease;
+    }
+    .period-chip:hover {
+      background: var(--primary-bg);
+      border-color: var(--primary-light);
+      color: var(--primary);
+    }
+    .period-chip.selected {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary-dark);
+    }
+
+    .timeline-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary);
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
@@ -726,6 +893,12 @@
     </button>
     <button class="nav-tab" id="tabBtn-assessments" onclick="switchTab('assessments')">📝 Assessments</button>
     <button class="nav-tab" id="tabBtn-settings" onclick="switchTab('settings')">⚙️ Settings</button>
+    <button class="nav-tab" onclick="switchTab('tab-absences')" id="nav-tab-absences">
+      🏥 Absences <span class="tab-badge" id="absenceBadge" style="background:var(--danger); color:white; display:none;">0</span>
+    </button>
+    <button class="nav-tab" onclick="switchTab('tab-temp-timetable')" id="nav-tab-temp">
+      📆 Temp Timetable
+    </button>
   </div>
 
   <!-- TAB 1: TIMETABLE -->
@@ -1062,6 +1235,229 @@
       <button onclick="clearTimetableSlots()" class="btn-danger">Clear All Timetable Slots</button>
     </div>
   </div>
+
+  <!-- TAB 8: ABSENCES -->
+  <div id="tab-absences" class="tab-content">
+    <!-- 1. Dashboard Row -->
+    <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:16px;">
+      <div class="abs-dashboard-card">
+        <div class="abs-dashboard-icon" style="background:#fee2e2; color:#dc2626;">🏥</div>
+        <div>
+          <div class="abs-dashboard-num" id="statActiveAbsences">0</div>
+          <div class="abs-dashboard-label">Active Absences</div>
+        </div>
+      </div>
+      <div class="abs-dashboard-card">
+        <div class="abs-dashboard-icon" style="background:#fef3c7; color:#d97706;">⏳</div>
+        <div>
+          <div class="abs-dashboard-num" id="statPendingApproval">0</div>
+          <div class="abs-dashboard-label">Pending Approval</div>
+        </div>
+      </div>
+      <div class="abs-dashboard-card">
+        <div class="abs-dashboard-icon" style="background:#eff6ff; color:#2563eb;">⚠️</div>
+        <div>
+          <div class="abs-dashboard-num" id="statUnresolvedLessons">0</div>
+          <div class="abs-dashboard-label">Unresolved Lessons</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Controls & Register Absence Button -->
+    <div class="controls-row">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <h3 style="margin:0; font-size:16px; color:var(--primary-dark);">Registered Absences</h3>
+        <span class="tag tag-primary">Long Leave Only</span>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+        <button class="btn-primary" onclick="ABS.openAbsenceModal()">
+          ➕ Register Teacher Absence
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. Active Absences Table -->
+    <div class="table-responsive" style="margin-bottom:16px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Teacher</th>
+            <th>Department</th>
+            <th>Leave Period</th>
+            <th>Duration</th>
+            <th>Reason &amp; Notes</th>
+            <th>Status</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="absencesTableBody">
+          <tr><td colspan="7" style="text-align:center; padding:20px; color:var(--slate-400);">Loading absence records...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4. Manage Detail Panel (Inline slide-down) -->
+    <div id="absenceManagePanel" class="card" style="display:none; padding:20px; border-top:4px solid var(--primary); margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h3 id="manageAbsenceTitle" style="margin:0 0 4px; font-size:18px; color:var(--primary);">Manage Absence: Teacher</h3>
+          <p id="manageAbsenceSubtitle" style="font-size:13px; color:var(--slate-600); margin:0;">Dates: 2026-11-01 to 2026-11-15</p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-outline" onclick="ABS.closeManagePanel()">✕ Close Panel</button>
+        </div>
+      </div>
+
+      <!-- Validation & Generation Status Bar -->
+      <div id="manageValidationBox" style="margin-bottom:14px;"></div>
+
+      <!-- Tabs/Sections inside Manage Panel -->
+      <div style="display:grid; grid-template-columns:1fr; gap:18px;">
+        <!-- Affected Lessons Table -->
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+            <h4 style="margin:0; font-size:14.5px; color:var(--slate-800);">📋 Affected Lessons (<span id="affectedLessonsCount">0</span>)</h4>
+            <span style="font-size:12px; color:var(--slate-500);">Assign each lesson group a combination or substitute</span>
+          </div>
+          <div class="table-responsive" style="max-height:360px; overflow-y:auto; border:1px solid var(--slate-200);">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Day</th>
+                  <th>Period</th>
+                  <th>Class</th>
+                  <th>Subject</th>
+                  <th>Current Status</th>
+                  <th style="text-align:right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="affectedLessonsTableBody">
+                <tr><td colspan="7" style="text-align:center; padding:16px; color:var(--slate-400);">No affected lessons found.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Existing Arrangements Cards List -->
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+            <h4 style="margin:0; font-size:14.5px; color:var(--slate-800);">🤝 Configured Arrangements (<span id="arrangementsCount">0</span>)</h4>
+            <div style="display:flex; gap:8px;">
+              <button class="btn-outline" style="font-size:12px; padding:4px 10px;" onclick="ABS.openArrangeModal()">+ New Arrangement</button>
+            </div>
+          </div>
+          <div id="arrangementsListContainer" style="max-height:320px; overflow-y:auto;">
+            <p style="text-align:center; padding:16px; color:var(--slate-400);">No arrangements configured yet.</p>
+          </div>
+        </div>
+
+        <!-- Action Footer -->
+        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--slate-200); padding-top:14px; flex-wrap:wrap; gap:10px;">
+          <div id="arrangementsStatusSummary" style="font-size:13px; font-weight:600; color:var(--slate-700);">
+            Ready to generate temporary timetable.
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-primary" id="btnGenerateTemp" onclick="ABS.generate()">
+              ⚡ Generate Temporary Timetable
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 9: TEMPORARY TIMETABLE -->
+  <div id="tab-temp-timetable" class="tab-content">
+    <!-- Controls row -->
+    <div class="controls-row">
+      <div class="control-group">
+        <label>Absence:</label>
+        <select id="tempAbsenceSelect" onchange="ABS.onTempAbsenceChange()" style="min-width:220px;"></select>
+      </div>
+      <div class="control-group">
+        <label>View Mode:</label>
+        <select id="tempViewMode" onchange="ABS.switchTempView(this.value)">
+          <option value="daily">Daily Timetable Grid</option>
+          <option value="grade">By Grade</option>
+          <option value="teacher">By Covering Teacher</option>
+        </select>
+      </div>
+      <!-- Date Navigator -->
+      <div class="control-group" id="tempDateNavGroup">
+        <button class="btn-outline" style="padding:6px 10px;" onclick="ABS.prevDay()">◀</button>
+        <input type="date" id="tempDatePicker" onchange="ABS.onTempDateChange(this.value)" style="width:145px; padding:6px 8px;">
+        <button class="btn-outline" style="padding:6px 10px;" onclick="ABS.nextDay()">▶</button>
+        <span id="tempDayBadge" class="tag tag-primary" style="font-size:12px;">Monday</span>
+      </div>
+
+      <!-- Right Actions -->
+      <div style="margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <span id="tempPublishedBadge" class="status-badge warn">Draft (Unpublished)</span>
+        <button class="btn-success" id="btnOpenApprovalModal" onclick="ABS.openApprovalModal()">
+          ✅ Review &amp; Approve
+        </button>
+        <button class="btn-outline" onclick="ABS.printTempTimetable()">🖨️ Print</button>
+        <button class="btn-danger" onclick="ABS.clearCurrentTemp()">🗑️ Clear</button>
+      </div>
+    </div>
+
+    <!-- Legend & Info Bar -->
+    <div class="card" style="padding:10px 16px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:12px; font-weight:600;">
+        <span style="color:var(--slate-500);">LEGEND:</span>
+        <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:12px; height:12px; background:#f0fdf4; border-left:3px solid #22c55e; border-radius:2px;"></span> Unchanged</span>
+        <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:12px; height:12px; background:#eff6ff; border-left:3px solid #3b82f6; border-radius:2px;"></span> Combined (2 Secs)</span>
+        <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:12px; height:12px; background:#fefce8; border-left:3px solid #eab308; border-radius:2px;"></span> Substitute Cover</span>
+        <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:12px; height:12px; background:#fef2f2; border-left:3px solid #ef4444; border-radius:2px;"></span> Unresolved</span>
+        <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:12px; height:12px; background:#f8fafc; border-left:3px solid #94a3b8; border-radius:2px;"></span> P.E. (Kept As-Is)</span>
+      </div>
+      <div id="tempApprovalMeta" style="font-size:12px; color:var(--slate-600);"></div>
+    </div>
+
+    <!-- Timetable Grid Container -->
+    <div class="table-responsive" style="margin-bottom:16px;">
+      <table id="tempTimetableGrid">
+        <thead id="tempGridHeader"></thead>
+        <tbody id="tempGridBody">
+          <tr><td colspan="9" style="text-align:center; padding:30px; color:var(--slate-400);">Select an active absence and generate the temporary timetable.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Comparison Diff Panel (Collapsible) -->
+    <div class="card" style="padding:16px 20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="ABS.toggleDiffPanel()">
+        <div>
+          <h4 style="margin:0; font-size:15px; color:var(--slate-800);">⚖️ Permanent vs. Temporary Comparison</h4>
+          <small style="color:var(--slate-500);">Review differences and verified schedule adjustments</small>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span id="diffStatsBadges"></span>
+          <button class="btn-outline" style="padding:2px 8px; font-size:11px;" id="diffToggleBtn">▼ Show Diff</button>
+        </div>
+      </div>
+      <div id="diffPanelContent" style="display:none; margin-top:14px; border-top:1px solid var(--slate-200); padding-top:14px;">
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Period</th>
+                <th>Class(es)</th>
+                <th>Subject</th>
+                <th>Type</th>
+                <th>Covering Teacher</th>
+                <th>Original Teacher</th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody id="diffTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- MODALS -->
@@ -1189,12 +1585,12 @@
   </div>
 </div>
 
-<!-- Absence Report Modal -->
-<div id="absenceModal" class="modal">
+<!-- Daily Absence Report Modal (Substitutions Tab) -->
+<div id="subAbsenceModal" class="modal">
   <div class="modal-content modal-lg">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--slate-200); padding-bottom:10px;">
       <h3 style="margin:0; color:var(--primary); font-size:18px;">🚨 Report Teacher Absence & Assign Cover</h3>
-      <button onclick="closeAbsenceModal()" class="btn-outline" style="padding:2px 8px;">✕</button>
+      <button onclick="closeSubAbsenceModal()" class="btn-outline" style="padding:2px 8px;">✕</button>
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
@@ -1220,7 +1616,232 @@
     </div>
 
     <div class="modal-actions">
-      <button class="btn-outline" onclick="closeAbsenceModal()">Close</button>
+      <button class="btn-outline" onclick="closeSubAbsenceModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- =============================================================================
+     NEW MODALS FOR TEACHER ABSENCE & TEMPORARY TIMETABLE MANAGEMENT
+     ============================================================================= -->
+
+<!-- 1. Register / Edit Absence Modal -->
+<div id="absenceModal" class="modal">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--slate-200); padding-bottom:10px;">
+      <h3 id="absenceModalTitle" style="margin:0; color:var(--primary); font-size:18px;">🏥 Register Teacher Absence</h3>
+      <button onclick="ABS.closeAbsenceModal()" class="btn-outline" style="padding:2px 8px;">✕</button>
+    </div>
+
+    <input type="hidden" id="absEditId">
+
+    <div class="form-group">
+      <label>Absent Teacher *</label>
+      <select id="absTeacher"></select>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div class="form-group">
+        <label>Start Date *</label>
+        <input type="date" id="absStartDate">
+      </div>
+      <div class="form-group">
+        <label>End Date *</label>
+        <input type="date" id="absEndDate">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Reason (e.g. Maternity Leave, Medical, Hajj)</label>
+      <input type="text" id="absReason" placeholder="Leave reason">
+    </div>
+
+    <div class="form-group">
+      <label>Notes &amp; Administrative Remarks</label>
+      <textarea id="absNotes" rows="3" placeholder="Optional notes..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Status</label>
+      <select id="absStatus">
+        <option value="active" selected>Active (Leave Ongoing)</option>
+        <option value="inactive">Inactive / Draft</option>
+        <option value="closed">Closed (Teacher Returned)</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="ABS.closeAbsenceModal()">Cancel</button>
+      <button class="btn-primary" onclick="ABS.saveAbsence()">💾 Save Absence</button>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Arrangement Builder Modal -->
+<div id="arrangeModal" class="modal">
+  <div class="modal-content modal-lg">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--slate-200); padding-bottom:10px;">
+      <h3 id="arrangeModalTitle" style="margin:0; color:var(--primary); font-size:18px;">🤝 Configure Lesson Arrangement</h3>
+      <button onclick="ABS.closeArrangeModal()" class="btn-outline" style="padding:2px 8px;">✕</button>
+    </div>
+
+    <input type="hidden" id="arrEditId">
+    <input type="hidden" id="arrLessonDate">
+
+    <!-- Arrangement Type Selector -->
+    <div class="card" style="padding:12px 16px; margin-bottom:14px; background:var(--slate-50);">
+      <label style="font-weight:700; font-size:13px; display:block; margin-bottom:8px;">Arrangement Strategy:</label>
+      <div style="display:flex; gap:20px; align-items:center;">
+        <label style="display:flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;">
+          <input type="radio" name="arrType" value="combine" checked onchange="ABS.onArrangeTypeChange()" style="width:auto;">
+          Combine 2 Sections (Max 2)
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;">
+          <input type="radio" name="arrType" value="substitute" onchange="ABS.onArrangeTypeChange()" style="width:auto;">
+          Assign Substitute Teacher
+        </label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Subject</label>
+      <select id="arrSubject"></select>
+    </div>
+
+    <!-- Combine Fields Container -->
+    <div id="arrCombineBox" style="border:1px solid #bfdbfe; background:#eff6ff; border-radius:8px; padding:14px; margin-bottom:14px;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px;">
+        <div class="form-group">
+          <label>Section 1 (Affected Class) *</label>
+          <select id="arrSec1" onchange="ABS.onCombineSectionsChange()"></select>
+        </div>
+        <div class="form-group">
+          <label>Section 2 (Same Grade Class) *</label>
+          <select id="arrSec2" onchange="ABS.onCombineSectionsChange()"></select>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px;">
+        <div class="form-group">
+          <label>Conducting Teacher *</label>
+          <select id="arrConductorTeacher" onchange="ABS.onConductorChange()"></select>
+        </div>
+        <div class="form-group">
+          <label>Day of Week *</label>
+          <select id="arrDayOfWeek" onchange="ABS.onConductorChange()">
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Common Free Period Finder Button & Display -->
+      <div style="background:white; border:1px solid #93c5fd; border-radius:6px; padding:10px 14px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+          <span style="font-size:12.5px; font-weight:700; color:var(--primary);">🎯 Find Common Free Period</span>
+          <button type="button" class="btn-outline" style="font-size:11.5px; padding:3px 8px;" onclick="ABS.findCommonPeriod()">
+            🔍 Search Free Periods for Both Classes &amp; Teacher
+          </button>
+        </div>
+        <div id="commonPeriodResultBox" style="font-size:12px; color:var(--slate-600);">
+          Click search above to find periods where Section 1, Section 2, and the conducting teacher are all free.
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:0;">
+        <label>Selected Period in Timetable *</label>
+        <select id="arrPeriod"></select>
+      </div>
+    </div>
+
+    <!-- Substitute Fields Container -->
+    <div id="arrSubstituteBox" style="border:1px solid #fde68a; background:#fefce8; border-radius:8px; padding:14px; margin-bottom:14px; display:none;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px;">
+        <div class="form-group">
+          <label>Class Section *</label>
+          <select id="arrSubSec"></select>
+        </div>
+        <div class="form-group">
+          <label>Day of Week *</label>
+          <select id="arrSubDay">
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label>Covering Substitute Teacher *</label>
+          <select id="arrSubTeacher"></select>
+        </div>
+        <div class="form-group">
+          <label>Period *</label>
+          <select id="arrSubPeriod"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recurrence & Notes -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px;">
+      <div class="form-group">
+        <label>Recurrence</label>
+        <select id="arrRecurrence" onchange="ABS.onRecurrenceChange()">
+          <option value="all">All dates in absence period (recurring on this weekday)</option>
+          <option value="specific">Specific single date only</option>
+        </select>
+      </div>
+      <div class="form-group" id="arrSpecificDateGroup" style="display:none;">
+        <label>Specific Date</label>
+        <input type="date" id="arrSpecificDate">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Notes &amp; Instructions</label>
+      <input type="text" id="arrNotes" placeholder="Optional notes for covering teacher...">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="ABS.closeArrangeModal()">Cancel</button>
+      <button class="btn-primary" onclick="ABS.saveArrangement()">✅ Save Arrangement</button>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Review & Approval Modal -->
+<div id="approvalModal" class="modal">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--slate-200); padding-bottom:10px;">
+      <h3 style="margin:0; color:var(--primary); font-size:18px;">📋 Review &amp; Approve Temporary Timetable</h3>
+      <button onclick="ABS.closeApprovalModal()" class="btn-outline" style="padding:2px 8px;">✕</button>
+    </div>
+
+    <div id="approvalSummaryBox" style="margin-bottom:14px;"></div>
+
+    <div id="approvalConflictBox" style="margin-bottom:14px;"></div>
+
+    <div class="form-group">
+      <label>Approved By (Your Full Name) *</label>
+      <input type="text" id="approvalAdminName" placeholder="e.g. Principal Khan">
+    </div>
+
+    <div class="form-group">
+      <label>Approval Notes</label>
+      <textarea id="approvalNotes" rows="2" placeholder="Optional approval remarks..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="ABS.closeApprovalModal()">Cancel</button>
+      <button class="btn-success" id="btnConfirmPublish" onclick="ABS.publishTimetable()">
+        📣 Approve &amp; Publish Timetable
+      </button>
     </div>
   </div>
 </div>
@@ -4268,6 +4889,1123 @@ function showToast(message, type = 'info') {
 
 // Window Load Bootstrap
 window.addEventListener('load', init);
+
+// =============================================================================
+// TEACHER ABSENCE & TEMPORARY TIMETABLE MANAGEMENT - CLIENT LOGIC (window.ABS)
+// =============================================================================
+
+function closeSubAbsenceModal() {
+    const m = document.getElementById('subAbsenceModal');
+    if (m) m.style.display = 'none';
+}
+
+window.openAbsenceReportModal = function() {
+    const select = document.getElementById('absentTeacherSelect');
+    if (select) {
+        select.innerHTML = (APP.teachers || []).map(t => `<option value="${t.name}">${t.name} (${t.department || 'General'})</option>`).join('');
+    }
+    renderAbsentTeacherSchedule();
+    const m = document.getElementById('subAbsenceModal');
+    if (m) m.style.display = 'flex';
+};
+
+window.ABS = {
+    state: {
+        absences: [],
+        currentAbsenceId: null,
+        arrangements: [],
+        affectedLessons: [],
+        tempSlots: [],
+        editingArrangement: null,
+        activeDate: null,
+        viewMode: 'daily',
+        diffOpen: false
+    }
+};
+
+// --- Initialization ---
+ABS.init = async function() {
+    try {
+        await ABS.updateBadge();
+        if (!window.__absTabHooked) {
+            window.__absTabHooked = true;
+            const origSwitchTab = window.switchTab;
+            window.switchTab = function(tabId) {
+                if (tabId === 'tab-absences') tabId = 'absences';
+                if (tabId === 'tab-temp-timetable' || tabId === 'temp') tabId = 'temp-timetable';
+                origSwitchTab(tabId);
+                if (tabId === 'absences') {
+                    const btn = document.getElementById('nav-tab-absences') || document.getElementById('tabBtn-absences');
+                    if (btn) btn.classList.add('active');
+                    ABS.loadAbsencesTab();
+                } else if (tabId === 'temp-timetable') {
+                    const btn = document.getElementById('nav-tab-temp') || document.getElementById('tabBtn-temp-timetable');
+                    if (btn) btn.classList.add('active');
+                    ABS.loadTempTab();
+                }
+            };
+        }
+    } catch (e) {
+        console.error("ABS.init error:", e);
+    }
+};
+
+ABS.updateBadge = async function() {
+    try {
+        const absences = await window.DB.getAbsences('active');
+        const count = absences ? absences.length : 0;
+        const badge = document.getElementById('absenceBadge');
+        if (badge) {
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+    } catch (e) {
+        console.warn("ABS.updateBadge error:", e);
+    }
+};
+
+// --- Helpers ---
+ABS.formatDate = function(dateStr) {
+    if (!dateStr) return '';
+    try {
+        const d = new Date(dateStr + "T00:00:00");
+        return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    } catch (e) { return dateStr; }
+};
+
+ABS.getDatesInRange = function(startStr, endStr) {
+    const list = [];
+    if (!startStr || !endStr) return list;
+    const cur = new Date(startStr + "T00:00:00");
+    const end = new Date(endStr + "T00:00:00");
+    while (cur <= end) {
+        const day = cur.getDay();
+        if (day >= 1 && day <= 5) {
+            const y = cur.getFullYear();
+            const m = String(cur.getMonth() + 1).padStart(2, '0');
+            const d = String(cur.getDate()).padStart(2, '0');
+            list.push(y + '-' + m + '-' + d);
+        }
+        cur.setDate(cur.getDate() + 1);
+    }
+    return list;
+};
+
+ABS.slotTypeClass = function(type) {
+    switch (type) {
+        case 'combined': return 'slot-combined';
+        case 'substitute': return 'slot-substitute';
+        case 'unresolved': return 'slot-unresolved';
+        case 'pe': return 'slot-pe';
+        default: return 'slot-unchanged';
+    }
+};
+
+ABS.slotTypeLabel = function(type) {
+    switch (type) {
+        case 'combined': return 'Combined';
+        case 'substitute': return 'Substitute';
+        case 'unresolved': return 'Unresolved';
+        case 'pe': return 'P.E. (Kept As-Is)';
+        default: return 'Unchanged';
+    }
+};
+
+// --- Tab Loading ---
+ABS.loadAbsencesTab = async function() {
+    try {
+        ABS.state.absences = await window.DB.getAbsences();
+        ABS.renderDashboard();
+        ABS.renderAbsencesTable();
+        await ABS.updateBadge();
+    } catch (e) {
+        console.error("loadAbsencesTab error:", e);
+        showToast("Error loading absences: " + e.message, "error");
+    }
+};
+
+ABS.renderDashboard = function() {
+    const all = ABS.state.absences || [];
+    const active = all.filter(a => a.status === 'active');
+    document.getElementById('statActiveAbsences').textContent = active.length;
+
+    let pendingArrCount = 0;
+    let unresolvedCount = 0;
+
+    Promise.all(active.map(a => window.DB.getArrangements(a.id))).then(results => {
+        results.forEach(arrs => {
+            pendingArrCount += (arrs || []).filter(ar => !ar.approved).length;
+        });
+        const el = document.getElementById('statPendingApproval');
+        if (el) el.textContent = pendingArrCount;
+    });
+
+    Promise.all(active.map(a => window.DB.getAffectedLessons(a.id))).then(results => {
+        results.forEach(lessons => {
+            unresolvedCount += (lessons || []).length;
+        });
+        const el = document.getElementById('statUnresolvedLessons');
+        if (el) el.textContent = unresolvedCount;
+    });
+};
+
+ABS.renderAbsencesTable = function() {
+    const tbody = document.getElementById('absencesTableBody');
+    if (!tbody) return;
+    const all = ABS.state.absences || [];
+
+    if (all.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--slate-400);">
+            No teacher absences registered yet. Click <strong>➕ Register Teacher Absence</strong> above to add one.
+        </td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = all.map(a => {
+        const start = ABS.formatDate(a.start_date);
+        const end = ABS.formatDate(a.end_date);
+        const weekdays = ABS.getDatesInRange(a.start_date, a.end_date).length;
+        const statusBadge = `<span class="absence-badge ${a.status}">${a.status}</span>`;
+
+        return `<tr>
+            <td><strong style="color:var(--primary); font-size:14px;">${a.teacher_name}</strong></td>
+            <td><span class="tag">${a.department || 'General'}</span></td>
+            <td>${start} ➔ ${end}</td>
+            <td><strong>${weekdays}</strong> working days</td>
+            <td>
+                <div>${a.reason || '<em>No reason stated</em>'}</div>
+                ${a.notes ? `<small style="color:var(--slate-500);">${a.notes}</small>` : ''}
+            </td>
+            <td>${statusBadge}</td>
+            <td style="text-align:right; white-space:nowrap;">
+                <button class="btn-primary" style="padding:4px 10px; font-size:12px; margin-right:4px;" onclick="ABS.openManagePanel('${a.id}')">
+                    ⚙️ Manage
+                </button>
+                <button class="btn-outline" style="padding:4px 8px; font-size:12px; margin-right:4px;" onclick="ABS.openAbsenceModal('${a.id}')">
+                    ✏️ Edit
+                </button>
+                ${a.status !== 'closed' ? `
+                    <button class="btn-danger" style="padding:4px 8px; font-size:12px;" onclick="ABS.closeAbsence('${a.id}')">
+                        Close
+                    </button>` : ''}
+            </td>
+        </tr>`;
+    }).join('');
+};
+
+// --- Absence CRUD Modal ---
+ABS.openAbsenceModal = function(id) {
+    const modal = document.getElementById('absenceModal');
+    if (!modal) return;
+    const title = document.getElementById('absenceModalTitle');
+    const teacherSel = document.getElementById('absTeacher');
+    const startInput = document.getElementById('absStartDate');
+    const endInput = document.getElementById('absEndDate');
+    const reasonInput = document.getElementById('absReason');
+    const notesInput = document.getElementById('absNotes');
+    const statusSelect = document.getElementById('absStatus');
+    const editIdInput = document.getElementById('absEditId');
+
+    teacherSel.innerHTML = (APP.teachers || []).map(t => `<option value="${t.id}">${t.name} (${t.department || 'General'})</option>`).join('');
+
+    if (id) {
+        const a = (ABS.state.absences || []).find(x => x.id === id);
+        if (a) {
+            title.textContent = "✏️ Edit Teacher Absence";
+            editIdInput.value = a.id;
+            teacherSel.value = a.teacher_id;
+            startInput.value = a.start_date;
+            endInput.value = a.end_date;
+            reasonInput.value = a.reason || '';
+            notesInput.value = a.notes || '';
+            statusSelect.value = a.status || 'active';
+        }
+    } else {
+        title.textContent = "🏥 Register Teacher Absence";
+        editIdInput.value = '';
+        const today = new Date().toISOString().slice(0, 10);
+        startInput.value = today;
+        const nextWeek = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+        endInput.value = nextWeek;
+        reasonInput.value = '';
+        notesInput.value = '';
+        statusSelect.value = 'active';
+    }
+
+    modal.style.display = 'flex';
+};
+
+ABS.closeAbsenceModal = function() {
+    const modal = document.getElementById('absenceModal');
+    if (modal) modal.style.display = 'none';
+};
+
+ABS.saveAbsence = async function() {
+    const id = document.getElementById('absEditId').value;
+    const teacherId = document.getElementById('absTeacher').value;
+    const startDate = document.getElementById('absStartDate').value;
+    const endDate = document.getElementById('absEndDate').value;
+    const reason = document.getElementById('absReason').value.trim();
+    const notes = document.getElementById('absNotes').value.trim();
+    const status = document.getElementById('absStatus').value;
+
+    if (!teacherId) {
+        showToast("Please choose an absent teacher.", "error");
+        return;
+    }
+    if (!startDate || !endDate) {
+        showToast("Please enter both start and end dates.", "error");
+        return;
+    }
+    if (new Date(startDate) > new Date(endDate)) {
+        showToast("End date must be on or after start date.", "error");
+        return;
+    }
+
+    try {
+        if (id) {
+            await window.DB.updateAbsence(id, {
+                teacher_id: teacherId,
+                start_date: startDate,
+                end_date: endDate,
+                reason: reason,
+                notes: notes,
+                status: status
+            });
+            showToast("Absence record updated.", "success");
+        } else {
+            await window.DB.saveAbsence({
+                teacher_id: teacherId,
+                start_date: startDate,
+                end_date: endDate,
+                reason: reason,
+                notes: notes,
+                status: status
+            });
+            showToast("New absence registered successfully!", "success");
+        }
+
+        ABS.closeAbsenceModal();
+        await ABS.loadAbsencesTab();
+    } catch (e) {
+        showToast("Error saving absence: " + e.message, "error");
+    }
+};
+
+ABS.closeAbsence = async function(id) {
+    if (confirm("Are you sure you want to close this absence? The teacher will be considered returned.")) {
+        try {
+            await window.DB.updateAbsence(id, { status: 'closed' });
+            showToast("Absence closed.", "info");
+            await ABS.loadAbsencesTab();
+        } catch (e) {
+            showToast("Error closing absence: " + e.message, "error");
+        }
+    }
+};
+
+// --- Manage Detail Panel ---
+ABS.openManagePanel = async function(absenceId) {
+    ABS.state.currentAbsenceId = absenceId;
+    const absence = await window.DB.getAbsence(absenceId);
+    if (!absence) return;
+
+    document.getElementById('manageAbsenceTitle').textContent = `Manage Absence: ${absence.teacher_name}`;
+    document.getElementById('manageAbsenceSubtitle').textContent = `Leave Period: ${ABS.formatDate(absence.start_date)} to ${ABS.formatDate(absence.end_date)} · Status: ${absence.status.toUpperCase()}`;
+
+    const panel = document.getElementById('absenceManagePanel');
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth' });
+
+    await ABS.reloadManageData();
+};
+
+ABS.closeManagePanel = function() {
+    const panel = document.getElementById('absenceManagePanel');
+    if (panel) panel.style.display = 'none';
+    ABS.state.currentAbsenceId = null;
+};
+
+ABS.reloadManageData = async function() {
+    const absenceId = ABS.state.currentAbsenceId;
+    if (!absenceId) return;
+
+    ABS.state.affectedLessons = await window.DB.getAffectedLessons(absenceId);
+    ABS.state.arrangements = await window.DB.getArrangements(absenceId);
+
+    ABS.renderAffectedLessons();
+    ABS.renderArrangements();
+
+    const validation = await window.DB.validateArrangements(absenceId);
+    ABS.renderValidationResult(validation);
+};
+
+ABS.renderAffectedLessons = function() {
+    const tbody = document.getElementById('affectedLessonsTableBody');
+    const countBadge = document.getElementById('affectedLessonsCount');
+    const lessons = ABS.state.affectedLessons || [];
+    countBadge.textContent = lessons.length;
+
+    if (lessons.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:18px; color:var(--slate-400);">No affected lessons found for this absence range.</td></tr>`;
+        return;
+    }
+
+    const arrangements = ABS.state.arrangements || [];
+
+    tbody.innerHTML = lessons.map((l, idx) => {
+        const matchingArr = arrangements.find(arr => {
+            const hasClass = (arr.sections || []).some(s => s.class_id === l.class_id);
+            if (!hasClass) return false;
+            if (arr.recurrence === 'all') {
+                return !arr.day_of_week || arr.day_of_week === l.day;
+            }
+            return (arr.dates || []).some(d => d.date === l.date && d.applies !== false);
+        });
+
+        let statusHtml = '';
+        if (matchingArr) {
+            const isApproved = matchingArr.approved;
+            statusHtml = `<span class="tag ${isApproved ? 'tag-success' : 'tag-primary'}">
+                ${matchingArr.arrangement_type === 'combine' ? 'Combined' : 'Substitute'}: ${matchingArr.conducting_teacher_name || 'Cover'}
+                ${isApproved ? '✅' : '⏳'}
+            </span>`;
+        } else {
+            statusHtml = `<span class="tag" style="background:#fee2e2; color:#dc2626;">Unarranged</span>`;
+        }
+
+        return `<tr class="lesson-row ${matchingArr ? 'arranged' : ''}">
+            <td><strong>${l.date}</strong></td>
+            <td>${l.day}</td>
+            <td><strong>P${l.period}</strong></td>
+            <td><span class="tag tag-primary">${l.class_name}</span></td>
+            <td><strong>${l.subject_name}</strong></td>
+            <td>${statusHtml}</td>
+            <td style="text-align:right;">
+                <button class="btn-outline" style="padding:3px 8px; font-size:11.5px;" onclick="ABS.openArrangeModalForLesson(${idx})">
+                    Arrange ▼
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+};
+
+ABS.renderArrangements = function() {
+    const container = document.getElementById('arrangementsListContainer');
+    const countBadge = document.getElementById('arrangementsCount');
+    const arrangements = ABS.state.arrangements || [];
+    countBadge.textContent = arrangements.length;
+
+    if (arrangements.length === 0) {
+        container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--slate-400);">
+            No arrangements configured yet. Click <strong>Arrange</strong> on any lesson above to combine sections or assign a substitute.
+        </p>`;
+        return;
+    }
+
+    container.innerHTML = arrangements.map(a => {
+        const isCombine = a.arrangement_type === 'combine';
+        const secNames = (a.sections || []).map(s => s.class_name).join(' + ') || 'No sections';
+        const badgeCol = isCombine ? '#3b82f6' : '#eab308';
+        const typeLabel = isCombine ? 'Combine (Max 2)' : 'Substitute Cover';
+
+        return `<div class="arr-card ${a.arrangement_type}">
+            <div style="flex:1; min-width:260px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                    <span class="tag" style="background:${badgeCol}; color:white; font-size:11px;">${typeLabel}</span>
+                    <strong style="font-size:14px; color:var(--slate-800);">${secNames}</strong>
+                    <span class="tag">${a.subject_name || 'General'}</span>
+                </div>
+                <div style="font-size:12.5px; color:var(--slate-600);">
+                    👨‍🏫 Conductor: <strong>${a.conducting_teacher_name || 'Unassigned'}</strong> · 
+                    ⏰ Period ${a.period || '?'} · ${a.day_of_week || 'All Days'} (${a.recurrence})
+                </div>
+                ${a.notes ? `<div style="font-size:11px; color:var(--slate-500); margin-top:2px;">Notes: ${a.notes}</div>` : ''}
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                ${a.approved ? `
+                    <span class="tag tag-success" title="Approved by ${a.approved_by || 'Admin'}">
+                        ✅ Approved (${a.approved_by || 'Admin'})
+                    </span>` : `
+                    <button class="btn-success" style="padding:4px 10px; font-size:11.5px;" onclick="ABS.approveArrangement('${a.id}')">
+                        Approve
+                    </button>`}
+                <button class="btn-danger" style="padding:4px 8px; font-size:11.5px;" onclick="ABS.deleteArrangement('${a.id}')">
+                    🗑️
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+};
+
+ABS.renderValidationResult = function(result) {
+    const box = document.getElementById('manageValidationBox');
+    if (!box) return;
+
+    if (!result || (result.errors.length === 0 && result.warnings.length === 0)) {
+        box.innerHTML = `<div class="alert-success" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0;">
+            <span>✅ All configured arrangements are conflict-free.</span>
+        </div>`;
+        return;
+    }
+
+    let html = '';
+    if (result.errors.length > 0) {
+        html += `<div class="alert-error" style="margin-bottom:8px;">
+            <strong>⛔ Cannot generate temporary timetable — Conflicts detected:</strong>
+            <ul>${result.errors.map(e => `<li>${e}</li>`).join('')}</ul>
+        </div>`;
+    }
+    if (result.warnings.length > 0) {
+        html += `<div class="alert-warning" style="margin-bottom:0;">
+            <strong>⚠️ Warnings:</strong>
+            <ul>${result.warnings.map(w => `<li>${w}</li>`).join('')}</ul>
+        </div>`;
+    }
+    box.innerHTML = html;
+};
+
+// --- Arrangement Builder Modal ---
+ABS.openArrangeModalForLesson = function(lessonIndex) {
+    const lesson = (ABS.state.affectedLessons || [])[lessonIndex];
+    if (!lesson) return;
+    ABS.openArrangeModal(lesson);
+};
+
+ABS.openArrangeModal = function(lesson) {
+    const modal = document.getElementById('arrangeModal');
+    if (!modal) return;
+
+    const subSel = document.getElementById('arrSubject');
+    subSel.innerHTML = (APP.subjects || []).filter(s => s.name !== 'P.E').map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+
+    const sec1 = document.getElementById('arrSec1');
+    const sec2 = document.getElementById('arrSec2');
+    const subSec = document.getElementById('arrSubSec');
+
+    const allClasses = (APP.classes || []).slice();
+    sec1.innerHTML = allClasses.map(c => `<option value="${c.id}" data-grade="${c.grade}">${c.name}</option>`).join('');
+    sec2.innerHTML = '<option value="">-- Select 2nd Section (Same Grade) --</option>' + 
+        allClasses.map(c => `<option value="${c.id}" data-grade="${c.grade}">${c.name}</option>`).join('');
+    subSec.innerHTML = allClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+    const condSel = document.getElementById('arrConductorTeacher');
+    const subTeachSel = document.getElementById('arrSubTeacher');
+    const teacherOpts = (APP.teachers || []).map(t => {
+        return `<option value="${t.id}">${t.name} (${t.department || 'General'})</option>`;
+    }).join('');
+    condSel.innerHTML = teacherOpts;
+    subTeachSel.innerHTML = teacherOpts;
+
+    const pOpts = (APP.PERIODS || [1,2,3,4,5,6,7]).map(p => `<option value="${p}">Period ${p}</option>`).join('');
+    document.getElementById('arrPeriod').innerHTML = pOpts;
+    document.getElementById('arrSubPeriod').innerHTML = pOpts;
+
+    if (lesson) {
+        if (lesson.subject_id) subSel.value = lesson.subject_id;
+        sec1.value = lesson.class_id;
+        subSec.value = lesson.class_id;
+        document.getElementById('arrDayOfWeek').value = lesson.day;
+        document.getElementById('arrSubDay').value = lesson.day;
+        document.getElementById('arrPeriod').value = lesson.period;
+        document.getElementById('arrSubPeriod').value = lesson.period;
+        document.getElementById('arrLessonDate').value = lesson.date;
+
+        ABS.filterSection2ByGrade(lesson.grade, lesson.class_id);
+    }
+
+    ABS.onArrangeTypeChange();
+    document.getElementById('commonPeriodResultBox').innerHTML = 'Click search above to find periods where Section 1, Section 2, and the conducting teacher are all free.';
+
+    modal.style.display = 'flex';
+};
+
+ABS.closeArrangeModal = function() {
+    const modal = document.getElementById('arrangeModal');
+    if (modal) modal.style.display = 'none';
+};
+
+ABS.onArrangeTypeChange = function() {
+    const type = document.querySelector('input[name="arrType"]:checked').value;
+    const combineBox = document.getElementById('arrCombineBox');
+    const subBox = document.getElementById('arrSubstituteBox');
+    if (type === 'combine') {
+        combineBox.style.display = 'block';
+        subBox.style.display = 'none';
+    } else {
+        combineBox.style.display = 'none';
+        subBox.style.display = 'block';
+    }
+};
+
+ABS.filterSection2ByGrade = function(targetGrade, excludeClassId) {
+    const sec2 = document.getElementById('arrSec2');
+    const sameGrade = (APP.classes || []).filter(c => {
+        const g = parseInt(c.grade) || parseInt(c.name) || 1;
+        return g === parseInt(targetGrade) && c.id !== excludeClassId;
+    });
+
+    sec2.innerHTML = '<option value="">-- Select 2nd Section (Same Grade) --</option>' +
+        sameGrade.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    if (sameGrade.length > 0) sec2.value = sameGrade[0].id;
+};
+
+ABS.onCombineSectionsChange = function() {
+    const sec1Id = document.getElementById('arrSec1').value;
+    const c1 = (APP.classes || []).find(c => c.id === sec1Id);
+    if (c1) {
+        const grade = parseInt(c1.grade) || parseInt(c1.name) || 1;
+        const sec2 = document.getElementById('arrSec2');
+        const c2 = (APP.classes || []).find(c => c.id === sec2.value);
+        if (!c2 || (parseInt(c2.grade) || parseInt(c2.name) || 1) !== grade) {
+            ABS.filterSection2ByGrade(grade, sec1Id);
+        }
+    }
+    ABS.findCommonPeriod();
+};
+
+ABS.onConductorChange = function() {
+    ABS.findCommonPeriod();
+};
+
+ABS.onRecurrenceChange = function() {
+    const rec = document.getElementById('arrRecurrence').value;
+    const dateGrp = document.getElementById('arrSpecificDateGroup');
+    dateGrp.style.display = (rec === 'specific') ? 'block' : 'none';
+    if (rec === 'specific') {
+        const lDate = document.getElementById('arrLessonDate').value;
+        if (lDate) document.getElementById('arrSpecificDate').value = lDate;
+    }
+};
+
+ABS.findCommonPeriod = async function() {
+    const sec1Id = document.getElementById('arrSec1').value;
+    const sec2Id = document.getElementById('arrSec2').value;
+    const conductorId = document.getElementById('arrConductorTeacher').value;
+    const day = document.getElementById('arrDayOfWeek').value;
+    const box = document.getElementById('commonPeriodResultBox');
+
+    if (!sec1Id || !sec2Id) {
+        box.innerHTML = '<span style="color:var(--slate-500);">Please select both Section 1 and Section 2.</span>';
+        return;
+    }
+    if (!conductorId) {
+        box.innerHTML = '<span style="color:var(--slate-500);">Please choose a conducting teacher.</span>';
+        return;
+    }
+
+    box.innerHTML = '🔍 Checking timetable clashes...';
+
+    try {
+        const freePeriods = await window.DB.findCommonPeriod(sec1Id, sec2Id, conductorId, day, APP.PERIODS.length);
+        if (freePeriods.length === 0) {
+            box.innerHTML = `<span style="color:var(--danger); font-weight:700;">
+                ⚠️ No period found where Section 1, Section 2, and the conducting teacher are all free on ${day}. You may select a period manually below.
+            </span>`;
+        } else {
+            box.innerHTML = `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <span style="font-weight:700; color:var(--success);">✅ Common Free Periods on ${day}:</span>
+                ${freePeriods.map(p => `
+                    <button type="button" class="period-chip" onclick="document.getElementById('arrPeriod').value='${p}'">
+                        Period ${p}
+                    </button>
+                `).join('')}
+                <span style="font-size:11px; color:var(--slate-500);">(Click any to select)</span>
+            </div>`;
+            document.getElementById('arrPeriod').value = freePeriods[0];
+        }
+    } catch (e) {
+        box.innerHTML = `<span style="color:var(--danger);">Error searching periods: ${e.message}</span>`;
+    }
+};
+
+ABS.saveArrangement = async function() {
+    const absenceId = ABS.state.currentAbsenceId;
+    if (!absenceId) return;
+
+    const type = document.querySelector('input[name="arrType"]:checked').value;
+    const subjectId = document.getElementById('arrSubject').value;
+    const recurrence = document.getElementById('arrRecurrence').value;
+    const notes = document.getElementById('arrNotes').value.trim();
+
+    let sections = [];
+    let conductorId = null;
+    let period = null;
+    let dayOfWeek = null;
+
+    if (type === 'combine') {
+        const s1 = document.getElementById('arrSec1').value;
+        const s2 = document.getElementById('arrSec2').value;
+        conductorId = document.getElementById('arrConductorTeacher').value;
+        period = parseInt(document.getElementById('arrPeriod').value);
+        dayOfWeek = document.getElementById('arrDayOfWeek').value;
+
+        if (!s1 || !s2) {
+            showToast("Please choose 2 sections to combine.", "error");
+            return;
+        }
+        if (s1 === s2) {
+            showToast("Section 1 and Section 2 cannot be the same class.", "error");
+            return;
+        }
+        sections = [
+            { class_id: s1, original_period: period },
+            { class_id: s2, original_period: period }
+        ];
+    } else {
+        const sec = document.getElementById('arrSubSec').value;
+        conductorId = document.getElementById('arrSubTeacher').value;
+        period = parseInt(document.getElementById('arrSubPeriod').value);
+        dayOfWeek = document.getElementById('arrSubDay').value;
+
+        if (!sec) {
+            showToast("Please choose a class section.", "error");
+            return;
+        }
+        sections = [{ class_id: sec, original_period: period }];
+    }
+
+    if (!conductorId) {
+        showToast("Please choose a conducting/substitute teacher.", "error");
+        return;
+    }
+
+    let dates = [];
+    if (recurrence === 'specific') {
+        const specDate = document.getElementById('arrSpecificDate').value;
+        if (!specDate) {
+            showToast("Please specify the date for this arrangement.", "error");
+            return;
+        }
+        dates = [{ date: specDate, applies: true }];
+    }
+
+    try {
+        await window.DB.saveArrangement({
+            absence_id: absenceId,
+            arrangement_type: type,
+            subject_id: subjectId,
+            conducting_teacher_id: conductorId,
+            period: period,
+            day_of_week: dayOfWeek,
+            recurrence: recurrence,
+            notes: notes,
+            sections: sections,
+            dates: dates
+        });
+
+        ABS.closeArrangeModal();
+        showToast("Arrangement saved!", "success");
+        await ABS.reloadManageData();
+    } catch (e) {
+        showToast("Error saving arrangement: " + e.message, "error");
+    }
+};
+
+ABS.deleteArrangement = async function(id) {
+    if (confirm("Delete this arrangement?")) {
+        try {
+            await window.DB.deleteArrangement(id);
+            showToast("Arrangement removed.", "info");
+            await ABS.reloadManageData();
+        } catch (e) {
+            showToast("Error deleting arrangement: " + e.message, "error");
+        }
+    }
+};
+
+ABS.approveArrangement = async function(id) {
+    const approver = prompt("Approved by (admin name):", "Admin");
+    if (!approver) return;
+    try {
+        await window.DB.approveArrangement(id, approver);
+        showToast("Arrangement approved!", "success");
+        await ABS.reloadManageData();
+    } catch (e) {
+        showToast("Error approving arrangement: " + e.message, "error");
+    }
+};
+
+// --- Temp Timetable Generation ---
+ABS.generate = async function() {
+    const absenceId = ABS.state.currentAbsenceId;
+    if (!absenceId) return;
+
+    try {
+        const val = await window.DB.validateArrangements(absenceId);
+        if (!val.valid) {
+            showToast("Cannot generate: fix the clashes shown in the panel first.", "error");
+            ABS.renderValidationResult(val);
+            return;
+        }
+
+        const res = await window.DB.generateTempTimetable(absenceId);
+        showToast(`Temporary timetable generated with ${res.generated} slots!`, "success");
+        await ABS.reloadManageData();
+
+        window.switchTab('temp-timetable');
+        const sel = document.getElementById('tempAbsenceSelect');
+        if (sel) {
+            sel.value = absenceId;
+            await ABS.onTempAbsenceChange();
+        }
+    } catch (e) {
+        showToast("Generation error: " + e.message, "error");
+    }
+};
+
+// --- Tab: Temporary Timetable ---
+ABS.loadTempTab = async function() {
+    try {
+        const absences = await window.DB.getAbsences();
+        ABS.state.absences = absences || [];
+        const sel = document.getElementById('tempAbsenceSelect');
+        if (!sel) return;
+
+        sel.innerHTML = absences.map(a => `<option value="${a.id}">${a.teacher_name} (${a.start_date} to ${a.end_date})</option>`).join('');
+
+        if (ABS.state.currentAbsenceId) {
+            sel.value = ABS.state.currentAbsenceId;
+        }
+
+        await ABS.onTempAbsenceChange();
+    } catch (e) {
+        console.error("loadTempTab error:", e);
+    }
+};
+
+ABS.onTempAbsenceChange = async function() {
+    const absenceId = document.getElementById('tempAbsenceSelect').value;
+    if (!absenceId) return;
+    ABS.state.currentAbsenceId = absenceId;
+
+    const absence = (ABS.state.absences || []).find(a => a.id === absenceId) || await window.DB.getAbsence(absenceId);
+    if (!absence) return;
+
+    const picker = document.getElementById('tempDatePicker');
+    picker.min = absence.start_date;
+    picker.max = absence.end_date;
+
+    const weekdays = ABS.getDatesInRange(absence.start_date, absence.end_date);
+    if (!ABS.state.activeDate || !weekdays.includes(ABS.state.activeDate)) {
+        ABS.state.activeDate = weekdays[0] || absence.start_date;
+    }
+    picker.value = ABS.state.activeDate;
+
+    await ABS.renderTempSchedule();
+};
+
+ABS.onTempDateChange = async function(dateStr) {
+    ABS.state.activeDate = dateStr;
+    await ABS.renderTempSchedule();
+};
+
+ABS.prevDay = function() {
+    const picker = document.getElementById('tempDatePicker');
+    const cur = new Date(picker.value + "T00:00:00");
+    cur.setDate(cur.getDate() - 1);
+    while (cur.getDay() === 0 || cur.getDay() === 6) cur.setDate(cur.getDate() - 1);
+    const nextStr = cur.toISOString().slice(0, 10);
+    if (nextStr >= picker.min) {
+        picker.value = nextStr;
+        ABS.onTempDateChange(nextStr);
+    }
+};
+
+ABS.nextDay = function() {
+    const picker = document.getElementById('tempDatePicker');
+    const cur = new Date(picker.value + "T00:00:00");
+    cur.setDate(cur.getDate() + 1);
+    while (cur.getDay() === 0 || cur.getDay() === 6) cur.setDate(cur.getDate() + 1);
+    const nextStr = cur.toISOString().slice(0, 10);
+    if (nextStr <= picker.max) {
+        picker.value = nextStr;
+        ABS.onTempDateChange(nextStr);
+    }
+};
+
+ABS.switchTempView = function(view) {
+    ABS.state.viewMode = view;
+    ABS.renderTempSchedule();
+};
+
+ABS.renderTempSchedule = async function() {
+    const absenceId = ABS.state.currentAbsenceId;
+    const date = ABS.state.activeDate;
+    if (!absenceId || !date) return;
+
+    const d = new Date(date + "T00:00:00");
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+    document.getElementById('tempDayBadge').textContent = `${dayName}, ${ABS.formatDate(date)}`;
+
+    ABS.state.tempSlots = await window.DB.getTempTimetable(absenceId, date);
+    const slots = ABS.state.tempSlots || [];
+
+    const isPublished = slots.length > 0 && slots.every(s => s.published);
+    const badge = document.getElementById('tempPublishedBadge');
+    if (badge) {
+        badge.className = `status-badge ${isPublished ? 'ok' : 'warn'}`;
+        badge.textContent = isPublished ? '✅ Published' : 'Draft (Unpublished)';
+    }
+
+    if (ABS.state.viewMode === 'daily') {
+        ABS.renderTempDaily(slots);
+    } else if (ABS.state.viewMode === 'grade') {
+        ABS.renderTempByGrade(slots);
+    } else {
+        ABS.renderTempByTeacher(slots);
+    }
+
+    ABS.renderCompareDiff();
+};
+
+ABS.renderTempDaily = function(slots) {
+    const thead = document.getElementById('tempGridHeader');
+    const tbody = document.getElementById('tempGridBody');
+    const P = APP.PERIODS || [1,2,3,4,5,6,7];
+    const breakAfter = parseInt(APP.settings.break_after_period) || 3;
+
+    thead.innerHTML = `<tr>
+        <th style="min-width:130px;">Class Section</th>
+        ${P.map(p => `<th>Period ${p}</th>` + (p === breakAfter ? '<th style="width:30px; background:#1e3a8a; color:white;">☕</th>' : '')).join('')}
+    </tr>`;
+
+    if (slots.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${P.length + 2}" style="text-align:center; padding:30px; color:var(--slate-400);">
+            No temporary timetable generated for this date. Go to <strong>Absences ➔ Manage</strong> and click <strong>Generate Temporary Timetable</strong>.
+        </td></tr>`;
+        return;
+    }
+
+    const byClass = {};
+    slots.forEach(s => {
+        (s.class_names || []).forEach(cn => {
+            byClass[cn] = byClass[cn] || {};
+            byClass[cn][s.period] = s;
+        });
+    });
+
+    const classNames = Object.keys(byClass).sort((a, b) => {
+        const ga = parseInt(a) || 1, gb = parseInt(b) || 1;
+        return (ga - gb) || a.localeCompare(b);
+    });
+
+    tbody.innerHTML = classNames.map(cn => {
+        return `<tr>
+            <td style="font-weight:700; background:var(--slate-50); border-right:2px solid var(--slate-200);">${cn}</td>
+            ${P.map(p => {
+                const s = byClass[cn] ? byClass[cn][p] : null;
+                const cellHtml = s ? ABS.renderSlotCell(s) : '<div class="period-free" style="cursor:default;">Free</div>';
+                return `<td>${cellHtml}</td>` + (p === breakAfter ? '<td class="break-cell">BREAK</td>' : '');
+            }).join('')}
+        </tr>`;
+    }).join('');
+};
+
+ABS.renderSlotCell = function(s) {
+    const cls = ABS.slotTypeClass(s.slot_type);
+    const label = ABS.slotTypeLabel(s.slot_type);
+    let teacherDisplay = s.teacher_name || 'No teacher';
+    if (s.slot_type === 'combined') {
+        teacherDisplay = `Combined: ${s.teacher_name}`;
+    } else if (s.slot_type === 'substitute') {
+        teacherDisplay = `Cover: ${s.teacher_name}`;
+    } else if (s.slot_type === 'unresolved') {
+        teacherDisplay = `<span style="color:var(--danger); font-weight:700;">⚠️ Unresolved</span>`;
+    }
+
+    return `<div class="period-cell ${cls}" title="${s.change_reason || label}">
+        <span class="cell-subject">${s.subject_name || 'Subject'}</span>
+        <span class="cell-teacher">${teacherDisplay}</span>
+        ${s.class_names && s.class_names.length > 1 ? `<span class="tag" style="font-size:9.5px; padding:1px 5px; margin-top:2px;">${s.class_names.join('+')}</span>` : ''}
+    </div>`;
+};
+
+ABS.renderTempByGrade = function(slots) {
+    ABS.renderTempDaily(slots);
+};
+
+ABS.renderTempByTeacher = function(slots) {
+    const thead = document.getElementById('tempGridHeader');
+    const tbody = document.getElementById('tempGridBody');
+    const P = APP.PERIODS || [1,2,3,4,5,6,7];
+    const breakAfter = parseInt(APP.settings.break_after_period) || 3;
+
+    thead.innerHTML = `<tr>
+        <th style="min-width:150px;">Covering Teacher</th>
+        ${P.map(p => `<th>Period ${p}</th>` + (p === breakAfter ? '<th style="width:30px; background:#1e3a8a; color:white;">☕</th>' : '')).join('')}
+    </tr>`;
+
+    const byTeacher = {};
+    slots.filter(s => s.teacher_name).forEach(s => {
+        byTeacher[s.teacher_name] = byTeacher[s.teacher_name] || {};
+        byTeacher[s.teacher_name][s.period] = s;
+    });
+
+    const teacherNames = Object.keys(byTeacher).sort();
+    if (teacherNames.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${P.length + 2}" style="text-align:center; padding:20px; color:var(--slate-400);">No covering teachers assigned for this day.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = teacherNames.map(tn => {
+        return `<tr>
+            <td style="font-weight:700; background:var(--slate-50);">${tn}</td>
+            ${P.map(p => {
+                const s = byTeacher[tn][p];
+                const cellHtml = s ? ABS.renderSlotCell(s) : '<div class="period-free" style="cursor:default;">Free</div>';
+                return `<td>${cellHtml}</td>` + (p === breakAfter ? '<td class="break-cell">BREAK</td>' : '');
+            }).join('')}
+        </tr>`;
+    }).join('');
+};
+
+// --- Comparison Diff ---
+ABS.toggleDiffPanel = function() {
+    ABS.state.diffOpen = !ABS.state.diffOpen;
+    const content = document.getElementById('diffPanelContent');
+    const btn = document.getElementById('diffToggleBtn');
+    content.style.display = ABS.state.diffOpen ? 'block' : 'none';
+    btn.textContent = ABS.state.diffOpen ? '▲ Hide Diff' : '▼ Show Diff';
+};
+
+ABS.renderCompareDiff = async function() {
+    const absenceId = ABS.state.currentAbsenceId;
+    if (!absenceId) return;
+
+    try {
+        const diff = await window.DB.compareWithPermanent(absenceId);
+        const badgesContainer = document.getElementById('diffStatsBadges');
+        if (badgesContainer) {
+            badgesContainer.innerHTML = `
+                <span class="tag tag-success">${diff.unchanged.length} Unchanged</span>
+                <span class="tag" style="background:#eff6ff; color:#2563eb;">${diff.combined.length} Combined</span>
+                <span class="tag" style="background:#fefce8; color:#d97706;">${diff.substitute.length} Substitute</span>
+                <span class="tag" style="background:#fee2e2; color:#dc2626;">${diff.unresolved.length} Unresolved</span>
+            `;
+        }
+
+        const tbody = document.getElementById('diffTableBody');
+        if (!tbody) return;
+
+        const changes = (diff.modified || []).concat(diff.unresolved || []);
+        if (changes.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:16px; color:var(--slate-400);">No modifications found compared to permanent schedule.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = changes.map(s => {
+            const rowClass = `compare-row-${s.slot_type}`;
+            return `<tr class="${rowClass}">
+                <td><strong>${s.date}</strong></td>
+                <td><strong>Period ${s.period}</strong></td>
+                <td><span class="tag tag-primary">${s.class_name}</span></td>
+                <td><strong>${s.subject_name}</strong></td>
+                <td><span class="tag">${ABS.slotTypeLabel(s.slot_type)}</span></td>
+                <td style="color:var(--success); font-weight:700;">${s.teacher_name || '—'}</td>
+                <td style="color:var(--danger);">${s.original_teacher_name || 'Absent'}</td>
+                <td style="font-size:11.5px; color:var(--slate-600);">${s.change_reason || '-'}</td>
+            </tr>`;
+        }).join('');
+    } catch (e) {
+        console.warn("renderCompareDiff error:", e);
+    }
+};
+
+// --- Approval & Publish ---
+ABS.openApprovalModal = async function() {
+    const absenceId = ABS.state.currentAbsenceId;
+    if (!absenceId) {
+        showToast("Please select an absence first.", "error");
+        return;
+    }
+
+    const modal = document.getElementById('approvalModal');
+    const summaryBox = document.getElementById('approvalSummaryBox');
+    const conflictBox = document.getElementById('approvalConflictBox');
+    const btn = document.getElementById('btnConfirmPublish');
+
+    const diff = await window.DB.compareWithPermanent(absenceId);
+    const val = await window.DB.validateArrangements(absenceId);
+
+    summaryBox.innerHTML = `
+        <div class="card" style="padding:12px 16px; background:var(--slate-50); margin-bottom:10px;">
+            <div style="font-weight:700; margin-bottom:6px; color:var(--slate-800);">Temporary Timetable Breakdown:</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:13px;">
+                <span class="tag tag-success">✅ ${diff.unchanged.length} Unchanged Slots</span>
+                <span class="tag" style="background:#eff6ff; color:#2563eb;">🤝 ${diff.combined.length} Combined Slots</span>
+                <span class="tag" style="background:#fefce8; color:#d97706;">⚡ ${diff.substitute.length} Substitute Slots</span>
+                <span class="tag" style="background:#fee2e2; color:#dc2626;">⚠️ ${diff.unresolved.length} Unresolved Slots</span>
+            </div>
+        </div>
+    `;
+
+    if (val.errors.length > 0) {
+        conflictBox.innerHTML = `<div class="alert-error">
+            <strong>⛔ Cannot publish — Clashes detected:</strong>
+            <ul>${val.errors.map(e => `<li>${e}</li>`).join('')}</ul>
+        </div>`;
+        btn.disabled = true;
+    } else {
+        conflictBox.innerHTML = `<div class="alert-success">
+            ✅ Verified: 0 teacher or classroom conflicts detected.
+        </div>`;
+        btn.disabled = false;
+    }
+
+    modal.style.display = 'flex';
+};
+
+ABS.closeApprovalModal = function() {
+    const modal = document.getElementById('approvalModal');
+    if (modal) modal.style.display = 'none';
+};
+
+ABS.publishTimetable = async function() {
+    const absenceId = ABS.state.currentAbsenceId;
+    const adminName = document.getElementById('approvalAdminName').value.trim();
+
+    if (!adminName) {
+        showToast("Please enter your name in 'Approved By'.", "error");
+        return;
+    }
+
+    try {
+        await window.DB.publishTempTimetable(absenceId, adminName);
+        ABS.closeApprovalModal();
+        showToast("📣 Temporary Timetable published successfully!", "success");
+        await ABS.renderTempSchedule();
+    } catch (e) {
+        showToast("Publish error: " + e.message, "error");
+    }
+};
+
+ABS.clearCurrentTemp = async function() {
+    const absenceId = ABS.state.currentAbsenceId;
+    if (!absenceId) return;
+
+    if (confirm("Clear temporary timetable for this absence?")) {
+        try {
+            await window.DB.clearTempTimetable(absenceId);
+            showToast("Temporary timetable cleared.", "info");
+            await ABS.renderTempSchedule();
+        } catch (e) {
+            showToast("Error clearing temp timetable: " + e.message, "error");
+        }
+    }
+};
+
+ABS.printTempTimetable = function() {
+    window.print();
+};
+
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        if (window.ABS && window.ABS.init) {
+            window.ABS.init();
+        }
+    }, 400);
+});
 </script>
 
 </body>
